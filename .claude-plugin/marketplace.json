@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "msw-ai-coding-plugins-official",
+  "description": "메이플스토리 월드(MSW) AI 코딩을 위한 Claude Code 플러그인 모음",
+  "owner": {
+    "name": "MSW-Git",
+    "email": "mswvsc123@outlook.kr"
+  },
+  "plugins": [
+    {
+      "name": "msw-maker-base-skill",
+      "description": "MSW 기본 스킬셋 - 플랫폼 규칙, 스크립트 프레임워크, 파일 작성법, 공통 패턴, 에러 가이드. MSW 월드 제작의 기반 지식.",
+      "author": {
+        "name": "MSW-Git",
+        "email": "mswvsc123@outlook.kr"
+      },
+      "source": "./plugins/msw-maker-base-skill",
+      "category": "development"
+    }
+  ]
+}

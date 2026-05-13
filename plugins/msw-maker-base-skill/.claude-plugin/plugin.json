@@ -1,0 +1,8 @@
+{
+  "name": "msw-maker-base-skill",
+  "description": "MSW 기본 스킬셋 - 플랫폼 규칙, 스크립트 프레임워크, 파일 작성법, 공통 패턴, 에러 가이드. MSW 월드 제작의 기반 지식.",
+  "author": {
+    "name": "MSW-Git",
+    "email": "mswvsc123@outlook.kr"
+  }
+}
