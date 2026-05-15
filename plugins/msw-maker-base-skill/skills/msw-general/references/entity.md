@@ -1,8 +1,8 @@
 # MSW Entity — `.map` Placement & Runtime
 
-Place and manage entity **instances** in `.map` files; spawn, parent, and handle hierarchy at runtime. `.model` template authoring is split out into [model.md](model.md).
+Place and manage entity **instances** in `.map` files through `MapBuilder`; spawn, parent, and handle hierarchy at runtime. `.model` template authoring is split out into [model.md](model.md).
 
-The legacy Maker RPC (curl) API has been removed, so all work is performed via **direct workspace file edits** combined with **msw-maker-mcp** tools.
+The legacy Maker RPC (curl) API has been removed. `.map` inspection and mutation are performed through `skills/msw-general/scripts/map/msw_map_builder.cjs`, followed by **msw-maker-mcp** verification tools.
 
 ---
 
@@ -13,7 +13,7 @@ The legacy Maker RPC (curl) API has been removed, so all work is performed via *
 | Map | `./map/*.map` | Map root, footholds, tiles, **all placed entities** |
 | User models | `./RootDesk/MyDesk/Models/{Category}/*.model` (typed subfolder, e.g. `Models/Monsters/`) | Custom `.model` templates ([model.md](model.md) — never save directly under `MyDesk/` or `Models/`) |
 | System models | `./Global/*.model` | Engine default templates (monster presets, Player, etc.) — read-only; copy into `MyDesk/Models/{Category}/` to customize |
-| UI | `./ui/*.ui` | UI-only entities and widgets ([ui.md](ui.md)) |
+| UI | `./ui/*.ui` | UI-only entities and widgets ([`msw-ui-system`](../../msw-ui-system/SKILL.md)) |
 
 > **Placing a monster** — read [monster.md](monster.md) first. Monsters have 11 required components, lowercase `ActionSheet` keys, and several `IsLegacy: false` flags. Mixing inline `@components` with `modelId` overrides on a system monster model produces `LEA-3046 InternalError` at runtime; bake the values into a dedicated `.model` instead.
 
@@ -24,7 +24,7 @@ The legacy Maker RPC (curl) API has been removed, so all work is performed via *
 ## Scope Concept (file-edit workflow)
 
 1. **Scope of "what shows up in the list"**
-   - The editor **hierarchy** and **`ContentProto.Entities` of `./map/{mapname}.map`** only contain entities belonging to **that map instance**.
+   - The editor **hierarchy** and the builder entity list for `./map/{mapname}.map` only contain entities belonging to **that map instance**.
    - When listing entities by opening a file, the **currently edited map file is the scope**. Placements in other maps live in other `.map` files.
 
 2. **Scope of ID / path-based access**
@@ -94,37 +94,20 @@ _SpawnService:SpawnByModelId("myenemy", "Enemy_1", position, map)
 ## Snapshot Workflow (get → edit → set)
 
 ```
-1. GET  : read `./map/{map}.map` or `./RootDesk/MyDesk/.../{model}.model`.
-2. EDIT : keep JSON structure intact; modify only the needed fields (sync id / path / @components carefully).
-3. SET  : save the file.
+1. GET  : `MapBuilder.read("./map/{map}.map")`.
+2. EDIT : call builder APIs only (`placeModel`, `sprite`, `patch`, `patchComponent`, etc.).
+3. SET  : `map.write("./map/{map}.map")`.
 4. SYNC : call MCP `refresh`.
 5. (optional) `play` → check runtime via `logs`.
 ```
 
-**Caution**: `.map` files have very large `ContentProto.Entities[]` arrays. **Do not regenerate the whole file** — apply minimal edits only to the relevant entity block.
+**Caution**: `.map` files have very large entity arrays. Use the builder snapshot and patch APIs for covered work. Direct raw JSON edits are allowed only when `MapBuilder` explicitly does not cover the operation; keep the edit minimal and verify with refresh/logs.
 
 ---
 
-## Inline `@components` Values in `.map` Files
+## Builder Values
 
-Map entity JSON often stores values **directly into fields without `ValueType`**.
-
-| Logical type | `.map` / inspector JSON example |
-|-----------|-------------------------|
-| Number | `1.0`, `100` |
-| String | `"..."` |
-| Vector3 | `"Position": { "x", "y", "z" }` |
-| Color | `"Color": { "r", "g", "b", "a" }` |
-| DataRef / RUID | `"SpriteRUID": "hex..."` **or** `{ "DataId": "hex..." }` — **match the form used by existing entities in the same map** |
-
-> See [model.md §9](model.md) for the full `ValueType` rules of `.model` `Values`. The same logical value **may have different JSON representations** in `.map` vs `.model` — preserve each file's existing pattern.
-
-### Special Cases
-
-| Situation | Caution |
-|------|------|
-| Quaternion | `.map` `TransformComponent` has a separate `QuaternionRotation` field — copy from an existing entity, then edit |
-| ZRotation vs Rotation | Map data may carry both — there are cases where **fixing only one is wrong**, so preserve the pattern of the same entity |
+Map entity values are patched through `MapBuilder` component APIs. Use world-unit vectors like `pos: [x, y, z]`, color helpers, and component override objects; do not hand-write raw component JSON except as a builder argument for a single component payload.
 
 ---
 
@@ -137,7 +120,7 @@ Map entity JSON often stores values **directly into fields without `ValueType`**
 Before touching a map in any way (entity placement, spawn, movement scripts, applying models, tile edits, etc.), always confirm the following two items **in order**:
 
 1. **Identify which map you are working on and where it lives** (e.g. the `./map/{mapname}.map` path and its root entity).
-2. **Open that `.map` file and read `MapComponent.TileMapMode` as a number**, and keep the value in mind:
+2. **Use `MapBuilder.read(...).getTileMapMode()` to read `MapComponent.TileMapMode` as a number**, and keep the value in mind:
    - `0` → **MapleTile** (side-view + Foothold; Body = `RigidbodyComponent`)
    - `1` → **RectTile** (top-down grid; Body = `KinematicbodyComponent`)
    - `2` → **SideViewRectTile** (side-view tile grid; Body = `SideviewbodyComponent`)
@@ -146,17 +129,17 @@ Before touching a map in any way (entity placement, spawn, movement scripts, app
 
 ### Recommending the mode (when starting a new map or when the current mode is wrong for the user's goal)
 
-For **new map authoring** — or whenever the current map's `TileMapMode` clearly does not fit the gameplay the user described — **explicitly recommend the appropriate `TileMapMode` in Korean before doing any further entity / model / script work** (do not silently proceed with whatever is already on disk).
+For **new map authoring** — or whenever the current map's `TileMapMode` clearly does not fit the gameplay the user described — **explicitly recommend the appropriate `TileMapMode` before doing any further entity / model / script work** (do not silently proceed with whatever is already on disk).
 
 Use this decision matrix:
 
 | User's intended game / gameplay | Recommend | Why |
 |---|---|---|
-| 메이플스토리식 횡스크롤 액션 · 점프 · 사다리 · 자유 위치 발판(플랫포머) | **`0` MapleTile** | Side-view + gravity + freely placed Foothold line segments |
-| 탑다운(위에서 본) RPG · 미로 · 보드게임 · 던전 크롤러 · 봄버맨류 · 농장 시뮬레이션 | **`1` RectTile** | Top-down 4-directional free move, no gravity, square-tile grid |
-| 타일 기반 횡스크롤 플랫포머 · 마리오식 픽셀 액션 · 사이드뷰 퍼즐 | **`2` SideViewRectTile** | Side-view + gravity **on a tile grid** (not free footholds) |
+| MapleStory-style side-scrolling action · jump · ladder · freely placed footholds (platformer) | **`0` MapleTile** | Side-view + gravity + freely placed Foothold line segments |
+| Top-down RPG · maze · board game · dungeon crawler · Bomberman-style · farming sim | **`1` RectTile** | Top-down 4-directional free move, no gravity, square-tile grid |
+| Tile-based side-scrolling platformer · Mario-style pixel action · side-view puzzle | **`2` SideViewRectTile** | Side-view + gravity **on a tile grid** (not free footholds) |
 
-If the user has not yet told you what kind of game they want, **ask one short Korean question first** (e.g. "탑다운 시점인가요, 횡스크롤(점프/사다리)인가요? 자유 발판 기반인지, 정사각 타일 그리드 기반인지 알려주세요.") and only then recommend.
+If the user has not yet told you what kind of game they want, **ask one short question first** (e.g. "Is it top-down, or side-scrolling (jump/ladder)? Is it based on freely placed footholds, or a square tile grid?") and only then recommend.
 
 ### Changing `TileMapMode` — user action in Maker, not an AI file edit
 
@@ -171,7 +154,7 @@ Guide the user to switch the mode in the Maker editor as follows:
 
 > AI role on mode changes: **recommend mode → wait for the user to right-click-switch in the Maker Hierarchy → refresh → fix Body components / scripts that no longer match**. Do not flip `TileMapMode` from a file edit.
 
-> Mapping table / check protocol / transition limits / `LEA-3004` handling: [platform.md §4](platform.md), [platform.md §11](platform.md). Tile map editing itself: [tile.md](tile.md).
+> Mapping table / check protocol / transition limits: [platform.md §4](platform.md). `LEA-3004` and other silent-failure symptoms (won't move / won't render / floating in mid-air / stuck in a wall …): [troubleshooting.md](troubleshooting.md). Per-map-type code patterns: [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md). Tile painting itself: [tile.md](tile.md).
 
 ---
 
@@ -179,10 +162,10 @@ Guide the user to switch the mode in the Maker editor as follows:
 
 1. **Create** — define the `.model` under `RootDesk/MyDesk/Models/{Category}/{Name}.model` (typed subfolder; details in [model.md §1, §2.2](model.md)).
 2. **Place**
-   - Add an entity entry to `Entities` in `./map/{map}.map`.
-   - **`modelId` form (default — required for ≥2 instances)**: set `jsonString.modelId` to the model id, `origin.entry_id` to the same id, `origin.root_entity_id` to the entity's own outer `id`, and **mirror every component from the model into both `componentNames` (full comma-joined list) and `@components` (one entry per component with at least `Enable: true`)**. Per-instance overrides (typically `Position` on `TransformComponent`) live on the relevant `@components` entry. Use the verbatim shape in [entity/map-schema.md "Model-referenced entity"](entity/map-schema.md) — it matches what Maker emits after a save.
-   - **Inline form**: `modelId: null` + full `@components` listing — **only acceptable when the composition appears exactly once in the map**.
-   - Follow the rules for `id` (UUID), `path`, `componentNames`, `displayOrder` ([entity/map-schema.md](entity/map-schema.md)).
+   - Use `MapBuilder.read("./map/{map}.map").placeModel(name, modelPath, { pos })`.
+   - **`modelId` form (default — required for ≥2 instances)**: `placeModel()` mirrors model components and applies per-instance overrides.
+   - **Inline form**: use `sprite()` / `empty()` only for true one-off map-local entities.
+   - Follow the builder protocol in [entity/map-builder.md](entity/map-builder.md).
    - `refresh`.
 
 ### `modelId` vs Inline — Decision Rule
@@ -211,19 +194,11 @@ Guide the user to switch the mode in the Maker editor as follows:
 
 ### modelId entities
 
-- `modelId` is a lowercase id matching the model's `Id` field.
-- `origin.type` = `"Model"`; `origin.entry_id` = same lowercase id.
-- `origin.root_entity_id` = **the entity's own outer `id`** (self-reference for a top-level instance; sub-entities of a composite model carry the parent root's id instead).
-- `origin.sub_entity_id` / `replaced_model_id` = `null` unless this is a sub-entity or a model substitution.
-- `revision` is `1` for a freshly placed instance and bumps as Maker saves further edits.
-- **`componentNames` is the full comma-joined list** of every component in the model's `Components` array — **never empty**, never partial.
-- **`@components` mirrors every component in the model**, in the same order. Each entry has at minimum `Enable: true`. Components with an `IsLegacy` field (`AIChaseComponent`, `AIWanderComponent`, `HitComponent`) repeat `IsLegacy: false`. Component-specific defaults (default `MoveVelocity`/`RealMoveVelocity` on Rigidbody, `IsDead: false` on `script.Monster`, zero `SpriteSize`/`PositionOffset` on `script.MonsterAttack`) are mirrored too. Per-instance overrides (typically `Position` on `TransformComponent`) replace the model default on the relevant entry.
-- A `modelId` instance is **not** a thin pointer that pulls components at load time. The map's `@components` array *is* the runtime component list — Maker treats a missing entry as "this component is removed from this instance." Empty `componentNames` + single-component `@components` = an entity that has only `TransformComponent` at runtime, regardless of what the model defines (the monster will look invisible / immobile / non-combat even though the model is correct).
-- See [entity/map-schema.md "Model-referenced entity"](entity/map-schema.md) for the verbatim shape and a per-field table.
+Use `MapBuilder.placeModel()`. It creates the model instance metadata, keeps component names in sync, mirrors model components, and applies per-instance `TransformComponent.Position` / `componentOverrides`.
 
 ### Adding a new map to the world
 
-- You may need to add `map://{mapId}` to `entries` in `Global/SectorConfig.config` ([entity/map-schema.md](entity/map-schema.md)).
+- You may need to add `map://{mapId}` to `entries` in `Global/SectorConfig.config`.
 
 ---
 
@@ -257,12 +232,12 @@ Guide the user to switch the mode in the Maker editor as follows:
 
 | Old (RPC) | Current equivalent |
 |----------------|-----------|
-| Create entity | Author `.model` under `RootDesk/MyDesk/Models/{Category}/` + add an instance to `Entities` in `.map` (use `modelId` form by default; inline only for true one-offs) |
-| Delete entity | Remove the relevant `Entities` entry in `.map` (clean up orphan references) |
-| Change property | Edit `@components` in `.map` or `Values` in `.model` |
-| Add/remove component | Sync the `.model` `Components` array with the map instance's `componentNames` / `@components` |
+| Create entity | Author `.model` under `RootDesk/MyDesk/Models/{Category}/` + place it with `MapBuilder.placeModel()` |
+| Delete entity | `MapBuilder.remove()` |
+| Change property | `MapBuilder.patchComponent()` for map instances or ModelBuilder values for templates |
+| Add/remove component | `MapBuilder.upsertComponent()` / `removeComponent()` for one-off map-local instance changes |
 | Register/edit/delete model | CRUD `.model` files under `RootDesk/MyDesk/` (`refresh`) |
-| List entities | Grep `.map` files / parse JSON |
+| List entities | `MapBuilder.snapshot()` / `listEntities()` |
 
 ---
 
@@ -290,7 +265,7 @@ After work, `**stop**` to return to edit mode.
 ### Files / Editor / MCP
 
 1. **Run `refresh` after file changes** (not allowed during play — `stop` first).
-2. **Edit large `.map` files in part** — do not overwrite the whole file.
+2. **Use `MapBuilder` first for `.map` work** — direct raw JSON edits are only for explicitly unsupported gaps, and must be minimal plus verified.
 3. **Do not modify `Environment/*.d.mlua`** — API definitions are read-only.
 4. **Do not create or edit `.codeblock` manually** — Maker `refresh` generates it from `.mlua`.
 5. **Take `screenshot` only when the user explicitly asks** ([mcp-tools.md](mcp-tools.md)).
@@ -300,7 +275,7 @@ After work, `**stop**` to return to edit mode.
 6. **TileMapMode ↔ Body components** must match.
 7. On **MapleTile**, placement Y is **foothold-based**; assumes gravity / Rigidbody.
 8. On **RectTile**, do not expect vertical foothold physics — assumes Kinematicbody.
-9. When adding a new foothold, keep **Id chain / Length / OwnerId** consistent ([entity/map-schema.md](entity/map-schema.md)).
+9. When inspecting or changing foothold data, use `MapBuilder` APIs so Id / Length / OwnerId consistency is centralized.
 
 ### Render / Resource
 
@@ -313,7 +288,7 @@ After work, `**stop**` to return to edit mode.
 13. **Keep `id` / `path` / `componentNames` / `jsonString.path` consistent in `.map`.**
 14. **`SpawnService` parent must not be nil** — pass a map entity such as `self.Entity.CurrentMap`.
 15. **When referencing `modelId`**, `origin.entry_id` = `modelId`, and `origin.root_entity_id` = the entity's own outer `id` (top-level instance).
-16. **Mirror the model's components in `modelId` instances** — `componentNames` must be the full comma-joined list, and `@components` must contain one entry per component (with at least `Enable: true`). Empty `componentNames` or a partial `@components` array silently removes those components at runtime.
+16. **Use `MapBuilder.placeModel()` for `modelId` instances** — it mirrors model components and keeps `componentNames` in sync. Empty component names or partial component arrays silently remove components at runtime.
 17. Child entities must have a **`path` that is a prefix of the parent**.
 
 ### Input / UI Boundary
@@ -337,11 +312,13 @@ After work, `**stop**` to return to edit mode.
 
 | Doc | Purpose |
 |-------------|------|
-| [entity/map-schema.md](entity/map-schema.md) | `.map` JSON schema details |
+| [entity/map-builder.md](entity/map-builder.md) | `.map` builder protocol |
 | [model.md](model.md) | `.model` template authoring |
 | [tile.md](tile.md) | Tile maps / tilesets |
-| [ui.md](ui.md) | UI authoring |
-| [platform.md](platform.md) | TileMapMode, spawn, RUID, coordinates, directories |
+| [`msw-ui-system`](../../msw-ui-system/SKILL.md) | UI authoring |
+| [platform.md](platform.md) (core) | TileMapMode↔Body mapping, spawn, RUID, coordinates, `.directory`, ID, `.config` (common to all map types) |
+| [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md) | Per-map-type physics/events/patterns/checklists |
+| [troubleshooting.md](troubleshooting.md) | Symptom → cause → fix reference (`LEA-3004`, "won't move", "won't render" …) |
 | `msw-defaultplayer` | Player model / Values / components |
 | `msw-scripting` | Component/Logic, properties, lifecycle |
 | `msw-search` | RUID / asset / doc search |

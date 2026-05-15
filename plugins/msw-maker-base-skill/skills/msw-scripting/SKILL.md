@@ -87,8 +87,9 @@ MSW uses Lua + ECS + an MSW-specific execution-space model. **Applying Unity or 
 | `MonoBehaviour.gameObject` / `this.transform` to access the owning entity | `@Logic` has no `self.Entity` (that is `@Component`-only) | Inject via `property Entity x = "uuid"` on the Logic, or use `_EntityService:GetEntityByPath(...)` | `Logic.d.mlua`, `Component.d.mlua:16` |
 | `OnMouseDown` / `BoxCollider2D` is enough to receive clicks/touches | Physics colliders and Rigidbody **do not emit `TouchEvent`** | World: `TouchReceiveComponent` / UI: `ButtonComponent` or `UITouchReceiveComponent` | `EmitTouchEvent` in `TouchReceiveComponent.d.mlua`, §10 |
 | `OnCollisionEnter` + Rigidbody for collision callbacks | Entity-to-entity collisions use a **separate** `TriggerComponent` + `TriggerEnter/Leave/Stay` | Attach `TriggerComponent`, then `ConnectEvent(TriggerEnterEvent, ...)` | `TriggerComponent.d.mlua:56-62` |
+| UI `interactable` / `enabled` / `text` / `color` field names | UI component fields are MSW-specific; `ButtonComponent.Interactable` does not exist | Before every UI component field read/write, check `msw-ui-system/references/component-api.md`. Typical mappings: button disable -> `Enable`; text string -> `Text`; text color -> `FontColor`; sprite tint -> `Color`. | `msw-ui-system/references/component-api.md` |
 | Attach multiple Rigidbody/Collider freely | **One Body per map type** (MapleTile→Rigidbody, RectTile→Kinematicbody, SideViewRectTile→Sideviewbody) | Custom models include only the Body that matches the map type | `msw-general/references/platform.md §4`. `DefaultPlayer` has all three with engine auto-activation. |
-| Reference/modify UI objects from server code | **UI entities exist only on the client** — referencing them from server `@ExecSpace` returns nil | Server→UI must go through an `@ExecSpace("Client")` RPC | `msw-general/references/ui.md` *Runtime UI Caveats §2-3* |
+| Reference/modify UI objects from server code | **UI entities exist only on the client** — referencing them from server `@ExecSpace` returns nil | Server→UI must go through an `@ExecSpace("Client")` RPC | `msw-ui-system/references/runtime-patterns.md` *Runtime UI Caveats §2-3* |
 | `Instantiate(prefab)` callable anywhere | `_SpawnService:SpawnByModelId(id, name, pos, parent)` — **`parent` is required**, server-only | Inside `ServerOnly`/`Server` RPC, pass `CurrentMap` as parent | `SpawnService.d.mlua:22` (no default for parent) |
 | `static` classes / hand-rolled singletons | `@Logic` is itself an engine singleton | Call from other scripts as `_ScriptName:Method()` (e.g., `_TweenLogic`, `_UtilLogic`, `_ScreenMessageLogic`) — never instantiate | §3.2 |
 
@@ -102,38 +103,25 @@ MSW uses Lua + ECS + an MSW-specific execution-space model. **Applying Unity or 
 
 **Why this placement matters**: mlua's parser/tooling associates leading comments differently from in-body comments. Placing the description inside the body keeps the comment reliably bound to the method and avoids it being parsed as a trailing comment of the previous declaration.
 
-**❌ Wrong — comment placed outside (above) the method:**
-
 ```lua
--- Applies damage to the target entity and triggers the hit VFX.
+-- ❌ Wrong: comment ABOVE the method
+-- Applies damage and triggers hit VFX.
 method void ApplyDamage(Entity target, number amount)
     target:TakeDamage(amount)
 end
-```
 
-**✅ Correct — comment placed inside the method body, as the first line:**
-
-```lua
+-- ✅ Correct: comment as the FIRST line INSIDE the body
 method void ApplyDamage(Entity target, number amount)
-    -- Applies damage to the target entity and triggers the hit VFX.
-    -- @param target : the entity receiving damage (must be valid)
-    -- @param amount : damage amount in HP units
+    -- Applies damage and triggers hit VFX.
+    -- @param target : entity receiving damage
+    -- @param amount : damage in HP units
     target:TakeDamage(amount)
 end
-```
 
-**✅ Correct — also applies to lifecycle / RPC methods:**
-
-```lua
-@ExecSpace("ServerOnly")
-method void OnBeginPlay()
-    -- Server-side initialization: wires up spawn points and boss triggers.
-end
-
+-- ✅ Same rule for lifecycle / RPC handlers:
 @ExecSpace("Server")
 method void RequestBuyItem(string itemId)
-    -- Client → Server RPC. Validates ownership/gold, then grants the item.
-    -- senderUserId is required to authenticate the requester.
+    -- Client → Server RPC. Validates and grants the item; uses senderUserId.
 end
 ```
 
@@ -162,24 +150,12 @@ Scripts attached to an Entity. Use `self.Entity` to access the owning entity.
 ```lua
 @Component
 script MyScript extends Component
-
     property number Speed = 5.0
 
     @ExecSpace("ServerOnly")
     method void OnBeginPlay()
-        -- initialization
+        -- initialization (also: OnUpdate(delta), OnEndPlay)
     end
-
-    @ExecSpace("ServerOnly")
-    method void OnUpdate(number delta)
-        -- per-frame logic
-    end
-
-    @ExecSpace("ServerOnly")
-    method void OnEndPlay()
-        -- cleanup
-    end
-
 end
 ```
 
@@ -195,19 +171,12 @@ Global singletons. Run independently without an Entity. Use for game managers, U
 ```lua
 @Logic
 script GameManager extends Logic
-
     @Sync property integer Score = 0
 
     @ExecSpace("ServerOnly")
     method void OnBeginPlay()
-        -- global initialization
+        -- global initialization (also: OnUpdate, OnEndPlay)
     end
-
-    @ExecSpace("ServerOnly")
-    method void OnUpdate(number delta)
-        -- per-frame logic
-    end
-
 end
 ```
 
@@ -222,20 +191,15 @@ end
 > Code like `self.Entity.xxx` inside a Logic **compiles but produces a nil-access at runtime and silently fails**. If a Logic needs to operate on a specific world entity, use one of these:
 >
 > ```lua
-> @Logic
-> script GameManager extends Logic
->     property Entity spawnPoint = "uuid-string"        -- inject UUID directly
->     property EntityRef bossEntity = ""                -- survives map transitions
->
->     method void OnBeginPlay()
->         local map = _EntityService:GetCurrentMap()    -- current map
->         local e   = _EntityService:GetEntityByPath("/maps/Main/Entities/Boss")
->     end
-> end
+> property Entity spawnPoint = "uuid-string"   -- (1) inject UUID directly
+> property EntityRef bossEntity = ""           -- survives map transitions
+> -- (2) service lookup:
+> local map = _EntityService:GetCurrentMap()
+> local e   = _EntityService:GetEntityByPath("/maps/Main/Entities/Boss")
+> -- also: _EntityService:FindEntityByName(...)
 > ```
 >
 > - **Property injection** (recommended): hard-code the UUID of an entity already placed in the map into the property default.
-> - **Service lookup**: `_EntityService:GetCurrentMap()` / `GetEntityByPath(...)` / `FindEntityByName(...)`.
 
 > **Decision: @Component vs @Logic — pick by lifetime/scope, not just "is it global?"**
 >
@@ -328,7 +292,7 @@ Plus, on map transitions: `OnMapEnter` / `OnMapLeave`.
 **Required pattern**: anything connected in `OnBeginPlay` must be released in `OnEndPlay`.
 
 ```lua
-property any eventHandler = nil   -- store the EventHandlerBase returned by ConnectEvent
+property any eventHandler = nil   -- EventHandlerBase from ConnectEvent (must be 'any')
 property integer timerId = 0
 
 method void OnBeginPlay()
@@ -337,16 +301,12 @@ method void OnBeginPlay()
 end
 
 method void OnEndPlay()
-    if self.eventHandler then
-        self.Entity:DisconnectEvent(SomeEvent, self.eventHandler)
-    end
-    if self.timerId then
-        _TimerService:ClearTimer(self.timerId)
-    end
+    if self.eventHandler then self.Entity:DisconnectEvent(SomeEvent, self.eventHandler) end
+    if self.timerId then _TimerService:ClearTimer(self.timerId) end
 end
 ```
 
-**`ConnectEvent` return type**: an `EventHandlerBase` object. When storing it as a property, declare it as `any`. If you declare it as `integer`, `DisconnectEvent` will fail to detach due to a type mismatch.
+**`ConnectEvent` returns** an `EventHandlerBase`. Store it in an `any` property — declaring `integer` makes `DisconnectEvent` fail.
 
 ---
 
@@ -375,25 +335,17 @@ MSW is a server-client architecture. Every method must declare where it runs.
 ### Key rules
 
 ```lua
--- Calling a ServerOnly function from the client → silently ignored (no error!)
+-- ServerOnly: client call is silently ignored (no error!)
 @ExecSpace("ServerOnly")
-method void TakeDamage(number amount)
-    self.Hp = self.Hp - amount  -- runs only on the server
-end
+method void TakeDamage(number amount) self.Hp = self.Hp - amount end
 
--- Server RPC: client calls → runs on the server
+-- Server RPC: client call → runs on server (network latency applies)
 @ExecSpace("Server")
-method void RequestAttack()
-    -- client calls self:RequestAttack()
-    -- actual execution happens on the server (network latency applies)
-end
+method void RequestAttack() end
 
--- Client RPC: server calls → runs on that client
+-- Client RPC: server call → runs on the targeted client
 @ExecSpace("Client")
-method void ShowDamageEffect(number damage)
-    -- server calls self:ShowDamageEffect(50)
-    -- runs on the targeted user's client
-end
+method void ShowDamageEffect(number damage) end
 ```
 
 ### Typical server-client pattern
@@ -417,11 +369,8 @@ When an `@ExecSpace("Server")` method is called from the client, the server side
 ```lua
 @ExecSpace("Server")
 method void RequestBuyItem(integer itemId)
-    -- Verify the requester: confirm the call came from the local client
-    if senderUserId ~= self.Entity.PlayerComponent.UserId then
-        log_warning("blocked request from a different client")
-        return
-    end
+    -- Verify caller — block requests not from the local client
+    if senderUserId ~= self.Entity.PlayerComponent.UserId then return end
     self:ProcessPurchase(itemId)
 end
 ```
@@ -432,14 +381,11 @@ When the server invokes an `@ExecSpace("Client")` function, **adding a UserId as
 
 ```lua
 @ExecSpace("Client")
-method void ShowReward(string itemName)
-    log("reward earned: " .. itemName)
-end
+method void ShowReward(string itemName) log(itemName) end
 
 @ExecSpace("ServerOnly")
 method void GiveReward(string playerId, string itemName)
-    -- Show UI only on playerId's client
-    self:ShowReward(itemName, playerId)
+    self:ShowReward(itemName, playerId)   -- last arg = target UserId
 end
 ```
 
@@ -459,25 +405,22 @@ When functions are called across server↔client boundaries:
 ### Basic property types
 
 ```lua
-property number Speed = 5.0              -- floating point (float/double)
-property integer Count = 0               -- integer
-property string Name = "Player"          -- string
-property boolean IsAlive = true          -- boolean
+property number Speed = 5.0              -- float/double (NOTE: integers are 'integer')
+property integer Count = 0
+property string Name = "Player"
+property boolean IsAlive = true
 property Vector2 Direction = Vector2(0, 0)
 property Vector3 Position = Vector3(0, 0, 0)
-property Color Tint = Color(1, 1, 1, 1)
-property any CustomData = nil            -- arbitrary type
+property Color Tint = Color(1, 1, 1, 1)  -- r,g,b,a in 0.0~1.0
+property any CustomData = nil
 ```
-
-**Type-name reminder**: integers are `integer`, floats are `number`.
 
 ### Entity / Component reference properties
 
 ```lua
 property Entity targetEntity = ""                    -- linked by UUID string
 property Entity popup = "94a274e4-4111-40f1-924d-c95a3a1f14d5"
-property ButtonComponent btnOk = "uuid-string"       -- specific component reference
-property TextComponent txtScore = "uuid-string"
+property ButtonComponent btnOk = "uuid-string"       -- typed component ref
 ```
 
 **AI automation principle — inject UUID strings directly**
@@ -493,7 +436,7 @@ The default value of an Entity/Component/EntityRef/ComponentRef property is a **
 script WaypointPath extends Logic
     property Entity wp0 = "a1b2c3d4-...-000000000000"
     property Entity wp1 = "a1b2c3d4-...-000000000001"
-    -- ... no drag required. Inject UUIDs from the map file as strings.
+    -- inject UUIDs read from the .map file as string literals; no drag needed.
 end
 ```
 
@@ -520,13 +463,8 @@ end
 Both **take no arguments**.
 
 ```lua
-@Sync
-property number CurrentHp = 100
--- Server changes the value → automatically reflected on all clients
-
-@TargetUserSync
-property number PrivateScore = 0
--- Synced to the owning user's client only
+@Sync property number CurrentHp = 100         -- server change → all clients
+@TargetUserSync property number PrivateScore = 0  -- → owning user's client only
 ```
 
 **Core rules**:
@@ -541,13 +479,8 @@ property number PrivateScore = 0
 A table that can be synced. Supports both array and dictionary forms.
 
 ```lua
--- Array form: SyncTable<ValueType>
-@Sync
-property SyncTable<number> Scores = {}
-
--- Dictionary form: SyncTable<KeyType, ValueType>
-@Sync
-property SyncTable<string, number> Stats = {}
+@Sync property SyncTable<number> Scores = {}            -- array form
+@Sync property SyncTable<string, number> Stats = {}     -- dict form
 ```
 
 - Use together with `@Sync`.
@@ -558,9 +491,8 @@ property SyncTable<string, number> Stats = {}
 `self._T` exposes non-synced temporary properties created on the fly. No `property` declaration is required.
 
 ```lua
--- Use for non-synced, frame-local state
+-- Non-synced, frame-local state; no property declaration needed
 self._T.accumulatedDamage = 0
-self._T.lastAttackTime = 0
 self._T.isCharging = false
 ```
 
@@ -574,11 +506,8 @@ A callback automatically invoked on the client when a `@Sync` property changes o
 ```lua
 @ExecSpace("ClientOnly")
 method void OnSyncProperty(string name, any value)
-    if name == "CurrentHp" then
-        self:UpdateHpBar(value)
-    elseif name == "IsDead" and value == true then
-        self:PlayDeathEffect()
-    end
+    if name == "CurrentHp" then self:UpdateHpBar(value)
+    elseif name == "IsDead" and value == true then self:PlayDeathEffect() end
 end
 ```
 
@@ -593,22 +522,11 @@ end
 Control how the property is shown in the Maker editor inspector:
 
 ```lua
-@DisplayName("Display Name")           -- Override the name shown in the editor
-property string InternalName = ""
-
-@Description("Used for ~")             -- Inspector tooltip
-property number Damage = 10
-
-@MinValue(0)                           -- Min limit (number/integer)
-@MaxValue(999)                         -- Max limit (number/integer)
-@Delta(5)                              -- Step value for the mobile editor's +/- buttons
-property integer Score = 0
-
-@MaxLength(20)                         -- Max string length
-property string Nickname = ""
-
-@HideFromInspector                     -- Hide from the inspector
-property any InternalState = nil
+@DisplayName("Display Name") property string InternalName = ""
+@Description("Used for ~")   property number Damage = 10
+@MinValue(0) @MaxValue(999) @Delta(5) property integer Score = 0  -- step for mobile +/-
+@MaxLength(20)               property string Nickname = ""
+@HideFromInspector           property any InternalState = nil
 ```
 
 ---
@@ -638,18 +556,31 @@ end
 
 ```lua
 @EventSender("Service", "InputService")
-handler HandleKeyDown(KeyDownEvent event)
-    -- Receives key events emitted by InputService
-end
+handler HandleKeyDown(KeyDownEvent event) end   -- key events from InputService
 ```
 
 ### Dynamic event connect / disconnect
 
 ```lua
--- Connect (in OnBeginPlay) — return type is an EventHandlerBase object
+-- OnBeginPlay: ConnectEvent returns EventHandlerBase
 local eventHandler = entity:ConnectEvent(ButtonClickEvent, self.OnClick)
--- Disconnect (mandatory in OnEndPlay)
+-- OnEndPlay (mandatory): pass the same handler object
 entity:DisconnectEvent(ButtonClickEvent, eventHandler)
+```
+
+#### Closure handler for per-element captured state
+
+Use a closure when many equivalent entities need different captured state (card IDs, slot indexes, etc.). Store the returned `EventHandlerBase` and disconnect in `OnEndPlay` just like `self.MethodName`.
+
+```lua
+for _, id in ipairs(cardIds) do
+    local capturedId = id
+    local e = _EntityService:GetEntityByPath("/ui/CardGroup/Card_" .. capturedId)
+    if isvalid(e) then
+        local h = e:ConnectEvent(ButtonClickEvent, function() self:OnCardClicked(capturedId) end)
+        table.insert(self.clickHandlers, { entity = e, handler = h })
+    end
+end
 ```
 
 > ⚠️ **`ConnectEvent` is called on Entity / Logic / Service — NOT on a Component**
@@ -662,14 +593,11 @@ entity:DisconnectEvent(ButtonClickEvent, eventHandler)
 > The public members of the `Component` parent (`Component.d.mlua`) are only `Enable` / `Entity` / `IsClient` / `IsServer`. So **no Component — including `ButtonComponent` and `TriggerComponent` — has its own `ConnectEvent`**. Components only *emit* events; the **entity** they are attached to is what *receives* them.
 >
 > ```lua
-> -- ❌ Wrong — Component has no ConnectEvent. Runtime nil access.
+> -- ❌ Component has no ConnectEvent — runtime nil
 > self.Entity.ButtonComponent:ConnectEvent(ButtonClickEvent, self.OnClick)
->
-> -- ✅ Correct — subscribe via the entity that owns the Component
+> -- ✅ Subscribe on the owning Entity (or Service / Logic)
 > self.clickHandler = self.Entity:ConnectEvent(ButtonClickEvent, self.OnClick)
->
-> -- ✅ Service events: subscribe on the service
-> self.keyHandler = _InputService:ConnectEvent(KeyDownEvent, self.OnKeyDown)
+> self.keyHandler   = _InputService:ConnectEvent(KeyDownEvent, self.OnKeyDown)
 > ```
 
 
@@ -688,68 +616,30 @@ entity:DisconnectEvent(ButtonClickEvent, eventHandler)
 
 
 
-### Defining a CustomEvent — typed class style
+### Defining and sending a CustomEvent — typed class style
 
-The **only** way to author a CustomEvent is the typed-class form: `@Event` + `extends EventType` with `property` fields. There is no inline factory like `CustomEvent("Name", { ... })` — that signature does not exist in mlua. Always declare an event class.
-
-Define the event:
+The **only** way to author a CustomEvent is the typed-class form: `@Event` + `extends EventType` with `property` fields. There is no inline factory like `CustomEvent("Name", { ... })` in mlua. Always declare an event class.
 
 ```lua
-@Event
-script UserLogEvent extends EventType
-    property string userId = ""
-    property number logTime = 0
-end
-```
-
-Dispatch from a Logic via `SendEvent`:
-
-```lua
-@Logic
-script UserLogService extends Logic
-    method void LogIn(string userId)
-        local userLog = UserLogEvent()
-        userLog.userId = userId
-        userLog.logTime = DateTime.UtcNow.Elapsed
-        _UserService:SendEvent(userLog)
-    end
-end
-```
-
-Receive via `ConnectEvent` on the entity. The first argument is the event **Type** (the class itself), and the callback must reference an existing method:
-
-```lua
-@Component
-script UserLogComponent extends Component
-    method void OnBeginPlay()
-        self.Entity:ConnectEvent(UserLogEvent, self.OnUserLogEvent)
-    end
-
-    method void OnUserLogEvent(UserLogEvent event)
-        log("User Id: " .. event.userId .. ", Login Time: " .. tostring(event.logTime))
-    end
-end
-```
-
-### Sending events
-
-Instantiate the typed event class, set its `property` fields, and pass the instance to `SendEvent`:
-
-```lua
+-- 1) Define the event
 @Event
 script DamageDealtEvent extends EventType
     property number amount = 0
 end
 
--- Send to my own entity
+-- 2) Send: instantiate, set fields, pass to SendEvent (Entity / Logic / Service)
 local dmg = DamageDealtEvent()
 dmg.amount = 50
-self.Entity:SendEvent(dmg)
+self.Entity:SendEvent(dmg)        -- to my own entity
+targetEntity:SendEvent(dmg)       -- to another entity
+_UserService:SendEvent(dmg)       -- via a service / Logic
 
--- Send to another entity
-local heal = HealEvent()
-heal.amount = 20
-targetEntity:SendEvent(heal)
+-- 3) Receive: ConnectEvent first arg is the event Type (class itself)
+self.Entity:ConnectEvent(DamageDealtEvent, self.OnDamage)
+
+method void OnDamage(DamageDealtEvent event)
+    log("amount: " .. event.amount)
+end
 ```
 
 ### NativeEvent vs CustomEvent
@@ -764,20 +654,10 @@ targetEntity:SendEvent(heal)
 ### Common NativeEvent parameters
 
 ```lua
--- HitEvent
-event.TotalDamage      -- number: total damage
-event.AttackerEntity   -- Entity: attacker
-event.DamageType       -- DamageType: damage type
-
--- ButtonClickEvent
--- (no parameters; emitted by the entity)
-
--- StateChangedEvent
-event.PrevState        -- string: previous state
-event.CurState         -- string: current state
-
--- PlayerActionEvent
-event.ActionName       -- string: action name
+-- HitEvent:           event.TotalDamage / .AttackerEntity / .DamageType
+-- ButtonClickEvent:   (no parameters; emitted by the entity)
+-- StateChangedEvent:  event.PrevState / .CurState  (string)
+-- PlayerActionEvent:  event.ActionName  (string)
 ```
 
 ---
@@ -787,16 +667,8 @@ event.ActionName       -- string: action name
 ### Validity checks
 
 ```lua
--- Entity validity (deletion / inactive check)
-if isvalid(entity) then
-    -- safe to access
-end
-
--- Confirm a component exists
-local comp = self.Entity.SomeComponent
-if isvalid(comp) then
-    -- only when the component is present
-end
+if isvalid(entity) then ... end                         -- entity deletion/inactive check
+if isvalid(self.Entity.SomeComponent) then ... end      -- component presence check
 ```
 
 **Caution**: accessing a deleted entity is a runtime error. Always use `isvalid()`.
@@ -813,9 +685,8 @@ The "same signature" rule **includes `@ExecSpace`**. If the parent method's exec
 
 ```
 [CLIENT] [LEA-3014] SignatureMismatch :
-  ProjectileComponent.CalcDamage[integer CalcDamage(Entity, Entity, string) (ExecSpace=ServerOnly)]의
-  시그니처는 재정의된 AttackComponent.CalcDamage.[integer CalcDamage(Entity, Entity, string) (ExecSpace=All)]와
-  일치해야 합니다.
+  The signature of ProjectileComponent.CalcDamage[integer CalcDamage(Entity, Entity, string) (ExecSpace=ServerOnly)]
+  must match the overridden AttackComponent.CalcDamage.[integer CalcDamage(Entity, Entity, string) (ExecSpace=All)].
 ```
 
 **Rule**: an override's `@ExecSpace` must be **byte-identical** to the parent. If the parent declares no `@ExecSpace` (engine default = `All`), the override must also **omit** `@ExecSpace` entirely. Adding `@ExecSpace("ServerOnly")` to "make it server-side" silently breaks compilation at runtime.
@@ -934,20 +805,14 @@ All services and logic are accessed via `_Name` (underscore + type name). Only t
 ### Math / utility examples
 
 ```lua
--- Random
-local rand = _UtilLogic:RandomDouble()              -- 0.0 ~ 1.0
-local randInt = _UtilLogic:RandomIntegerRange(1, 10) -- 1 ~ 10
+local rand    = _UtilLogic:RandomDouble()             -- 0.0~1.0
+local randInt = _UtilLogic:RandomIntegerRange(1, 10)  -- 1~10
+local elapsed = _UtilLogic.ElapsedSeconds             -- elapsed game time
 
--- Time
-local elapsed = _UtilLogic.ElapsedSeconds           -- elapsed game time
+local rad = math.rad(angle)                           -- trig
+local x, y = math.cos(rad) * dist, math.sin(rad) * dist
 
--- Trig
-local radian = math.rad(angle)
-local x = math.cos(radian) * distance
-local y = math.sin(radian) * distance
-
--- Distance
-local diff = targetPos - myPos
+local diff = targetPos - myPos                        -- distance
 local dist = math.sqrt(diff.x * diff.x + diff.y * diff.y)
 ```
 
@@ -981,31 +846,33 @@ Collections / utility types beyond the Lua standard library:
 ```lua
 ---@type string
 local name = GetPlayerName()
-
 ---@type table<string, Entity>
 local entityMap = {}
 
 ---@param target Entity
 ---@param damage integer
 ---@return boolean
-local function ApplyDamage(target, damage)
-    return target ~= nil
-end
+local function ApplyDamage(target, damage) return target ~= nil end
 ```
 
 ### Reserved words
 
-Using mlua keywords as local variable names produces a parse error.
+Using mlua keywords as identifiers produces a parse error.
 
-**Forbidden as variable names**: `handler`, `property`, `method`, `script`, `end`, `extends`, `self`, `nil`, `true`, `false`.
+**Forbidden as identifiers**: `handler`, `property`, `method`, `script`, `end`, `extends`, `self`, `nil`, `true`, `false`.
+
+Do not use these words as local variables, parameters, properties, methods, event handlers, dot-field names (`rec.handler`), or bare table keys (`{ handler = value }`). If an external payload forces a reserved string key, use bracket syntax (`rec["handler"]`) and prefer renaming internal keys to `eventHandler`, `connHandler`, or another non-reserved identifier.
 
 ```lua
--- Wrong
-local handler = entity:ConnectEvent(...)    -- 'handler' is a reserved word
+-- ❌ 'handler' is reserved — local, dot-field, and bare table key all fail
+local handler = entity:ConnectEvent(...)
+rec.handler = entity:ConnectEvent(...)
+local rec = { handler = nil }
 
--- Correct (ConnectEvent returns: EventHandlerBase object)
+-- ✅ Rename, or bracket-quote when the string key is mandatory
 local eventHandler = entity:ConnectEvent(...)
-local connHandler = entity:ConnectEvent(...)
+rec.eventHandler   = entity:ConnectEvent(...)
+rec["handler"]     = entity:ConnectEvent(...)
 ```
 
 ---

@@ -2,10 +2,10 @@
 'use strict';
 
 // MSW Core Version Check Hook
-// 세션당 1회만 실행: 락 파일로 중복 실행 방지.
-// Environment/config 의 CoreVersion 과 플러그인 지원 버전을 비교한다.
+// Runs only once per session: a lock file prevents duplicate execution.
+// Compares the `CoreVersion` in `Environment/config` with the plugin's supported version.
 //
-// 플러그인 hooks/hooks.json 으로 자동 등록 — 수동 설정 불필요.
+// Auto-registered via the plugin's `hooks/hooks.json` — no manual setup required.
 
 const fs = require('fs');
 const path = require('path');
@@ -55,7 +55,7 @@ const coreVersion = match[1];
 try {
   fs.writeFileSync(lockPath, '');
 } catch (_) {
-  // 락 생성 실패해도 본 체크는 계속 진행
+  // Continue with the check even if the lock file cannot be created.
 }
 
 if (coreVersion === SUPPORTED_VERSION) {
@@ -64,9 +64,9 @@ if (coreVersion === SUPPORTED_VERSION) {
 
 process.stdout.write(
   `<core-version-mismatch>\n` +
-  `MSW Core Version 불일치. 워크스페이스: ${coreVersion} / 플러그인: ${SUPPORTED_VERSION}\n` +
-  `사용자에게 아래 내용을 안내하고, MSW 개발 작업(코드 작성, 파일 수정 등)을 절대 진행하지 마라.\n` +
-  `- 워크스페이스가 더 높으면 → msw-ai-coding-plugins-official 플러그인을 최신 버전으로 업데이트\n` +
-  `- 워크스페이스가 더 낮으면 → MSW 클라이언트를 최신 버전으로 업데이트\n` +
+  `MSW Core Version mismatch. Workspace: ${coreVersion} / Plugin: ${SUPPORTED_VERSION}\n` +
+  `Inform the user of the following and do NOT proceed with any MSW development work (writing code, editing files, etc.).\n` +
+  `- If the workspace version is higher → update the msw-ai-coding-plugins-official plugin to the latest version.\n` +
+  `- If the workspace version is lower  → update the MSW client to the latest version.\n` +
   `</core-version-mismatch>\n`
 );

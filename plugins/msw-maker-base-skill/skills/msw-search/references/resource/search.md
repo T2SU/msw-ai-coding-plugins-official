@@ -18,13 +18,13 @@ Natural-language semantic search. Supports queries in Korean, English, Japanese,
 
 ```bash
 # CLI — defaults: topK=3, --resource-type / --category optional
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     search "orange mushroom" --resource-type resource_pack --category npc --topK 3
 ```
 
 ```js
 // Node.js — require and call
-const { searchResources } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { searchResources } = require('../../msw_resource_api.cjs');
 
 const result = await searchResources("orange mushroom", {
   resourceTypeFilter: ["resource_pack"],
@@ -151,13 +151,13 @@ narrow the search to a specific avatar slot by passing
 
 ```bash
 # CLI
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     search-avatar "early dismissal" --topK 3 --category shoes
 ```
 
 ```js
 // Node.js
-const { searchAvatarItems } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { searchAvatarItems } = require('../../msw_resource_api.cjs');
 
 const result = await searchAvatarItems("early dismissal", {
   topK: 3,
@@ -237,13 +237,13 @@ Find resources that are visually or semantically similar to a given resource.
 
 ```bash
 # CLI
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     similar 0017da7385e04bc4b2ddbe5949b4b462 --topK 3 --resource-type animationclip
 ```
 
 ```js
 // Node.js
-const { findSimilarResources } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { findSimilarResources } = require('../../msw_resource_api.cjs');
 
 const result = await findSimilarResources("0017da7385e04bc4b2ddbe5949b4b462", {
   topK: 3,

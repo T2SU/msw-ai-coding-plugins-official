@@ -21,13 +21,13 @@ optionally a slot category).
 
 ```bash
 # CLI — narrow to a specific slot with --category
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     search-avatar "early dismissal" --topK 3 --category shoes
 ```
 
 ```js
 // Node.js
-const { searchAvatarItems } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { searchAvatarItems } = require('../../msw_resource_api.cjs');
 
 const result = await searchAvatarItems("early dismissal", {
   topK: 3,
@@ -55,15 +55,15 @@ a query; for keyword search use `searchAvatarItems`.
 
 ```bash
 # CLI — canonical-only (default; deduped by color/shape variant)
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs avatars
+node ../../msw_resource_api.cjs avatars
 
 # Include all variants
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs avatars --no-canonical-only
+node ../../msw_resource_api.cjs avatars --no-canonical-only
 ```
 
 ```js
 // Node.js
-const { listAvatars } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { listAvatars } = require('../../msw_resource_api.cjs');
 
 const avatars = await listAvatars({ canonicalOnly: true });
 ```
@@ -80,7 +80,7 @@ const avatars = await listAvatars({ canonicalOnly: true });
     {
       "ruid": "d9e9948624a54255b079df8dba096f47",
       "category": "coat",
-      "names": {"ko": ["옐로우 프릴 슬리브리스"]},
+      "names": {"ko": ["Yellow Frill Sleeveless"]},
       "dname": "coat-541",
       "group_id": "coat:757587b9bf92",
       "color_hex": "#eeac19",
@@ -104,13 +104,13 @@ Fetch the default avatar body / head RUIDs — the required base parts for avata
 
 ```bash
 # CLI
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     avatar-defaults
 ```
 
 ```js
 // Node.js
-const { getAvatarDefaults } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { getAvatarDefaults } = require('../../msw_resource_api.cjs');
 
 const defaults = await getAvatarDefaults();
 ```
@@ -138,13 +138,13 @@ const defaults = await getAvatarDefaults();
 
 ```bash
 # CLI
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     get ITEM_RUID
 ```
 
 ```js
 // Node.js
-const { getResource } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { getResource } = require('../../msw_resource_api.cjs');
 
 const item = await getResource("ITEM_RUID");
 ```
@@ -156,7 +156,7 @@ const item = await getResource("ITEM_RUID");
   "id": "71ce85c4acf04770949b7a55488974c2",
   "type": "avataritem",
   "category": "cap",
-  "names": {"ko": ["주황버섯 빵모자"]},
+  "names": {"ko": ["Orange Mushroom Beanie"]},
   "dname": "cap-895",
   "payload": {
     "color_hex": "#ed8316",
@@ -179,7 +179,7 @@ Render a combined avatar (multiple parts) in a specific action pose.
 ```bash
 # CLI — body + head are required; equipment slots are optional.
 # --actions defaults to ["stand1"] when omitted.
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     avatar-render \
     --ruids body_ruid head_ruid hat_ruid weapon_ruid \
     --actions stand1 walk1
@@ -187,7 +187,7 @@ node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
 
 ```js
 // Node.js
-const { renderAvatar } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { renderAvatar } = require('../../msw_resource_api.cjs');
 
 const result = await renderAvatar(
   ["body_ruid", "head_ruid", "hat_ruid", "weapon_ruid"],
@@ -258,13 +258,13 @@ filename):
 
 ```bash
 # CLI
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     avatar-frame-url rendered_frame_name
 ```
 
 ```js
 // Node.js
-const { avatarFrameUrl } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { avatarFrameUrl } = require('../../msw_resource_api.cjs');
 
 const url = avatarFrameUrl("rendered_frame_name");
 ```

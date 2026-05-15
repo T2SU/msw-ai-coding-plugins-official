@@ -146,8 +146,8 @@ Code examples in search results use **Maker Editor syntax**. They must be conver
 > Concretely, the AttackComponent / HitComponent damage hooks (`CalcDamage`, `CalcCritical`, `GetCriticalDamageRate`, `GetDisplayHitCount`, `IsAttackTarget`, `IsHitTarget`, `OnAttack`) are all `ExecSpace=All` upstream. Adding `@ExecSpace("ServerOnly")` produces:
 >
 > ```
-> [LEA-3014] SignatureMismatch : <Child>.CalcDamage[... (ExecSpace=ServerOnly)]의
->   시그니처는 재정의된 <Parent>.CalcDamage.[... (ExecSpace=All)]와 일치해야 합니다.
+> [LEA-3014] SignatureMismatch : The signature of <Child>.CalcDamage[... (ExecSpace=ServerOnly)]
+>   must match the overridden <Parent>.CalcDamage.[... (ExecSpace=All)].
 > ```
 >
 > Always look up the parent in `.d.mlua` first and copy its annotation block verbatim. Detail: [`msw-scripting/SKILL.md` §9 "Method override → LEA-3014"](../msw-scripting/SKILL.md).
@@ -191,7 +191,7 @@ Never guess or fabricate a RUID — **always obtain one through this API**.
 All resource-API calls in this skill are made through the Node.js wrapper
 
 ```
-plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs
+./msw_resource_api.cjs
 ```
 
 **Do not assemble curl commands by hand.** The wrapper:
@@ -205,11 +205,11 @@ Two ways to use it:
 
 ```bash
 # 1) CLI — fire one call from a shell. Output is pretty-printed JSON.
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ./msw_resource_api.cjs \
     search "orange mushroom" --resource-type resource_pack --category npc --topK 3
 
 # Discover available subcommands:
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs --help
+node ./msw_resource_api.cjs --help
 ```
 
 ```js
@@ -219,7 +219,7 @@ const {
   getResource, getResourcesBatch, getResourceTags,
   listResources, randomResources, findPacksContaining,
   listAvatars, getAvatarDefaults, renderAvatar, avatarFrameUrl,
-} = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+} = require('./msw_resource_api.cjs');
 
 const result = await searchResources("orange mushroom", {
   resourceTypeFilter: ["resource_pack"],
@@ -444,7 +444,7 @@ end
 
 > **Sanity check** — the left-facing convention is not contractual. Open `payload.thumbnail` from `GET /v3/resources/{ruid}` to confirm.
 >
-> **Do not use `TransformComponent.Scale.x` to flip** — it breaks physics colliders. Always use `SpriteRendererComponent.FlipX`. (See `msw-combat-system/SKILL.md` line 423: "방향 판정 ★".)
+> **Do not use `TransformComponent.Scale.x` to flip** — it breaks physics colliders. Always use `SpriteRendererComponent.FlipX`. (See `msw-combat-system/SKILL.md` line 423: "Facing decision ★".)
 
 ---
 

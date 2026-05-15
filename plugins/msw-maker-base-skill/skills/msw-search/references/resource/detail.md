@@ -15,13 +15,13 @@ Fetch detail for a single resource.
 
 ```bash
 # CLI
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     get 0017da7385e04bc4b2ddbe5949b4b462
 ```
 
 ```js
 // Node.js
-const { getResource } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { getResource } = require('../../msw_resource_api.cjs');
 
 const detail = await getResource("0017da7385e04bc4b2ddbe5949b4b462");
 ```
@@ -85,13 +85,13 @@ Fetch multiple RUIDs in a single request.
 
 ```bash
 # CLI — pass RUIDs as space-separated positional arguments
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     batch 0017da7385e04bc4b2ddbe5949b4b462 abc123def456789012345678abcdef01
 ```
 
 ```js
 // Node.js
-const { getResourcesBatch } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { getResourcesBatch } = require('../../msw_resource_api.cjs');
 
 const resources = await getResourcesBatch([
   "0017da7385e04bc4b2ddbe5949b4b462",
@@ -117,13 +117,13 @@ Fetch AI-generated multilingual tags for a resource — including description, k
 
 ```bash
 # CLI
-node plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs \
+node ../../msw_resource_api.cjs \
     tags 0017da7385e04bc4b2ddbe5949b4b462
 ```
 
 ```js
 // Node.js
-const { getResourceTags } = require('plugins/msw-maker-base-skill/skills/msw-search/msw_resource_api.cjs');
+const { getResourceTags } = require('../../msw_resource_api.cjs');
 
 const tags = await getResourceTags("0017da7385e04bc4b2ddbe5949b4b462");
 ```

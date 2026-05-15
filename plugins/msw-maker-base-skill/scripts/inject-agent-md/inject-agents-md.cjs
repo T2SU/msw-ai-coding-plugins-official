@@ -2,13 +2,13 @@
 'use strict';
 
 // inject-agents-md.cjs
-// 세션 첫 실행 시 플러그인의 AGENTS.md를 프로젝트 루트에 복사하고
-// CLAUDE.md에 @AGENTS.md import를 추가한다.
+// On the first session run, copies the plugin's AGENTS.md to the project root
+// and adds an `@AGENTS.md` import to CLAUDE.md.
 //
-// - 이미 복사되어 있으면 스킵 (내용 비교)
-// - CLAUDE.md에 이미 @AGENTS.md가 있으면 스킵
+// - Skipped if AGENTS.md is already in place (compared by content).
+// - Skipped if CLAUDE.md already contains `@AGENTS.md`.
 //
-// 플러그인 hooks/hooks.json 으로 자동 등록 — 수동 설정 불필요.
+// Auto-registered via the plugin's `hooks/hooks.json` — no manual setup required.
 
 const fs = require('fs');
 const path = require('path');
@@ -30,12 +30,12 @@ const SRC = path.join(hooksDir, 'AGENTS.md');
 const DST = path.join(projectRoot, 'AGENTS.md');
 const CLAUDE_MD = path.join(projectRoot, 'CLAUDE.md');
 
-// 플러그인에 AGENTS.md가 없으면 종료
+// Exit if the plugin does not bundle an AGENTS.md.
 if (!fs.existsSync(SRC)) {
   process.exit(0);
 }
 
-// 1. AGENTS.md 복사 (내용이 다를 때만)
+// 1. Copy AGENTS.md (only when contents differ).
 try {
   const srcBuf = fs.readFileSync(SRC);
   let needCopy = true;
@@ -47,10 +47,10 @@ try {
     fs.writeFileSync(DST, srcBuf);
   }
 } catch (_) {
-  // 파일 I/O 실패는 훅을 차단하지 않는다.
+  // File I/O failures must not block the hook.
 }
 
-// 2. CLAUDE.md에 @AGENTS.md import 추가
+// 2. Add an `@AGENTS.md` import to CLAUDE.md.
 try {
   if (!fs.existsSync(CLAUDE_MD)) {
     fs.writeFileSync(CLAUDE_MD, '@AGENTS.md\n');
@@ -61,5 +61,5 @@ try {
     }
   }
 } catch (_) {
-  // 동일하게 무시.
+  // Ignore for the same reason as above.
 }

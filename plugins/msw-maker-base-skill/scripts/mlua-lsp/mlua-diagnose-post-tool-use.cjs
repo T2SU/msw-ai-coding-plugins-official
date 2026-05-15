@@ -3,7 +3,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { appendLspLog } = require('./lsp-log.cjs');
+const { resolveLspCommand, spawnLspSync } = require('./resolve-cmd.cjs');
 
 function readInput() {
   try {
@@ -32,10 +33,6 @@ function findProjectRoot(startPath) {
   }
 }
 
-function splitArgs(raw) {
-  return String(raw || '').trim().split(/\s+/).filter(Boolean);
-}
-
 function jsonOut(obj) {
   process.stdout.write(JSON.stringify(obj));
 }
@@ -48,6 +45,22 @@ function formatDiagnostic(d) {
   return `${line}:${col} ${severity} ${message}`;
 }
 
+function pickServerMs(payload) {
+  if (!payload || typeof payload !== 'object') return undefined;
+  const candidates = [
+    payload.serverDurationMs,
+    payload.server_ms,
+    payload.elapsedMs,
+    payload.elapsed_ms,
+    payload.durationMs,
+    payload.duration_ms,
+  ];
+  for (const v of candidates) {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+  }
+  return undefined;
+}
+
 const input = readInput();
 const filePath = input.tool_input?.file_path || input.tool_input?.path || input.file_path;
 
@@ -57,15 +70,61 @@ if (!fs.existsSync(filePath)) process.exit(0);
 const projectRoot = process.env.MLUA_LSP_PROJECT_ROOT || findProjectRoot(filePath) || findProjectRoot(input.cwd);
 if (!projectRoot) process.exit(0);
 
-const cmd = process.env.MLUA_LSP_CMD || 'mlua-lsp';
-const args = splitArgs(process.env.MLUA_LSP_ARGS).concat(['diagnose', projectRoot, filePath]);
+const resolved = resolveLspCommand();
+const subArgs = ['diagnose', projectRoot, filePath];
+const args = resolved.baseArgs.concat(subArgs);
 const timeout = Number.parseInt(process.env.MLUA_LSP_HOOK_DIAGNOSE_TIMEOUT_MS || '120000', 10);
 
-const result = spawnSync(cmd, args, {
-  encoding: 'utf8',
+const spawnStart = Date.now();
+const result = spawnLspSync(resolved, subArgs, {
   timeout: Number.isFinite(timeout) ? timeout : 120000,
-  windowsHide: true,
-  shell: process.platform === 'win32',
+});
+const spawnEnd = Date.now();
+const durationMs = spawnEnd - spawnStart;
+
+const parseStart = Date.now();
+let payload = null;
+try {
+  payload = JSON.parse(result.stdout);
+} catch (_) {
+  payload = null;
+}
+const parseMs = Date.now() - parseStart;
+
+const serverMs = pickServerMs(payload);
+const overheadMs = serverMs !== undefined ? Math.max(durationMs - serverMs, 0) : undefined;
+
+const logSummary = (payload && typeof payload === 'object') ? {
+  diagnostic_count: payload.diagnosticCount ?? (Array.isArray(payload.diagnostics) ? payload.diagnostics.length : undefined),
+  errors: payload.errors,
+  warnings: payload.warnings,
+  phase: payload.phase,
+  workspace_loaded: payload.workspaceLoaded,
+  stale_cross_file_results: payload.staleCrossFileResults,
+  persistent: payload.persistent,
+  cmd_source: resolved.source,
+  use_shell: resolved.useShell,
+  parse_ms: parseMs,
+  server_ms: serverMs,
+  overhead_ms: overheadMs,
+} : {
+  cmd_source: resolved.source,
+  use_shell: resolved.useShell,
+  parse_ms: parseMs,
+};
+
+appendLspLog({
+  cwd: input.cwd || process.cwd(),
+  event: 'PostToolUse',
+  action: 'diagnose',
+  sessionId: input.session_id,
+  cmd: resolved.cmd,
+  args,
+  projectRoot,
+  targetFile: filePath,
+  result,
+  durationMs,
+  summary: logSummary,
 });
 
 if (result.error || result.status !== 0) {
@@ -79,10 +138,7 @@ if (result.error || result.status !== 0) {
   process.exit(0);
 }
 
-let payload;
-try {
-  payload = JSON.parse(result.stdout);
-} catch (_) {
+if (!payload) {
   jsonOut({
     hookSpecificOutput: {
       hookEventName: 'PostToolUse',

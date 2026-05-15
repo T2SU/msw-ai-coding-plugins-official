@@ -2,15 +2,17 @@
 'use strict';
 
 // MSW Skill Log Hook
-// Claude Code 가 스킬을 읽거나(`Read` on SKILL.md / references), 호출하거나(`Skill` tool),
-// CLAUDE.md / .claude/rules/*.md 가 컨텍스트에 로드될 때(`InstructionsLoaded`)
-// 한 줄짜리 사람이 읽기 쉬운 로그를 working dir 의 `.claude/skill.log` 에 append 한다.
+// Whenever Claude Code reads a skill (`Read` on SKILL.md / references), invokes
+// one (`Skill` tool), or loads CLAUDE.md / `.claude/rules/*.md` into context
+// (`InstructionsLoaded`), this hook appends a single human-readable line to
+// `.claude/skill.log` under the working directory.
 //
-// 플러그인 hooks/hooks.json 으로 자동 등록 — 수동 설정 불필요.
-// 비-스킬 이벤트는 무시하고 즉시 종료한다.
+// Auto-registered via the plugin's `hooks/hooks.json` — no manual setup required.
+// Non-skill events are ignored and the hook exits immediately.
 
 const fs = require('fs');
 const path = require('path');
+const { resolveLogFile } = require('../_lib/log-root.cjs');
 
 function readInput() {
   try {
@@ -50,7 +52,8 @@ function formatLocalISO(date) {
   const m = pad(date.getMinutes());
   const s = pad(date.getSeconds());
   const ms = pad(date.getMilliseconds(), 3);
-  // getTimezoneOffset() 은 UTC - local 분 단위. 부호 반전 후 ±HH:MM 으로 포맷.
+  // `getTimezoneOffset()` returns (UTC - local) in minutes; flip the sign and
+  // format as ±HH:MM.
   const offsetMin = -date.getTimezoneOffset();
   const sign = offsetMin >= 0 ? '+' : '-';
   const absOffset = Math.abs(offsetMin);
@@ -200,12 +203,10 @@ function main() {
   if (!line) return;
 
   try {
-    const logDir = path.join(cwd, '.claude');
-    fs.mkdirSync(logDir, { recursive: true });
-    const logFile = path.join(logDir, 'skill.log');
+    const logFile = resolveLogFile(cwd, 'skill.log');
     fs.appendFileSync(logFile, line + '\n', 'utf8');
   } catch (_) {
-    // 로깅 실패는 모델 흐름에 영향 주지 않도록 조용히 무시.
+    // Silently ignore logging failures so they never disrupt the model's flow.
   }
 }
 

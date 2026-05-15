@@ -9,29 +9,29 @@ Format: `Name | Alignment | (x, y) | WxH | [Components] | (state)`
 ButtonGroup | GroupOrder=3 | StretchAll | 1952x1080 | [UIGroupComponent]
   Btn_Achievement | TopRight | (-30, -583) | 140x140 | [Button]
     Icon | Center | (0, 2) | 64x72
-    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "업적"
+    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "Achievement"
   Btn_Attendance | TopRight | (-30, -432) | 140x140 | [Button]
     Icon | Center | (0, 5) | 64x68
-    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "출석"
+    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "Attendance"
   Btn_Basic | TopRight | (-30, -130) | 140x140 | [Button]
     Icon | Center | (0, 3) | 80x80
-    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "기본팝업1"
+    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "Basic Popup 1"
   Btn_GameResult | TopRight | (-30, -885) | 140x140 | [Button]
     Icon | Center | (0, 2) | 48x72
-    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "게임 순위"
+    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "Game Ranking"
   Btn_Inven | TopRight | (-30, -734) | 140x140 | [Button]
     Icon | Center | (0, 5) | 72x64
-    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "인벤토리"
+    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "Inventory"
   Btn_Shop | TopRight | (-330, -287) | 130x130 | [Button]
     Icon | Center | (0, 5) | 80x76
-    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "뽑기 상점"
+    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "Gacha Shop"
   Btn_ShopMenu | TopRight | (-30, -281) | 140x140 | [Button]
     Icon | Center | (0, 5) | 80x76
-    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "상점"
+    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "Shop"
     UISprite | Left | (10, 0) | 68x68
   Btn_ShopResult | TopRight | (-190, -287) | 130x130 | [Button]
     Icon | Center | (0, 5) | 80x76
-    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "뽑기 결과"
+    Title | BottomCenter | (0, 10) | 170x43 | [TextComponent] | "Gacha Result"
 
 ============================================================
   DefaultGroup.ui  (7 entities)
@@ -53,9 +53,9 @@ HUDGroup | GroupOrder=0 | StretchAll | 1920x1080 | [UIGroupComponent]
     Btn_Hall | TopLeft | (30, -10) | 140x140
   MatchingPanel | TopCenter | (0, -150) | 600x150
     MatchingBG | Center | 300x88
-    MatchingPlayers | TopLeft | (60, -5) | 201x35 | [TextComponent] | "매칭 인원 : 10"
+    MatchingPlayers | TopLeft | (60, -5) | 201x35 | [TextComponent] | "Matching Players: 10"
     StartButton | Right | (-18, 0) | 250x104 | [Button]
-    UIText | Left | (60, 0) | 260x50 | [TextComponent] | "게임 맵 이름"
+    UIText | Left | (60, 0) | 260x50 | [TextComponent] | "Game Map Name"
   PlayerInfo | TopCenter | (0, -25) | 900x100
     DiaInfoBG | TopRight | 300x100
     LevelInfoBG | TopLeft | 350x100
@@ -77,14 +77,14 @@ PopupGroup | GroupOrder=4 | StretchAll | 1920x1080 | [UIGroupComponent]
     Bg | BottomCenter | (0, 9) | 706x196
     MyInfo | TopCenter | (0, -780) | 676x130
     Ranking | TopCenter | (0, -364) | 675x679 | [ScrollLayout]
-    ReturnToLobby | BottomCenter | (-155, 10) | 300x104 | [Button, TextComponent] | "로비로 돌아가기"
-    SaveResult | BottomCenter | (155, 10) | 300x104 | [Button, TextComponent] | "결과 저장"
+    ReturnToLobby | BottomCenter | (-155, 10) | 300x104 | [Button, TextComponent] | "Return to Lobby"
+    SaveResult | BottomCenter | (155, 10) | 300x104 | [Button, TextComponent] | "Save Result"
   ShopPopup | StretchAll | 2520x1680 | (disabled)
     Panel | Center | (0, -50) | 900x850
   ShopResult | StretchAll | 2520x1680 | (disabled)
     Deco | Center | (0, 220) | 750x750 | [TweenCircularComponent]
     DecoDpt | Center | (0, 6) | 100x100
-    PopupBtnOK | Center | (0, -280) | 300x104 | [Button, TextComponent] | "확인"
+    PopupBtnOK | Center | (0, -280) | 300x104 | [Button, TextComponent] | "OK"
     PopupName | Center | (0, 200) | 916x176
     ResultEffect | Center | (0, -300) | 800x760 | (disabled)
     ResultItemBG | HStretchCenter | (0, -47) | 1680x460

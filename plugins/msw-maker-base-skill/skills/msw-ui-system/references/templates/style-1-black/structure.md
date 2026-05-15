@@ -8,17 +8,17 @@ Format: `Name | Alignment | (x, y) | WxH | [Components] | (state)`
 ============================================================
 ButtonGroup | GroupOrder=3 | StretchAll | 1920x1080 | [UIGroupComponent]
   1 | Center | (-829, 196) | 235x88 | [Button, script.Popupbutton]
-    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "팝업1"
+    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "Popup 1"
   2 | Center | (-829, 97) | 235x88 | [Button, script.Popupbutton]
-    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "팝업2"
+    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "Popup 2"
   3 | Center | (-829, -4) | 235x88 | [Button, script.Popupbutton]
-    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "팝업3"
+    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "Popup 3"
   4 | Center | (-829, -104) | 235x88 | [Button, script.Popupbutton]
-    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "팝업4"
+    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "Popup 4"
   5 | Center | (-829, -201) | 235x88 | [Button, script.Popupbutton]
-    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "팝업5"
+    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "Popup 5"
   6 | Center | (-829, -295) | 235x88 | [Button, script.Popupbutton]
-    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "팝업6"
+    UIText | Center | (-1, 7) | 100x100 | [TextComponent] | "Popup 6"
 
 ============================================================
   DefaultGroup.ui  (3 entities)
@@ -32,18 +32,18 @@ DefaultGroup | GroupOrder=1 | StretchAll | 1920x1080 | [UIGroupComponent] | (dis
 ============================================================
 HUDGroup | GroupOrder=0 | StretchAll | 1920x1080 | [UIGroupComponent]
   QuestHUD | TopCenter | (-486, -25) | 465x220 | [Button]
-    QuestDescription | StretchAll | (1, -28) | 463x165 | [TextComponent] | "주황버섯 처치하기  0/10
-슬라임 처치하기 0/10"
-    Title | HStretchTop | 465x57 | [TextComponent] | "메인 퀘스트"
+    QuestDescription | StretchAll | (1, -28) | 463x165 | [TextComponent] | "Defeat Orange Mushroom  0/10
+Defeat Slime 0/10"
+    Title | HStretchTop | 465x57 | [TextComponent] | "Main Quest"
     bg_title | HStretchTop | (-0, -0) | 465x55
   UIMatch | TopCenter | (90, -38) | 540x340
-    Title | HStretchTop | 510x70 | [TextComponent] | "미니 게임 개최!"
+    Title | HStretchTop | 510x70 | [TextComponent] | "Mini Game Open!"
     img_pattern | StretchAll | 510x310
     matchBtn | HStretchBottom | (81, 38) | 300x70 | [Button]
     matchCancelBtn | HStretchBottom | (81, 38) | 300x70 | [Button]
-    textMatchGame | HStretchTop | (0, -103) | 510x50 | [TextComponent] | "미니게임 이름"
-    textMatchInfo | HStretchTop | (0, -148) | 510x50 | [TextComponent] | "참여 가능 인원 : 1~10명"
-    textRecommendedLevel | HStretchTop | (0, -193) | 510x50 | [TextComponent] | "참여 권장 레벨 : LV 5 ↑"
+    textMatchGame | HStretchTop | (0, -103) | 510x50 | [TextComponent] | "Mini Game Name"
+    textMatchInfo | HStretchTop | (0, -148) | 510x50 | [TextComponent] | "Max Players: 1~10"
+    textRecommendedLevel | HStretchTop | (0, -193) | 510x50 | [TextComponent] | "Recommended Level: LV 5 ↑"
     textWaitInfo | BottomLeft | (43, 43) | 157x61 | [TextComponent] | "0"
     timer | TopLeft | (31, -20) | 82x91
 
@@ -55,9 +55,9 @@ PopupGroup | GroupOrder=4 | StretchAll | 1920x1080 | [UIGroupComponent]
     Panel_slot | StretchAll | (0, -35) | 1328x530 | [GridViewComponent]
     TitlePanel | HStretchTop | 1408x100
   BasicPopup | Center | (8, 5) | 981x508 | (disabled)
-    PopupBtnCancel | Center | (206, -155) | 415x105 | [Button, TextComponent] | "취소"
-    PopupBtnOK | Center | (-206, -155) | 415x105 | [Button, TextComponent] | "확인"
-    PopupMessage | Center | (0, 80) | 780x260 | [TextComponent] | "팝업 메시지"
+    PopupBtnCancel | Center | (206, -155) | 415x105 | [Button, TextComponent] | "Cancel"
+    PopupBtnOK | Center | (-206, -155) | 415x105 | [Button, TextComponent] | "OK"
+    PopupMessage | Center | (0, 80) | 780x260 | [TextComponent] | "Popup Message"
     deco_line | HStretchCenter | (0, -70) | 945x2
     img_deco | StretchAll | (0, -0) | 955x482
     img_pattern | StretchAll | 951x478

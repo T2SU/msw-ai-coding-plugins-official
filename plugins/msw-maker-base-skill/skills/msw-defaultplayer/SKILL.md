@@ -1,11 +1,11 @@
 ---
 name: msw-defaultplayer
-description: "MSW DefaultPlayer (character) management. Directly read/modify the DefaultPlayer.model file, add/remove components, configure movement speed / jump force / HP / camera, and per-map-mode movement components. Use for DefaultPlayer model, player components, movement speed, jump force, HP, camera, physics. Keywords: player, DefaultPlayer, speed, jump, HP, camera, gravity, revive, respawn, character."
+description: "MSW DefaultPlayer (character) management. Use the msw-general ModelBuilder to inspect/patch DefaultPlayer.model and Player.model, add/remove components, configure movement speed / jump force / HP / camera, and per-map-mode movement components. Use for DefaultPlayer model, player components, movement speed, jump force, HP, camera, physics. Keywords: player, DefaultPlayer, speed, jump, HP, camera, gravity, revive, respawn, character."
 ---
 
 # MSW DefaultPlayer
 
-Directly read/modify the DefaultPlayer model file, manage components, and configure movement / physics / HP / camera.
+Use the `msw-general` ModelBuilder to inspect/patch the DefaultPlayer model file, manage components, and configure movement / physics / HP / camera.
 
 > For **costume / avatar equipment**, see the `msw-avatar` skill. Costumes apply not only to DefaultPlayer but to any entity, so they live in a separate skill.
 
@@ -28,11 +28,11 @@ DefaultPlayer is made up of **two .model files**:
 
 > **Important**: both files are located in `./Global/`. Custom script files are created under `./RootDesk/MyDesk/`.
 
-### DefaultPlayer is edited directly via the .model file
-DefaultPlayer is managed by directly reading and editing the **`./Global/DefaultPlayer.model`** file.
-- Change a property value: modify the `Value` of the corresponding entry in the `Values` array of `DefaultPlayer.model`
-- Add/remove a component: modify the `Components` array of `DefaultPlayer.model`
-- Check the base component list: refer to the `Components` array of `Player.model`
+### DefaultPlayer is patched through ModelBuilder
+DefaultPlayer is managed through `skills/msw-general/scripts/model/msw_model_builder.cjs`, not raw JSON edits.
+- Change a property value: `ModelBuilder.read("./Global/DefaultPlayer.model").value(...)`
+- Add/remove a component: `component()` / `removeComponent()`
+- Check the base component list: `ModelBuilder.snapshot("./Global/Player.model")`
 
 ---
 
@@ -201,129 +201,66 @@ Values that directly override a component property rather than going through a m
 
 ### Changing property values (Values)
 
-Open `./Global/DefaultPlayer.model` and modify the `Value` of the target entry in the `ContentProto.Json.Values` array.
+Load `./Global/DefaultPlayer.model` with `ModelBuilder.read()`, then update values with `value()`.
 
 **Example: set movement speed to 2.0**
 
-In the `Values` array, find the entry whose `Name` is `"speed"` and update its `Value`:
-```json
-{
-  "TargetType": null,
-  "Name": "speed",
-  "ValueType": { ... },
-  "Value": 2.0
-}
+```javascript
+const { ModelBuilder } = require("../msw-general/scripts/model/msw_model_builder.cjs");
+
+const b = ModelBuilder.read("./Global/DefaultPlayer.model");
+
+b.value(null, "speed", 2.0, "float")
+  .value("MovementComponent", "InputSpeed", 2.0, "float")
+  .write("./Global/DefaultPlayer.model");
 ```
 
-Or, in the direct component override entries, `MovementComponent`'s `InputSpeed`:
-```json
-{
-  "TargetType": "MOD.Core.MovementComponent",
-  "Name": "InputSpeed",
-  "ValueType": { ... },
-  "Value": 2.0
-}
-```
-
-> **Note**: both the model property (`TargetType: null`, `Name: "speed"`) and the direct component override (`TargetType: "MOD.Core.MovementComponent"`, `Name: "InputSpeed"`) can exist. Modify both consistently.
+> **Note**: both the model property (`TargetType: null`, `Name: "speed"`) and the direct component override (`TargetType: "MOD.Core.MovementComponent"`, `Name: "InputSpeed"`) can exist. Set both consistently through `value()`.
 
 **Example: jump force 1.5 + HP 2000**
 
-Find each entry in the `Values` array and update:
-```json
-// jumpForce model property
-{ "TargetType": null, "Name": "jumpForce", "Value": 1.5 }
+```javascript
+const b = ModelBuilder.read("./Global/DefaultPlayer.model");
 
-// MovementComponent direct override
-{ "TargetType": "MOD.Core.MovementComponent", "Name": "JumpForce", "Value": 1.5 }
-
-// maxHp model property
-{ "TargetType": null, "Name": "maxHp", "Value": 2000 }
+b.value(null, "jumpForce", 1.5, "float")
+  .value("MovementComponent", "JumpForce", 1.5, "float")
+  .value(null, "maxHp", 2000, "int")
+  .write("./Global/DefaultPlayer.model");
 ```
 
 ### Adding a new Values entry
 
-You can append a new entry to the `Values` array to override defaults. The ValueType format must match precisely.
+Use `ModelBuilder.value(targetType, name, value, typeKey)`. The builder generates the `ValueType` descriptor; do not hand-write type strings.
 
-**Common ValueType patterns**:
-```json
-// float (System.Single)
-"ValueType": {
-  "$type": "MODNativeType",
-  "type": "System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-}
-
-// int (System.Int64)
-"ValueType": {
-  "$type": "MODNativeType",
-  "type": "System.Int64, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-}
-
-// string
-"ValueType": {
-  "$type": "MODNativeType",
-  "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-}
-
-// Vector2 (MODVector2)
-"ValueType": {
-  "$type": "MODNativeType",
-  "type": "MOD.Core.MODVector2, MOD.Core, Version=1.11.0.0, Culture=neutral, PublicKeyToken=null"
-}
-// Value format: { "$type": "MOD.Core.MODVector2, MOD.Core", "x": 0.0, "y": 0.0 }
-
-// DataRef (MODDataRef)
-"ValueType": {
-  "$type": "MODNativeType",
-  "type": "MOD.Core.MODDataRef, MOD.Core, Version=1.11.0.0, Culture=neutral, PublicKeyToken=null"
-}
-// Value format: { "$type": "MOD.Core.MODDataRef, MOD.Core", "DataId": "hex..." }
-
-// CollisionGroup
-"ValueType": {
-  "$type": "MODNativeType",
-  "type": "MOD.Core.Physics.CollisionGroup, MOD.Core, Version=1.11.0.0, Culture=neutral, PublicKeyToken=null"
-}
-// Value format: { "$type": "MOD.Core.Physics.CollisionGroup, MOD.Core", "Id": "hex..." }
-
-// boolean (System.Boolean) — used for Enable=false/true
-"ValueType": {
-  "$type": "MODNativeType",
-  "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-}
-// Value format: true or false
-```
+Common `typeKey` values: `bool`, `int`, `float`, `double`, `string`, `vector2`, `vector3`, `data_ref`, `collision_group`.
 
 ### Adding a component
 
-Add an entry to the `ContentProto.Json.Components` array of `./Global/DefaultPlayer.model`.
+Use `component()` on `./Global/DefaultPlayer.model`.
 
 **Adding a custom script component**:
-```json
-"Components": [
-  "script.PlayerHit",
-  "script.PlayerAttack",
-  "script.MyCustomComponent"
-]
+```javascript
+const b = ModelBuilder.read("./Global/DefaultPlayer.model");
+
+b.component("script.MyCustomComponent")
+  .write("./Global/DefaultPlayer.model");
 ```
 
-> Custom scripts (.mlua) must be created under `./RootDesk/MyDesk/`. Write the script first, then add `"script.<ScriptName>"` to the Components array.
+> Custom scripts (.mlua) must be created under `./RootDesk/MyDesk/`. Write the script first, Maker `refresh`, then add `"script.<ScriptName>"` with the builder.
 
 **Adding a native component** (e.g. SpriteRendererComponent):
-```json
-"Components": [
-  "script.PlayerHit",
-  "script.PlayerAttack",
-  "MOD.Core.SpriteRendererComponent"
-]
+```javascript
+const b = ModelBuilder.read("./Global/DefaultPlayer.model");
+
+b.component("SpriteRendererComponent")
+  .write("./Global/DefaultPlayer.model");
 ```
 
 ### Removing a component
 
-Remove the corresponding entry from the `Components` array of `DefaultPlayer.model`.
-The related `Values` entries should be removed as well.
+Use `removeComponent()` on `DefaultPlayer.model`. Related `Values` entries are removed by the builder.
 
-> **Caution**: components inherited from Player.model (the base) are not in DefaultPlayer.model's Components, so to remove a base component you must edit Player.model itself. Removing base components is generally not recommended.
+> **Caution**: components inherited from Player.model (the base) are not in DefaultPlayer.model's Components. Removing base components requires patching `Player.model` through `ModelBuilder`, and is generally not recommended.
 
 ---
 
@@ -331,7 +268,7 @@ The related `Values` entries should be removed as well.
 
 Common pitfalls when **adding to Components** and **changing Values** in DefaultPlayer.model.
 
-### Components array pitfalls
+### Component list pitfalls
 
 | # | Pitfall | Symptom | Resolution |
 |---|---------|---------|------------|
@@ -342,7 +279,7 @@ Common pitfalls when **adding to Components** and **changing Values** in Default
 
 ### Values change pitfall — only `jumpForce` / `speed` need extra care
 
-Most Values entries are in the `TargetType=null` (alias) form and modifying them directly works fine. **Only the two fields below are exceptions** — both an alias and a native entry (`TargetType="MOD.Core.MovementComponent"`) exist at the same time:
+Most Values entries are in the `TargetType=null` (alias) form and can be set through `ModelBuilder.value(null, ...)`. **Only the two fields below are exceptions** — both an alias and a native entry (`TargetType="MOD.Core.MovementComponent"`) exist at the same time:
 
 | Field | alias entry | native entry |
 |-------|-------------|--------------|
@@ -387,34 +324,18 @@ DefaultPlayer's components are inherited from the base model, so they **cannot b
 | SideviewbodyComponent | **disable** | keep per map mode | When on a SideViewRectTile map |
 | KinematicbodyComponent | EnableShadow=false | EnableShadow=false | Removes the shadow only |
 
-### File edit — add Enable=false to Values
+### Builder edit — add Enable=false to Values
 
-Add an entry to the `ContentProto.Json.Values` array of `./Global/DefaultPlayer.model`. For components that don't yet have an Enable entry, add a new one.
+Set the component values through `ModelBuilder.value()`. For components that don't yet have an Enable entry, the builder adds one.
 
-```json
-{
-  "TargetType": "MOD.Core.AvatarRendererComponent",
-  "Name": "Enable",
-  "ValueType": {
-    "$type": "MODNativeType",
-    "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-  },
-  "Value": false
-}
-```
+```javascript
+const { ModelBuilder } = require("../msw-general/scripts/model/msw_model_builder.cjs");
 
-Use the same pattern for each component to disable. For shadow removal:
+const b = ModelBuilder.read("./Global/DefaultPlayer.model");
 
-```json
-{
-  "TargetType": "MOD.Core.KinematicbodyComponent",
-  "Name": "EnableShadow",
-  "ValueType": {
-    "$type": "MODNativeType",
-    "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-  },
-  "Value": false
-}
+b.enable("AvatarRendererComponent", false)
+  .value("KinematicbodyComponent", "EnableShadow", false, "bool")
+  .write("./Global/DefaultPlayer.model");
 ```
 
 After saving, **Maker Refresh** is required.
@@ -433,25 +354,28 @@ After saving, **Maker Refresh** is required.
 
 ### Modifying basic player properties (movement speed, jump force, HP, etc.)
 ```
-1. Read ./Global/DefaultPlayer.model → inspect the Values array
-2. Find the property entry to change and modify Value
-3. If both the model property (TargetType: null) and the direct component override exist, edit both consistently
-4. Save the file
+1. Load ./Global/DefaultPlayer.model with ModelBuilder.read()
+2. Update values with value(targetType, name, value, typeKey)
+3. If both the model property (TargetType: null) and the direct component override exist, set both consistently
+4. write("./Global/DefaultPlayer.model")
 ```
 
 ### Adding a custom script to the player
 ```
 1. Write a new .mlua script under ./RootDesk/MyDesk/ (see the msw-scripting skill)
-2. Add "script.<ScriptName>" to the Components array of ./Global/DefaultPlayer.model
-3. If needed, add default property values for the script to the Values array
-4. Request Maker Refresh (.codeblock auto-generated)
+2. Maker refresh so the script type is registered
+3. Load ./Global/DefaultPlayer.model with ModelBuilder.read()
+4. Add "script.<ScriptName>" with component()
+5. If needed, add default property values for the script with value()
+6. write("./Global/DefaultPlayer.model")
+7. Request Maker Refresh
 ```
 
 ### Changing camera settings
 ```
-1. Read ./Global/DefaultPlayer.model
-2. In Values, modify cameraDeadZone, cameraSoftZone, cameraDamping, cameraScreen, cameraDutch, cameraOffset
-3. Save the file
+1. Load ./Global/DefaultPlayer.model with ModelBuilder.read()
+2. Set cameraDeadZone, cameraSoftZone, cameraDamping, cameraScreen, cameraDutch, cameraOffset with value()
+3. write("./Global/DefaultPlayer.model")
 ```
 
 ---
@@ -459,9 +383,9 @@ After saving, **Maker Refresh** is required.
 ## Boundaries and caveats
 
 ### In scope
-- Read/modify the DefaultPlayer/Player model files (.model)
-- Add/remove components (Components array)
-- Movement / physics / HP / camera settings (Values array)
+- Inspect/patch the DefaultPlayer/Player model files through ModelBuilder
+- Add/remove components through `component()` / `removeComponent()`
+- Movement / physics / HP / camera settings through `value()`
 
 ### Out of scope
 - Costume / avatar equipment → `msw-avatar` skill
@@ -473,5 +397,5 @@ After saving, **Maker Refresh** is required.
 1. **Careful with Global/**: DefaultPlayer.model and Player.model live in `./Global/`. This folder is reserved for engine default templates, so creating new files here is not recommended.
 2. **Custom script location**: new script files must be created under `./RootDesk/MyDesk/`.
 3. **Map mode caveat**: the active movement component differs depending on the map mode (MapleTile/RectTile/SideViewRectTile).
-4. **ValueType correctness**: when adding a Values entry, the `ValueType` format (especially the assembly version) must match existing entries.
+4. **ValueType correctness**: when adding a Values entry, use `ModelBuilder.value()` with an explicit `typeKey`; do not hand-write `ValueType`.
 5. **Maker Refresh**: after adding/modifying scripts, Maker Refresh is required (.codeblock is auto-generated).

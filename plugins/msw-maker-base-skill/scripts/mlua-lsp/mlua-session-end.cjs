@@ -3,7 +3,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { appendLspLog } = require('./lsp-log.cjs');
+const { resolveLspCommand, spawnLspSync } = require('./resolve-cmd.cjs');
 
 function readInput() {
   try {
@@ -32,21 +33,33 @@ function findProjectRoot(startPath) {
   }
 }
 
-function splitArgs(raw) {
-  return String(raw || '').trim().split(/\s+/).filter(Boolean);
-}
-
 const input = readInput();
 const projectRoot = process.env.MLUA_LSP_PROJECT_ROOT || findProjectRoot(input.cwd);
 
 if (!projectRoot) process.exit(0);
 
-const cmd = process.env.MLUA_LSP_CMD || 'mlua-lsp';
-const args = splitArgs(process.env.MLUA_LSP_ARGS).concat(['stop', projectRoot]);
+const resolved = resolveLspCommand();
+const subArgs = ['stop', projectRoot];
+const args = resolved.baseArgs.concat(subArgs);
 
-spawnSync(cmd, args, {
-  encoding: 'utf8',
+const startedAt = Date.now();
+const result = spawnLspSync(resolved, subArgs, {
   timeout: 5000,
-  windowsHide: true,
-  shell: process.platform === 'win32',
+});
+const durationMs = Date.now() - startedAt;
+
+appendLspLog({
+  cwd: input.cwd || process.cwd(),
+  event: 'SessionEnd',
+  action: 'stop',
+  sessionId: input.session_id,
+  cmd: resolved.cmd,
+  args,
+  projectRoot,
+  result,
+  durationMs,
+  summary: {
+    cmd_source: resolved.source,
+    use_shell: resolved.useShell,
+  },
 });

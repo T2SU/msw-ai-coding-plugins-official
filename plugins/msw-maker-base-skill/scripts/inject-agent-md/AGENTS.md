@@ -4,172 +4,244 @@ You are an expert assistant for **MapleStory World (MSW)** development. You help
 
 # PROJECT CONTEXT (MANDATORY)
 
-**This project is an MSW (MapleStory Worlds) project.** Every request in this workspace must be treated as an MSW task.
+**This project is an MSW (MapleStory Worlds) project.** Treat every request as an MSW task.
 
-### MSW Skills — Read FIRST (MANDATORY)
+### Foundation: load on EVERY turn (not just the first)
 
-Before doing **anything** in this project — analyzing, planning, searching, or making any edit — you **MUST first read the `msw-general` skill**:
+Before analyzing, planning, searching, or editing — and at the start of **every** new user message — load all Foundation context. Already having a different MSW skill in context from a previous turn is **not** a substitute.
 
-- **`plugins/msw-maker-base-skill/skills/msw-general/SKILL.md`** — the foundation skill. Read this **before every MSW task**, without exception. It defines workspace structure, platform rules, MCP tools, TileMapMode↔Body mapping, `.model`/`.map`/`.ui`/`.dataset` authoring rules, and the validated template catalog.
+**1. Three Foundation Skills via the `Skill` tool, in order:**
 
-Then, based on the task domain, also read the relevant specialized skill(s) **before implementing**:
+| # | Skill identifier | What it covers |
+|:-:|---|---|
+| 1 | `msw-maker-base-skill:msw-general` | Workspace structure, platform rules (`TileMapMode↔Body`, world unit, `SpriteRUID`, spawn), MCP tools, `.model`/`.map`/`.ui`/`.dataset` authoring, validated template catalog. Every other MSW skill assumes this is loaded. |
+| 2 | `msw-maker-base-skill:msw-packages` | Standard game-system catalog (inventory / shop / ranking / mail / quest / collection / key binding / GM / drop table / scrollview / global config / UI components). An MSW world IS a game; skipping the catalog and writing from scratch is the single biggest waste of time. |
+| 3 | `msw-maker-base-skill:msw-ui-system` | UI single entry point — HUDs, popups, toasts, menus, tabs, dialogs. Even "Galaga" needs a score/lives HUD. `.ui` files MUST go through a builder; never edit raw JSON. |
 
-| Task domain | Skill to read |
-|-------------|---------------|
-| Writing/modifying `.mlua` scripts, components, logic, events | `plugins/msw-maker-base-skill/skills/msw-scripting/SKILL.md` |
-| Finding sprites, animations, sounds, resources (RUIDs) | `plugins/msw-maker-base-skill/skills/msw-search/SKILL.md` |
-| Avatar / player appearance, equipment, costumes | `plugins/msw-maker-base-skill/skills/msw-avatar/SKILL.md` |
-| DefaultPlayer customization | `plugins/msw-maker-base-skill/skills/msw-defaultplayer/SKILL.md` |
-| Combat, damage, hit detection, monster battles | `plugins/msw-maker-base-skill/skills/msw-combat-system/SKILL.md` |
-| Standard game systems (ranking, inventory, shop, mail, quest, toast, dialog, key binding, collection, drop table, GM message, world shop, resource, player data, command, scrollview, global config, UI components) — check BEFORE writing from scratch | `plugins/msw-maker-base-skill/skills/msw-packages/SKILL.md` |
-| UI screens / widgets (popup, HUD, button, toast UI, layout) — pick a style template | `plugins/msw-maker-base-skill/skills/msw-ui-template/SKILL.md` (also invoked via `msw-general/references/ui.md`) |
+> ⛔ **Never** load a skill by path (`Read("plugins/msw-maker-base-skill/skills/...")`, `Glob`, `ls`, `Grep`). The plugin lives in Claude Code's global plugin cache, not in the workspace's `plugins/` folder. Use the `Skill` tool — it resolves the absolute path automatically.
 
-**Rules:**
-- **NEVER skip reading `msw-general` first**, even for tasks that look trivial or purely code-focused.
-- If multiple domains apply, read **all** relevant skills before starting the Plan step (## 0).
-- Treat the information from these skills as the source of truth — prefer it over your prior assumptions.
-- For standard game features matching the catalog (ranking/inventory/shop/etc.), read **`msw-packages` BEFORE `msw-scripting`** — a prebuilt package may replace zero-from-scratch implementation.
-- When a UI request is ambiguous between **full system** (msw-packages) and **UI screen only** (msw-ui-template), ask ONE short Scope-First question BEFORE fetching files. See the chosen skill's SKILL.md for question phrasings keyed by request type.
-- Skip the Scope-First question when the user explicitly says "from scratch" / "just the UI" → route to `msw-ui-template`, or "with data" / "full system" → route to `msw-packages`.
-- **⛔ NEVER use the `msw-mcp` MCP's `asset_search_resources` tool.** For any sprite / animation / sound / resource (RUID) lookup, use the **`msw-search` skill** instead — it routes to the correct, validated retrieval pipeline. Calling `asset_search_resources` directly bypasses the skill's filtering and post-processing and produces unreliable results.
+**2. Four Foundation references via `Read` (in full, no `offset`/`limit`):**
+
+| Reference | Why it is required every turn |
+|---|---|
+| `msw-general/references/platform.md` (core) | 8 core rules / `TileMapMode↔Body` / `[LEA-3004]` / coordinate system / SortingLayer·OrderInLayer / `SpriteRUID` / `SpawnByModelId` / `MovementComponent` per-map InputSpeed scaling / `.directory` / `.config` / CoreVersion. Every other reference assumes you have Read this. |
+| `msw-general/references/workspace.md` | World instance / Room / DataStorage / Play mode / `refresh` / mid-workflow recovery — the operations rule for "how does an edit get reflected and where do I verify it". |
+| `msw-general/references/entity.md` | Entity Work Preflight (Absolute Principle #0). inline `@components` vs `modelId`, snapshot workflow, RUID & coordinate rules. |
+| `msw-general/references/authoring.md` | Shared schema-consistency and hand-edit hazards across `.mlua` / `.model` / `.map` / `.ui` / `.userdataset` / `.config`. |
+
+Once `MapComponent.TileMapMode` is identified, also Read the matching `platform-{maple|rect|sideview}.md`. For silent-failure debugging, also Read `troubleshooting.md`.
+
+#### MSW silent-failure zones (why generic game-design intuition fails)
+
+Generic knowledge of "top-down RPG" / "side-scrolling platformer" / "Entity-Component" / "popup UI" matches MSW's rules only superficially. Recognizing a genre ("Galaga / Mario / Bomberman / dungeon RPG / boss fight") is at most a hint for which `platform-{type}.md` to read — not a substitute for reading it. These are the silent-failure zones (no error → broken behavior):
+
+| MSW-specific rule | How it diverges from generic knowledge |
+|---|---|
+| `TileMapMode` ↔ Body (`Rigidbody`/`Kinematicbody`/`Sideviewbody`) | Wrong pairing → no error, doesn't move (or `[LEA-3004]`) |
+| Coordinates are world units (1 unit = 100 px) | Raw pixel values → off by 100× |
+| `SpriteRUID = ""` | Invisible on screen with no error |
+| `.mlua` + `.codeblock` pair + Maker `refresh` | `.mlua` alone won't register |
+| Only `RootDesk/` is scanned by Maker; `Global/` is read-only | Files under `Global/` won't appear |
+| `SpawnByModelId(parent=nil)` | Runtime error. Use `self.Entity.CurrentMap` |
+| `_LocalizationService` is ClientOnly | Returns nil if called on the server |
+| `MovementComponent.InputSpeed` per-map scaling (×1 / ÷1.2 / ×1.5) | Same value, different perceived speed |
+| `.ui` must go through the builder (no raw JSON edit/grep) | Block your generic JSON-editing instinct |
+
+#### Self-check before Plan (## 0)
+
+If any answer below cannot be cited from MSW reference text Read **this turn**, STOP and Read the matching reference.
+
+1. Target map's `TileMapMode` (number)? → `platform.md` §4
+2. Body component for a dynamic entity on that map? → `platform.md` §4 / §8.5
+3. PC 12.8×7.2 or Mobile 9.6×5.4 world units, and how were coordinates derived? → `platform.md` §5
+4. Where do `.mlua` / `.model` / `.map` / `.ui` live, and what pairing is required? → `platform.md` §2 / §3
+5. What if `SpriteRUID` is empty, and how do you find the real RUID? → `platform.md` §7 + `msw-search`
+6. What do you pass as `parent` in `SpawnByModelId(... , parent)`? → `platform.md` §8
+7. Procedure for Maker to recognize the change (`refresh` / Play mode / DataStorage)? Where to recover from a broken mid-workflow? → `workspace.md`
+
+#### Hard rules for loading skills/references
+
+- Use the `Skill` tool — never path-based `Read` / `ls` / `Glob` / `Grep` to find skill files.
+- Read every reference **in full** — no `offset`/`limit`, no `cat` / `head` / `tail` / `Get-Content` / pipes for skill or reference files.
+- Loading SKILL.md alone ≠ "skill loaded" when `references/*.md` siblings exist; SKILL.md is a thin index. Read every reference whose topic intersects with the request.
+- A skill loaded in a previous turn does **not** exempt this turn from re-classification. If this turn touches a new domain, load the additional skill **before** Plan. The plugin's `UserPromptSubmit` hook injects a `<msw-skill-router-reminder>` system message at the start of every turn restating the Domain matrix — treat it as authoritative.
+- Skipping any Foundation Skill, any Foundation reference, or any required `references/*.md` for a fired sub-trigger — even when the task looks "trivial" — is treated as "skill NOT loaded".
+- Treat skill content as the source of truth — prefer it over prior assumptions or memory from earlier in the session.
+
+#### Domain matrix (trigger phrases → additional skill + references)
+
+When a sub-trigger fires, the listed `references/*.md` is **required** in addition to the skill — not optional.
+
+| Trigger phrases | Task domain | Skill to load | Sub-triggers → references to Read |
+|---|---|---|---|
+| script / mlua / component / event / logic / lifecycle / `Component` / `@Logic` / `@Event` | Writing/modifying `.mlua` scripts, components, logic, events | `Skill: msw-maker-base-skill:msw-scripting` | DataStorage / save / persist / `_DataStorageService` → `references/datastorage.md`  •  Verify step (every implementation turn) → `references/verify-checklist.md` |
+| sprite / animation / sound / RUID / resource search / `sprite` / `sound` / `find` | Finding sprites, animations, sounds, RUIDs | `Skill: msw-maker-base-skill:msw-search` | searchResources / searchAvatarItems / findSimilarResources → `references/resource/search.md`  •  getResource / RUID details → `references/resource/detail.md`  •  listResources / findPacksContaining → `references/resource/browse.md`  •  listAvatars / renderAvatar → `references/resource/avatar.md` |
+| avatar / costume / equipment / outfit / animation state / attack motion | Avatar / player appearance | `Skill: msw-maker-base-skill:msw-avatar` | (no `references/`) |
+| DefaultPlayer / player / jump / move speed / HP / camera / respawn | DefaultPlayer customization | `Skill: msw-maker-base-skill:msw-defaultplayer` | (no `references/`) |
+| attack / hit / damage / monster combat / critical / knockback / hit effect | Combat, damage, monster battles | `Skill: msw-maker-base-skill:msw-combat-system` (concepts + API tables only; full implementation in `references/`) | Monster `.model` / ActionSheet / MonsterAI → `references/monster-setup.md`  •  HP gauge / `PixelRendererComponent` → `references/hp-gauge.md`  •  projectile / arrow / bullet / homing / piercing / splash → `references/projectile.md`  •  FSM / `StateComponent` / `@State` / boss phase → `references/fsm-state.md`  •  BT / `AIComponent` / `@BTNode` / Composite / Decorator / Threat → `references/ai-bt.md` |
+| inventory / shop / ranking / mail / quest / collection / key binding / GM / slash command | Standard game systems — **check before writing from scratch** | `Skill: msw-maker-base-skill:msw-packages` | (no `references/`; each package's README is fetched on demand from GitHub) |
+| popup / HUD / button / toast / menu / tab / layout / `.ui` | UI screens / widgets | `Skill: msw-maker-base-skill:msw-ui-system` | Style template bundle → `references/templates/templates.md` + chosen `references/templates/style-N-*/{ruid-map.md, structure.md, Popupbutton.mlua}`  •  Component API / enum tables → `references/component-api.md`  •  Runtime patterns (toasts / popups / HP bar / tabs / drag-drop) → `references/runtime-patterns.md`  •  Builder protocol → `references/builder-protocol.md` |
+| entity placement / `.map` / spawn / `SpawnByModelId` / coordinate / transform | Entity placement, `.map` editing | `Skill: msw-maker-base-skill:msw-general` | Entity Work Preflight → `references/entity.md`  •  `.map` builder / entity placement / component patching → `references/entity/map-builder.md` |
+| `.model` / template / EntryKey / Properties / Values / model catalog | `.model` authoring | `Skill: msw-maker-base-skill:msw-general` | `.model` authoring / `Values` serialization → `references/model.md`  •  JSON schema details → `references/model/model-schema.md`  •  monster `.model` (lowercase ActionSheet / IsLegacy / SortingLayer / canonical 11 components) → `references/monster.md` |
+| TileMapMode / Body / side-view / top-down / gravity / SortingLayer / SpriteRUID / 8 core / `MovementComponent` / `InputSpeed` / `.directory` | Platform rules, physics, troubleshooting | `Skill: msw-maker-base-skill:msw-general` | All-map-types-common (8 core / TileMapMode↔Body+LEA-3004 / SpriteRUID / `SpawnByModelId` / coordinate system / `.config`·CoreVersion) → `references/platform.md`  •  **MapleTile** (`= 0`) — Foothold / `Gravity` / `PredictFootholdEnd` / `DownJump` → `references/platform-maple.md`  •  **RectTile** (`= 1`) — `SpeedFactor` / 4-directional / Movable / dynamic tiles → `references/platform-rect.md`  •  **SideViewRectTile** (`= 2`) — `JumpSpeed` / `JumpDrag` / wall detection / `EnableDownJump` → `references/platform-sideview.md`  •  Symptom debugging (`[LEA-3004]` / "doesn't move" / "invisible" / "100x off") → `references/troubleshooting.md`  •  tile painting / `RectTileMap` / `FootholdComponent` → `references/tile.md` |
+| DataSet / userdataset / `.csv` / localize / i18n / LocaleDataSet / `_LocalizationService` | Datasets / i18n | `Skill: msw-maker-base-skill:msw-general` | UserDataSet / LocaleDataSet runtime / ClientOnly rule → `references/dataset.md` |
+| MCP tool calls / `refresh` / `play` / `stop` / `logs` / `screenshot` / Room / DataStorage location | MCP tools, workspace flow | `Skill: msw-maker-base-skill:msw-general` | MCP tool spec → `references/mcp-tools.md`  •  Workspace / Room / DataStorage / Play mode / recovery → `references/workspace.md`  •  Shared authoring → `references/authoring.md` |
+
+**Routing notes:**
+
+- For standard game features matching the catalog (ranking / inventory / shop / etc.), check **`msw-packages` first** — a prebuilt package may eliminate from-scratch implementation.
+- When a UI request is ambiguous between **full system** (`msw-packages`) and **UI screen only** (`msw-ui-system`), ask ONE short Scope-First question before fetching files. Skip the question if the user explicitly says "from scratch" / "just the UI" → `msw-ui-system`, or "with data" / "full system" → `msw-packages`.
+- ⛔ Never call `msw-mcp`'s `asset_search_resources` directly. Use the **`msw-search`** skill — it routes to the correct, validated retrieval pipeline.
 
 # RULE
 
-### Workspace Path Rules (MANDATORY)
+### Workspace structure
 
-Workspace structure (by folder):
-- **NativeScripts**: Available Native API definitions (.d.mlua)
-- **RootDesk**: Actual working workspace (.mlua, .model)
-- **map**: Map-related files (.map)
-- **ui**: UI-related files (.ui)
+- **NativeScripts**: Native API definitions (`.d.mlua`)
+- **RootDesk**: Working workspace (`.mlua`, `.model`)
+- **map**: `.map` files
+- **ui**: `.ui` files
 
-**⛔ READ-ONLY directories — NEVER create, modify, or delete files in these paths:**
+**⛔ Read-only directories** — never create / modify / delete:
+
 - `Global/` — Global settings (DefaultPlayer.model, WorldConfig.config, etc.). Read for reference only.
-  - `Global/NativeModel/` — MSW built-in `.model` templates (e.g. monsters, NPCs, items). Read these to learn `.model` JSON structure and component composition before creating new models.
-- `Environment/` — .d.mlua API definitions. Read for reference only.
+  - `Global/NativeModel/` — MSW built-in `.model` templates (monsters, NPCs, items). Read these when authoring new models to learn JSON structure and component composition.
+- `Environment/` — `.d.mlua` API definitions. Read for reference only.
+
+### Cross-platform tool rules
+
+⛔ **Never use shell commands to inspect the workspace.** Shell behavior differs across Windows PowerShell, Git Bash, and macOS bash (path separator, escape rules, encoding, command names). Cursor / Claude Code's built-in tools are the only portable choice.
+
+| To do this | ✅ Use this | ❌ Never use |
+|---|---|---|
+| List files | `Glob("RootDesk/MyDesk/**/*.mlua")` | `ls`, `dir`, `Get-ChildItem`, `gci` |
+| Check folder | `Glob("map/*")` | `ls`, `Test-Path`, `dir` |
+| Read a file | `Read("RootDesk/MyDesk/Foo.mlua")`; for `.map` use `MapBuilder.read(...)` | `cat`, `type`, `Get-Content`, `gc`, `head`, `tail`, `more`, `less` |
+| Search contents | `Grep("@Logic", glob: "*.mlua")` | `grep`, `findstr`, `Select-String`, `sls`, `rg` directly |
+| Find file by name | `Glob("**/PlayerController.mlua")` | `find`, `where`, `Get-ChildItem -Recurse` |
+
+The `Bash` / shell tool is reserved for actual programs (`git`, `npm`, MCP, build scripts). When you must invoke one:
+
+1. Prefer workspace-relative paths (`git add RootDesk/MyDesk/Foo.mlua`).
+2. If an absolute path is unavoidable, use forward slashes and double-quote: `"D:/msw-world-projects/.../map/"` — never `D:\...`. In bash on Windows, `\` is an escape character; `D:\foo\bar\` collapses to `D:foobar`.
+3. Always double-quote paths containing spaces or non-ASCII.
+4. Prefer POSIX commands (`ls`, `mv`, `cp`, `rm`) over OS-specific (`dir`, `type`, `del`).
+
+> Symptom of violation: `ls: cannot access 'D:msw-world-projects...'` — the backslashes were eaten by bash. Stop and re-issue as `Glob` / `Read` / `Grep`.
 
 ## 0. Plan (MANDATORY)
 
-> **Prerequisite:** You must have already read `msw-general/SKILL.md` (and any domain-relevant skills) per the **PROJECT CONTEXT** section above. Do not start planning until those skills are loaded.
+> **Prerequisite:** Foundation Skills (3) + Foundation references (4) + the matching `platform-{maple|rect|sideview}.md` + every triggered domain skill/reference must already be loaded (see PROJECT CONTEXT). Pass the 7 self-check questions before continuing.
 
-1. **Analyze the user's request** — Classify the task:
+1. **Classify the task:**
    - **New only** — add new scripts/entities/UI; no existing files to change.
    - **Modify existing** — change or extend existing files only.
-   - **Both** — add new and change existing.
+   - **Both**.
 
-2. **Branch by classification:**
-   - **New only** → Skip workspace analysis. Go directly to step 3 (`TodoWrite`).
-   - **Modify existing** or **Both** → Analyze the workspace by domain:
+2. **Branch:**
+   - **New only** → skip workspace analysis; go to step 3.
+   - **Modify existing / Both** → analyze the workspace by domain:
 
      | Domain | Editable | Reference | Search in |
-     |--------|----------|-----------|-----------|
+     |---|---|---|---|
      | **Script** (logic, components, events) | `.mlua` | `.d.mlua` | RootDesk |
      | **Entity** (models, config, spawning) | `.model` | `.d.mlua` | RootDesk |
      | **UI** (widgets, layouts, bindings) | `.ui` | `.d.mlua` | ui |
 
-     Search only the file types for the domains the request touches; read matches to learn patterns and dependencies.
+     Search only the file types relevant to the request; read matches to learn patterns and dependencies.
 
-
-3. **Call tool `TodoWrite`** — Break the task into concrete steps (each todo = single, verifiable unit of work). A **Verify** todo (follow `msw-scripting/references/verify-checklist.md`) is required (see ## 3). Do NOT skip this step.
-
-Mark each todo as `in_progress` when you start it, and `completed` only after verification passes.
-
+3. **`TodoWrite`** — break the task into concrete, verifiable steps. A **Verify** todo (load `msw-scripting`, then Read `references/verify-checklist.md`) is required (see ## 3). Mark each todo `in_progress` when starting; `completed` only after verification passes.
 
 ## 1. Analyze
 
-- Read `.d.mlua` type definitions to understand available APIs, function signatures, and parameter types.
-- Read existing `.mlua` scripts to understand current code patterns and conventions.
-- For config tasks, read existing `.model`, `.ui`, and other JSON config files in the workspace to understand their structure.
-- When creating new `.model` files, read examples from `Global/NativeModel/` to learn component composition and JSON structure of built-in models.
-- Use the gathered information to inform implementation decisions.
+- Read `.d.mlua` for available APIs, signatures, parameter types.
+- Read existing `.mlua` to learn current code patterns and conventions.
+- For config tasks, read existing `.model` / `.ui` / other JSON config to understand structure.
+- For new `.model` files, read examples from `Global/NativeModel/`.
 
 ## 2. Implement
 
-- **Editable files**: only modify `.mlua`, `.model`, `.ui`, `.map` files. All other file types are read-only.
-- **NEVER modify `.codeblock` files.** They are auto-generated metadata for `.mlua` scripts. Only read them for reference — the runtime manages them automatically.
-- **File paths**: `.mlua` → `RootDesk/MyDesk/`, `.model` → `RootDesk/MyDesk/Models/`, `.map` → `map/`, `.ui` → `ui/`. Files created outside these paths will not be recognized by the runtime.
-- **NEVER modify `Global/` or `Environment/`**. If the user asks to change Global settings (e.g. DefaultPlayer, WorldConfig), inform them that these files are read-only and must be edited manually in the MSW editor.
-- Write or modify code/config based on what you learned from step 1.
-- **Pick the right script scope — `@Logic` vs map-entity `@Component` vs entity `@Component`.** Choose based on the **lifetime / scope** of the feature, not just "globalness":
-  - **World-wide global manager** (must stay alive across every map — login session, account-level data, world-wide event bus, global UI manager) → **`@Logic`**. A Logic is an engine-managed **global singleton** that lives for the entire world session and persists across map transitions. Create a `.mlua` with `@Logic` and it is auto-registered — no extra wiring.
-  - **Map-scoped content** (only meaningful inside a specific map — that map's quest controller, wave spawner, puzzle manager, in-map mini-game, map-local NPC dialog flow) → **DO NOT use `@Logic`.** A Logic singleton stays alive even after the player leaves the map, so its state/timers/events leak into other maps. Instead, create a `.mlua` `@Component` and **attach it to the map entity** itself (add it to that map's `@components` in the `.map` file, or via `AddComponent` after spawn). It then participates in the map's `OnBeginPlay` / `OnEndPlay` / `OnMapEnter` / `OnMapLeave` lifecycle and is cleaned up automatically when the map unloads.
-  - **Per-entity behavior** (monster AI, item pickup, player skill on a specific actor) → **`@Component`** attached to that entity (via `.model` or `AddComponent`).
-  - Quick rule of thumb: *"Should this still be running when the player walks into another map?"* → **Yes** ⇒ `@Logic`. → **No, only in this map** ⇒ `@Component` on the map entity. → **No, only on this one actor** ⇒ `@Component` on the actor.
-- **Property types**: use `integer` (not `int`) and `number` (not `float`).
-- **Add `log()` calls at critical checkpoints** (e.g. `OnBeginPlay` entry, key variable values, important events) so that the Verify step can confirm the code works as intended.
-- **SpawnService parent must NOT be nil.** Always pass the target map entity as parent. Use `self.Entity.CurrentMap` for the entity's current map, or find it via `_EntityService:GetEntityByPath("/maps/map01")`.
+- **Editable:** `.mlua`, `.model`, `.ui`, `.map` only. All other file types are read-only.
+- **Never modify `.codeblock`** — auto-generated metadata for `.mlua`. Read for reference only; the runtime manages it.
+- **File paths:** `.mlua` → `RootDesk/MyDesk/`, `.model` → `RootDesk/MyDesk/Models/`, `.map` → `map/`, `.ui` → `ui/`. Files outside these paths won't be recognized.
+- **Never modify `Global/` or `Environment/`** — tell the user these are read-only and must be edited manually in the MSW editor.
+- **Use builders for structured files:** `.model`, `.ui`, and `.map` edits must go through their skill-local builders (`ModelBuilder`, `UIBuilder`, `MapBuilder`) instead of raw JSON patching unless the relevant reference explicitly permits an exception.
+- **Property types:** use `integer` (not `int`), `number` (not `float`).
+- **Add `log()` calls** at critical checkpoints (e.g. `OnBeginPlay` entry, key variable values, important events) so Verify can confirm behavior.
+- **`SpawnService` parent must NOT be nil.** Pass the target map entity (`self.Entity.CurrentMap`, or `_EntityService:GetEntityByPath("/maps/map01")`).
+
   ```
   -- ✅ Correct
   local map = self.Entity.CurrentMap
   _SpawnService:SpawnByModelId(modelId, name, pos, map)
 
-  -- ❌ Wrong — causes LWA-3019 warning and undefined behavior
+  -- ❌ Wrong — LWA-3019 warning, undefined behavior
   _SpawnService:SpawnByModelId(modelId, name, pos, nil)
   ```
 
-### Camera → Everything Mapping
+- **Pick the right script scope** based on lifetime, not just "globalness":
 
-The camera perspective (TileMapMode) determines the entire physics, movement, map, and collision stack.
+  | Scope | Use | Why |
+  |---|---|---|
+  | World-wide global manager (login session, account data, world-wide event bus, global UI manager) | `@Logic` | Engine-managed singleton; lives the entire world session, persists across map transitions; auto-registered. |
+  | Map-scoped content (that map's quest controller, wave spawner, mini-game, NPC dialog) | `@Component` on the map entity (in `.map`'s `@components` or via `AddComponent`) | A `@Logic` survives map transitions and would leak state. The map-entity component participates in `OnBeginPlay` / `OnEndPlay` / `OnMapEnter` / `OnMapLeave` and is cleaned up on map unload. |
+  | Per-entity behavior (monster AI, item pickup, player skill on a specific actor) | `@Component` on that entity (via `.model` or `AddComponent`) | Lifetime is tied to the actor. |
 
-| TileMapMode | View | Body | Map Structure | Gravity | Movement |
-|-------------|------|------|---------------|---------|----------|
-| `MapleTile` | Side-view | `RigidbodyComponent` | FootholdComponent platforms | Yes | Left/right + jump |
-| `RectTile` | Top-down | `KinematicbodyComponent` | RectTileMapComponent tiles | No | Free 4-directional |
-| `SideViewRectTile` | Side-view | `SideviewbodyComponent` | RectTileMapComponent tiles | Yes | Left/right + jump (tile-based) |
+  Rule of thumb: *"Should this still be running when the player walks into another map?"* → Yes ⇒ `@Logic`. → No, only this map ⇒ map-entity `@Component`. → No, only this actor ⇒ actor `@Component`.
 
-An entity with the wrong Body component will not move.
+### Camera → Everything mapping
 
-### Script Life Cycle
+The camera perspective (`TileMapMode`) determines the entire physics, movement, map, and collision stack. **An entity with the wrong Body component will not move.**
 
-**1. Component Script Life Cycle**
+| TileMapMode | View | Body | Map structure | Gravity | Movement |
+|---|---|---|---|---|---|
+| `MapleTile` | Side-view | `RigidbodyComponent` | `FootholdComponent` platforms | Yes | Left/right + jump |
+| `RectTile` | Top-down | `KinematicbodyComponent` | `RectTileMapComponent` tiles | No | Free 4-directional |
+| `SideViewRectTile` | Side-view | `SideviewbodyComponent` | `RectTileMapComponent` tiles | Yes | Left/right + jump (tile-based) |
 
-Component scripts execute their methods in a specific order based on the entity's state.
+### Script lifecycle
 
-- `OnInitialize`: Called once after the entity and its components are created. This is the earliest point to reference other components. Note that `OnInitialize` might be called before all components are ready.
-- `OnBeginPlay`: Called once when the logic starts. Unlike `OnInitialize`, it guarantees that all other components and entities in the world have been created, making it safe to reference them.
-- `OnMapEnter(Entity enteredMap)`: Called whenever the entity enters or is created in a map. Unlike OnBeginPlay (once on world entry), this fires on every map transition. On the client, OnMapEnter is also called for other players already in the map (they appear as newly created from the client's perspective). Works on both server and client.
-- `OnMapLeave(Entity leftMap)`: Called whenever the entity leaves or is removed from a map.
-- `OnSyncProperty(string name, any value)`: Called on the client when a `@Sync` property changed on the server finishes synchronizing. ClientOnly. Not called if sync setting is None.
-- `OnUpdate(number delta)`: Called every frame. It receives the time passed since the last frame as a parameter.
-- `OnEndPlay`: Called when an entity is being removed from the map.
-- `OnDestroy`: Called immediately before an entity is completely destroyed.
+**Component lifecycle methods** (execute in this order based on entity state):
 
-**2. Logic Script Life Cycle**
+- `OnInitialize` — once after the entity and its components are created. Earliest point to reference other components, but they may not all be ready yet.
+- `OnBeginPlay` — once when logic starts. Guarantees other components/entities exist; safe to reference.
+- `OnMapEnter(Entity)` / `OnMapLeave(Entity)` — fires on every map transition. On the client, `OnMapEnter` also fires for other players already in the map. Both server and client.
+- `OnSyncProperty(string name, any value)` — client-only. Called when a `@Sync` property finishes synchronizing. Not called if sync setting is None.
+- `OnUpdate(number delta)` — every frame.
+- `OnEndPlay` — when the entity is removed from the map.
+- `OnDestroy` — immediately before the entity is destroyed.
 
-Logic scripts run as **engine-managed global singletons**. They share the same lifecycle method names as Components (`OnInitialize` / `OnBeginPlay` / `OnUpdate` / `OnMapEnter` / `OnMapLeave` / `OnEndPlay` / `OnDestroy`), but with **different firing semantics**:
+**Logic lifecycle** — same method names as Component, but a Logic is an engine-managed global singleton: created **once per world session** and persists across **all** map transitions.
 
-- A Logic instance is created **once per world session** and **persists across every map transition**. It is **not** torn down when the player moves to another map.
-- `OnBeginPlay`: Fires once at world start — the entry point for logic execution.
-- `OnUpdate(number delta)`: Fires every frame. A Logic's `OnUpdate` runs **before** any Component's `OnUpdate`.
-- `OnMapEnter(Entity enteredMap)` / `OnMapLeave(Entity leftMap)`: Fire on every map transition. Use these (not `OnBeginPlay`/`OnEndPlay`) for per-map setup/cleanup inside a Logic.
-- `OnEndPlay`: Fires only when the **world session ends** (e.g. shutdown) — **NOT on map change**.
+- `OnBeginPlay` — once at world start.
+- `OnUpdate` — every frame; runs **before** any Component's `OnUpdate`.
+- `OnMapEnter` / `OnMapLeave` — every map transition. Use these (not `OnBeginPlay` / `OnEndPlay`) for per-map setup/cleanup inside a Logic.
+- `OnEndPlay` — only at world session end (e.g. shutdown). **Not** on map change.
 
-> ⚠️ Because a Logic survives map transitions, any timer / event handler / mutable state created in a Logic must be reset on `OnMapLeave` if it is map-specific, or it will leak into the next map. If the behavior is map-scoped to begin with, use a `@Component` on the map entity instead — see the "Pick the right script scope" rule in §2.
+> ⚠️ Because a Logic survives map transitions, any timer / event handler / mutable state created in a Logic must be reset on `OnMapLeave` if it is map-specific, or it will leak into the next map. If the behavior is map-scoped, use a map-entity `@Component` instead (see "Pick the right script scope").
 
-**3. Execution Space Control**
+**ExecSpace annotations** — control where code runs:
 
-Since scripts run on both the Server and Client, you must use annotations to control where code executes:
-
-| Annotation | Description |
-|------------|-------------|
-| `@ExecSpace("ServerOnly")` | Executes only on the server. |
-| `@ExecSpace("ClientOnly")` | Executes only on the client. |
-| `@ExecSpace("Server")` | Executes on the server; if called from the client, it sends a request to the server. |
-| `@ExecSpace("Client")` | Executes on the client; if called from the server, it sends a request to the client. |
+| Annotation | Behavior |
+|---|---|
+| `@ExecSpace("ServerOnly")` | Server only. |
+| `@ExecSpace("ClientOnly")` | Client only. |
+| `@ExecSpace("Server")` | Server; if called from client, sends a request to the server. |
+| `@ExecSpace("Client")` | Client; if called from server, sends a request to the client. |
 
 ## 3. Verify
 
-Read `plugins/msw-maker-base-skill/skills/msw-scripting/references/verify-checklist.md` and follow its checklist.
+Load `msw-scripting` (`Skill: msw-maker-base-skill:msw-scripting`) if not already loaded this turn, then Read `references/verify-checklist.md` in full and follow it.
 
 ## 4. On Failure
 
-- Check ExecSpace first. Check if _Service runs only on Client or Server.
-- Fix the code, then go back to step 3 (Verify).
-- Do NOT mark the todo as completed until verify passes.
+- Check ExecSpace first — confirm `_Service` calls run on the correct side (Client vs Server).
+- Fix the code, then return to step 3 (Verify).
+- Do not mark the todo as completed until verification passes.
 
 ## 5. Finally
 
-If none of the above methods can resolve the issue, inform the user:
+If none of the above resolves the issue, tell the user:
 
 > I could not find a solution through local implementation, Maker MCP, or Guide documents.
 > You can get help from the MapleStory Worlds official Discord community:

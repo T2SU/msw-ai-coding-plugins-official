@@ -17,8 +17,8 @@ HUDGroup | GroupOrder=3 | StretchAll | 1920x1080 | [UIGroupComponent]
 ============================================================
 PopupGroup | GroupOrder=4 | StretchAll | 1920x1080 | [UIGroupComponent]
   BasicPopup | Center | (-35, -10) | 745x684 | (disabled)
-    Btn_No | BottomCenter | (150, 97) | 208x89 | [Button, TextComponent] | "취소"
-    Btn_Ok | BottomCenter | (-150, 97) | 208x89 | [Button, TextComponent] | "확인"
+    Btn_No | BottomCenter | (150, 97) | 208x89 | [Button, TextComponent] | "Cancel"
+    Btn_Ok | BottomCenter | (-150, 97) | 208x89 | [Button, TextComponent] | "OK"
     Img_Bg_1 | Center | (-1, 69) | 683x504
     Img_Clip_1 | TopCenter | (0, 4) | 89x105
   BasicPopup2 | Center | (-5, -29) | 1300x964 | (disabled)
@@ -28,9 +28,9 @@ PopupGroup | GroupOrder=4 | StretchAll | 1920x1080 | [UIGroupComponent]
     Img_Bg_Right | Center | (216, -63) | 792x782
     Left_SlotPanel | Center | (-402, -61) | 356x734
     SlotScroll | Center | (-402, -61) | 356x722 | [ScrollLayout]
-    TitleText | HStretchTop | (-0, -66) | 1300x135 | [TextComponent] | "제목제목제목"
+    TitleText | HStretchTop | (-0, -66) | 1300x135 | [TextComponent] | "Title Title Title"
   GameResultPanel | Center | (-15, -32) | 1300x964 | (disabled)
-    Btn_Ok_1 | BottomCenter | (0, 117) | 208x89 | [Button, TextComponent] | "확인"
+    Btn_Ok_1 | BottomCenter | (0, 117) | 208x89 | [Button, TextComponent] | "OK"
     Img_Acc_1_1 | TopCenter | (0, -270) | 1180x6
     Img_Acc_2 | TopCenter | 89x105
     Img_Line_1_1_1 | StretchAll | (-3, -1) | 1240x889
@@ -55,13 +55,13 @@ PopupGroup | GroupOrder=4 | StretchAll | 1920x1080 | [UIGroupComponent]
 ============================================================
 Popupbutton | GroupOrder=2 | StretchAll | 1920x1080 | [UIGroupComponent]
   1 | Left | (108, 231) | 129x98 | [Button, script.Popupbutton]
-    UIText | Left | (64, 3) | 100x100 | [TextComponent] | "팝업1"
+    UIText | Left | (64, 3) | 100x100 | [TextComponent] | "Popup 1"
   2 | Left | (110, 125) | 129x98 | [Button, script.Popupbutton]
-    UIText | Left | (64, 3) | 100x100 | [TextComponent] | "팝업2"
+    UIText | Left | (64, 3) | 100x100 | [TextComponent] | "Popup 2"
   3 | Left | (109, 17) | 129x98 | [Button, script.Popupbutton]
-    UIText | Left | (64, 3) | 100x100 | [TextComponent] | "팝업3"
+    UIText | Left | (64, 3) | 100x100 | [TextComponent] | "Popup 3"
   4 | Left | (111, -91) | 129x98 | [Button, script.Popupbutton]
-    UIText | Left | (64, 3) | 100x100 | [TextComponent] | "팝업4"
+    UIText | Left | (64, 3) | 100x100 | [TextComponent] | "Popup 4"
 
 ============================================================
   ToastGroup.ui  (1 entities)

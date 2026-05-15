@@ -1,6 +1,6 @@
-# UI Real-World Patterns
+# UI Runtime Patterns
 
-A collection of validated UI code patterns. Copy and paste to use directly.
+`.mlua` patterns for controlling UI from scripts. These are **runtime code**, separate from `.ui` file authoring (which goes through the builder — see `builder-protocol.md`).
 
 ---
 
@@ -260,7 +260,38 @@ end
 
 ---
 
-## 7. Drag and Drop
+## 7. Runtime Z-Order / Sibling Reorder
+
+Use `_UILogic:SetSiblingIndex(targetUITransform, index)` on the client to reorder UI siblings at runtime. There is no `entity.SetAsLastSibling()` pattern in the public mlua API; reorder through the target entity's `UITransformComponent`. The index is 1-based; a deliberately high index moves the target to the front among siblings.
+
+```lua
+@Logic
+script UIStackOrder extends Logic
+
+    property UITransformComponent draggingCard = nil
+
+    @ExecSpace("ClientOnly")
+    method void BringToFront(UITransformComponent target)
+        if target == nil then
+            return
+        end
+
+        _UILogic:SetSiblingIndex(target, 1000000)
+    end
+
+end
+```
+
+Use this when creation order is not enough:
+- Card/table stacks where later gameplay changes which card should receive input first.
+- Dragging an entity that must render above its siblings while held.
+- Popup-over-popup flows within the same UIGroup.
+
+Prefer build-time `displayOrder` for static layouts. Use runtime sibling reorder only for dynamic overlap.
+
+---
+
+## 8. Drag and Drop
 
 Implement drag with UITouchReceiveComponent.
 
@@ -290,7 +321,7 @@ end
 
 ---
 
-## 8. Text Input + Chat
+## 9. Text Input + Chat
 
 ```lua
 @Logic
@@ -329,7 +360,7 @@ end
 
 ---
 
-## 9. Cooldown Display (Radial FillAmount)
+## 10. Cooldown Display (Radial FillAmount)
 
 ```lua
 @Component
@@ -375,7 +406,7 @@ end
 
 ---
 
-## 10. World UI (Overhead Name Tag)
+## 11. World UI (Overhead Name Tag)
 
 Place UI at world coordinates with UIModeType.World.
 
@@ -403,12 +434,93 @@ end
 
 ---
 
-## Common Rules Summary
+## Event Handler Skeletons
 
-1. **`@ExecSpace("ClientOnly")`** -- UI Logic / Component is client-only.
-2. **Clean up in OnEndPlay** -- ClearTimer, DisconnectEvent, Destroy.
-3. **Control display via Enable** -- popupGroup.Enable = true/false.
-4. **Fade via GroupAlpha** -- CanvasGroupComponent.GroupAlpha.
-5. **Move via anchoredPosition** -- never set Position directly.
-6. **Animate with a 1/60 timer** -- _TimerService:SetTimerRepeat(fn, 1/60).
-7. **Measure time with _UtilLogic.ElapsedSeconds** -- for delta calculation.
+Quick skeletons for the most common UI events. Always store the handler return and `DisconnectEvent` in `OnEndPlay`.
+
+### Button click
+
+```lua
+property ButtonComponent btnOk = "uuid"
+property any clickHandler = nil
+
+@ExecSpace("ClientOnly")
+method void OnBeginPlay()
+    self.clickHandler = self.btnOk.Entity:ConnectEvent(ButtonClickEvent, self.OnClick)
+end
+
+method void OnClick() end
+
+method void OnEndPlay()
+    self.btnOk.Entity:DisconnectEvent(ButtonClickEvent, self.clickHandler)
+end
+```
+
+### Text input
+
+```lua
+property TextInputComponent input = "uuid"
+property any submitHandler = nil
+
+method void OnBeginPlay()
+    self.submitHandler = self.input.Entity:ConnectEvent(TextInputSubmitEvent, self.OnSubmit)
+end
+
+method void OnSubmit(TextInputSubmitEvent event)
+    local text = event.text
+end
+```
+
+### Slider
+
+```lua
+property SliderComponent slider = "uuid"
+property any sliderHandler = nil
+
+method void OnBeginPlay()
+    self.sliderHandler = self.slider.Entity:ConnectEvent(SliderValueChangedEvent, self.OnValueChanged)
+end
+
+method void OnValueChanged(SliderValueChangedEvent event)
+    local value = event.Value
+end
+```
+
+### Touch / drag
+
+```lua
+-- attach UITouchReceiveComponent on the entity first (use the builder's touch_receive())
+entity:ConnectEvent(UITouchDownEvent, handler)
+entity:ConnectEvent(UITouchDragEvent, handler)
+entity:ConnectEvent(UITouchUpEvent, handler)
+```
+
+---
+
+## Runtime UI Caveats
+
+Hard rules that show up as "UI doesn't respond" or "Server can't see UI". Memorize.
+
+### Hard constraints (silent failure if broken)
+
+1. **UI entities are client-only.** If an `@Component` on a UI entity defines `@ExecSpace("Server")`, `@ExecSpace("ServerOnly")`, or `@ExecSpace("Multicast")` methods, the runtime emits `'<entity>' is client only. '<component>.<method>' doesn't work normally.` and **RPCs do not work**. `@Sync` properties are also not synchronized. Route UI-to-server communication through an `@Logic` outside the UI entity, or a map entity `@Component`, then call the Server RPC.
+2. **No UI entity access from server.** Referencing a UI entity in `@ExecSpace("Server")` / `@ExecSpace("ServerOnly")` returns **nil**. For server-to-UI updates, route through an `@ExecSpace("Client")` RPC.
+3. **All UI Logic / Component must declare `@ExecSpace("ClientOnly")`** — default ExecSpace doesn't guarantee client-only execution.
+4. **Do not attach UI components (ButtonComponent, etc.) to map / world entities** — UI-only. Trying to attach via builder/runtime silently misbehaves.
+5. **`UIGroup DefaultShow=false`** — not visible until `Enable=true`. Also, if `DefaultShow=false` AND the group has no controller script outside to flip `Enable`, scripts inside the group never run `OnBeginPlay` / `OnUpdate` (typical symptom: "level-up popup never shows"). See `ui-hierarchy.md` for the standard pattern.
+
+### Movement / fade / visibility
+
+6. **Move via `anchoredPosition`** — never set `Position` directly (engine treats it as a derived cache, your writes get overwritten).
+7. **Fade via `CanvasGroupComponent.GroupAlpha`** — don't tween individual element alphas. One write covers the whole subtree consistently.
+8. **Show/hide via `Enable`** — `popupGroup.Enable = true/false`. `Visible = false` keeps clicks alive and OnUpdate running (see `ui-hierarchy.md §5`).
+
+### Resource cleanup
+
+9. **Always `DisconnectEvent` in `OnEndPlay`** — otherwise event handlers leak across script reloads / popup re-opens.
+10. **`_TimerService:ClearTimer` in `OnEndPlay`** — store the timer ID returned by `SetTimerRepeat` and clear it.
+
+### Animation timing
+
+11. **Use a 1/60 repeating timer** for per-frame UI animation (`_TimerService:SetTimerRepeat(fn, 1/60)`). MSW doesn't expose a global UI Update hook.
+12. **Measure delta with `_UtilLogic.ElapsedSeconds`** — diff between frames, never assume the timer interval is exact.

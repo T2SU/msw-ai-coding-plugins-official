@@ -1,20 +1,8 @@
----
-name: msw-ui-template
-description: >-
-  Style-coherent UI bundles for MSW (MapleStory Worlds). Each of 4 styles (black/diary/wood/blue)
-  provides a matched set: `.ui` structure + RUIDs (`ruid-map.md`) + button handler (`.mlua`).
-  Use when adding popups, HUD, toasts, or buttons — pick a style and use its templates and
-  RUIDs together for visual consistency. Skip msw-search for UI sprites covered by the
-  style's `ruid-map.md`.
-disable-model-invocation: true
----
+# MSW UI Style Templates
 
-# MSW UI Template Skill
+> **Entry point**: This document is reached from [`../../SKILL.md`](../../SKILL.md). Read `msw-ui-system` first for routing, components, anchors, lifecycle, and builder protocol — then return here when you need style-coherent template bundles.
 
-Read style-specific template files as reference when building game UI.
-**Each style is a coherent bundle**: `.ui` structure templates + matching
-RUIDs (`ruid-map.md`) + button handler patterns (`Popupbutton.mlua`).
-Pick a style first, then use its files together for visual consistency.
+Style-specific template files for building game UI. **Each style is a coherent bundle**: `.ui` structure templates + matching RUIDs (`ruid-map.md`) + button handler patterns (`Popupbutton.mlua`). Pick a style first, then use its files together for visual consistency.
 
 ## Style Selection Guide
 
@@ -91,38 +79,38 @@ The `.ui` files are large JSON. Use the helper scripts in `scripts/` or `rg` to 
 
 ### Helper Scripts
 
-Located in `plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/`:
+Located in `./scripts/`:
 
 **`ui-structure.cjs`** — Entity hierarchy viewer
 
 ```bash
 # Show all .ui files in a style (top-level only)
-node plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/ui-structure.cjs --style 1 --depth 0
+node ./scripts/ui-structure.cjs --style 1 --depth 0
 
 # Show specific file with full hierarchy
-node plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/ui-structure.cjs --style 1 --file PopupGroup.ui
+node ./scripts/ui-structure.cjs --style 1 --file PopupGroup.ui
 
 # Limit hierarchy depth
-node plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/ui-structure.cjs --style 1 --file PopupGroup.ui --depth 2
+node ./scripts/ui-structure.cjs --style 1 --file PopupGroup.ui --depth 2
 
 # Dump full JSON for an entity by exact name
-node plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/ui-structure.cjs --style 1 --entity BasicPopup
+node ./scripts/ui-structure.cjs --style 1 --entity BasicPopup
 
 # Search entity name across all files (substring match)
-node plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/ui-structure.cjs --style 1 --grep ExitButton
+node ./scripts/ui-structure.cjs --style 1 --grep ExitButton
 ```
 
 **`ruid-lookup.cjs`** — RUID lookup by style and role
 
 ```bash
 # List available styles
-node plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/ruid-lookup.cjs
+node ./scripts/ruid-lookup.cjs
 
 # Dump all RUIDs for a style
-node plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/ruid-lookup.cjs --style 1
+node ./scripts/ruid-lookup.cjs --style 1
 
 # Filter by role keyword (button, panel, slot, icon, gauge, etc.)
-node plugins/msw-maker-base-skill/skills/msw-ui-template/scripts/ruid-lookup.cjs --style 1 --role button
+node ./scripts/ruid-lookup.cjs --style 1 --role button
 ```
 
 ### ripgrep patterns
@@ -131,13 +119,13 @@ For quick one-off searches (from workspace root):
 
 ```bash
 # Entity by name — use -A 50 to capture full layout + components + RUID
-rg '"name": "ExitButton"' -A 50 plugins/msw-maker-base-skill/skills/msw-ui-template/style-1-black/PopupGroup.ui
+rg '"name": "ExitButton"' -A 50 ./style-1-black/PopupGroup.ui
 
 # Find where a specific RUID is used
-rg '6efba31a09bb434f833edaceac5fd12a' plugins/msw-maker-base-skill/skills/msw-ui-template/style-1-black/
+rg '6efba31a09bb434f833edaceac5fd12a' ./style-1-black/
 
 # Disabled entities (hidden popups) — -B 3 shows entity name above
-rg '"enable": false' -B 3 plugins/msw-maker-base-skill/skills/msw-ui-template/style-1-black/PopupGroup.ui
+rg '"enable": false' -B 3 ./style-1-black/PopupGroup.ui
 ```
 
 **Entity JSON field order** (what you'll see in `-A 50` output):
@@ -151,26 +139,25 @@ rg '"enable": false' -B 3 plugins/msw-maker-base-skill/skills/msw-ui-template/st
 
 ## Workflow
 
-1. **Determine the style source** (planning-time decision, BEFORE writing any `.ui`):
+The end-to-end UI authoring workflow (anchors, 4-value formula, `refresh_workspace` cycle, lifecycle) lives in [`../../SKILL.md`](../../SKILL.md) and [`../builder-protocol.md`](../builder-protocol.md). The template-specific decision steps below feed into that workflow.
 
-   | Situation | Action |
-   |---|---|
-   | User specified a visual style (color, mood, reference image, "like X") | Follow user's intent for visuals. Use ui-template for **structure/patterns only**; pick RUIDs per user's intent (may need `msw-search`). |
-   | Project already has custom UI (`HUDGroup`/`ButtonGroup`/`PopupGroup` with intentional visuals) | Match existing style — keep naming, path, and RUID conventions consistent across new files. |
-   | Fresh project (only `DefaultGroup.ui` / `ToastGroup.ui`, or no UI yet) AND user gave no visual guidance | **Pick one of the 4 ui-template styles** and use its full bundle (`.ui` + `ruid-map` + `Popupbutton.mlua`). Default behavior — do **not** ask the user "which style?"; pick one and tell them in step 2. |
+### Style-Source Decision (planning-time, BEFORE writing any `.ui`)
 
-   **Rule of thumb**: when style source is unclear, pick a ui-template style and proceed. The user can redirect at step 2.
+| Situation | Action |
+|---|---|
+| User specified a visual style (color, mood, reference image, "like X") | Follow user's intent for visuals. Use templates for **structure/patterns only**; pick RUIDs per user's intent (may need `msw-search`). |
+| Project already has custom UI (`HUDGroup`/`ButtonGroup`/`PopupGroup` with intentional visuals) | Match existing style — keep naming, path, and RUID conventions consistent across new files. |
+| Fresh project (only `DefaultGroup.ui` / `ToastGroup.ui`, or no UI yet) AND user gave no visual guidance | **Pick one of the 4 template styles** and use its full bundle (`.ui` + `ruid-map` + `Popupbutton.mlua`). Default behavior — do **not** ask the user "which style?"; pick one and tell them. |
 
-2. **Mention chosen style**: Briefly tell the user which style is being used (e.g. "Using `style-3-wood` as reference"). Switch immediately if user prefers a different style.
+**Rule of thumb**: when style source is unclear, pick a template style and proceed. The user can redirect.
 
-3. **Read `ruid-map.md` + `structure.md`**: These two files give you everything needed without reading full `.ui` files:
+### Reading Template Files
+
+1. **Mention chosen style** — briefly tell the user which style is being used (e.g. "Using `style-3-wood` as reference"). Switch immediately if user prefers a different style.
+2. **Read `ruid-map.md` + `structure.md`** — these two files give you everything needed without reading full `.ui` files:
    - `ruid-map.md` — which RUID to use for each UI role (buttons, panels, icons, etc.)
    - `structure.md` — entity hierarchy, alignment, position, size, components
-
-4. **Read `.mlua` handler**: Read `Popupbutton.mlua` for button handler patterns
-
-5. **Read `.ui` files only as needed**: Only read the full `.ui` file when you need exact JSON to copy/paste
-
-6. **Apply template RUIDs**: Use the RUIDs from the lookup output to maintain visual consistency
-
-7. **Avoid conflicts**: Do not duplicate existing Entity UUIDs, displayOrder, or GroupOrder values
+3. **Read `.mlua` handler** — `Popupbutton.mlua` for button handler patterns.
+4. **Read `.ui` files only as needed** — only when you need exact JSON to copy/paste.
+5. **Apply template RUIDs** — keep visual consistency.
+6. **Avoid conflicts** — do not duplicate existing Entity UUIDs, `displayOrder`, or `GroupOrder` values.

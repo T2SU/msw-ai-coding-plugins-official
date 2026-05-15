@@ -127,7 +127,7 @@ local cell = _DataService:GetCell("ItemTable", 1, "Price")
 local cell2 = _DataService:GetCell("ItemTable", 1, 3)  -- col index also OK (1-based)
 ```
 
-`UserDataSet` and `UserDataRow` method signatures are defined in `default-local-workspace/Environment/NativeScripts/Misc/UserDataSet.d.mlua` and `UserDataRow.d.mlua`. All cells are `string` — convert with `tonumber()` etc. as needed.
+`UserDataSet` and `UserDataRow` return all cell values as `string`; convert with `tonumber()` etc. as needed.
 
 ---
 
@@ -187,7 +187,7 @@ Let the editor handle UUID generation, EntryKey consistency, and CSV creation.
 
 ### Manual creation
 
-1. Generate a UUID (e.g. Python `uuid.uuid4()`, PowerShell `[guid]::NewGuid()`)
+1. Generate a UUID with a cross-platform command: `node -e "console.log(require('node:crypto').randomUUID())"`
 2. Write `<Name>.userdataset` using the template above — fill in `name`, `id`, `EntryKey`
 3. Write `<Name>.csv` — UTF-8, first line = header, then data rows
 4. Place both in the same folder under `RootDesk/MyDesk/` and hit **Refresh** in Maker

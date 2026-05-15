@@ -1,12 +1,12 @@
 {
-  "description": "msw-maker-base-skill 자동 등록 훅 — CoreVersion 체크 + mlua 자동 진단 + daemon 워밍업",
+  "description": "msw-maker-base-skill auto-registered hooks — CoreVersion check + per-turn skill router reminder + Bash partial-read blocking for skill files + direct read/write blocking for .model/.ui files + automatic mlua diagnostics + daemon warm-up",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "MLUA_LSP_CMD=npx MLUA_LSP_ARGS=\"-y @maplestoryworlds/mlua-lsp@1.1.0\" node \"${CLAUDE_PLUGIN_ROOT}/scripts/mlua-lsp/mlua-session-start.cjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/mlua-lsp/mlua-session-start.cjs\"",
             "timeout": 120
           },
           {
@@ -25,6 +25,38 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/core-version-check/core-version-check.cjs\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/skill-router-reminder/skill-router-reminder.cjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/skill-read-guard/skill-read-guard.cjs\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/structured-file-guard/structured-file-guard.cjs\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/structured-file-guard/structured-file-guard.cjs\"",
+            "timeout": 5
           }
         ]
       }
@@ -35,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "MLUA_LSP_CMD=npx MLUA_LSP_ARGS=\"-y @maplestoryworlds/mlua-lsp@1.1.0\" node \"${CLAUDE_PLUGIN_ROOT}/scripts/mlua-lsp/mlua-diagnose-post-tool-use.cjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/mlua-lsp/mlua-diagnose-post-tool-use.cjs\"",
             "timeout": 120
           },
           {
@@ -51,6 +83,17 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/skill-log/skill-log.cjs\"",
+            "async": true,
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/mcp-log/mcp-log.cjs\"",
             "async": true,
             "timeout": 5
           }
@@ -74,7 +117,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "MLUA_LSP_CMD=npx MLUA_LSP_ARGS=\"-y @maplestoryworlds/mlua-lsp@1.1.0\" node \"${CLAUDE_PLUGIN_ROOT}/scripts/mlua-lsp/mlua-session-end.cjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/mlua-lsp/mlua-session-end.cjs\"",
             "timeout": 5
           }
         ]

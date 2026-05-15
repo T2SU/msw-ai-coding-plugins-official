@@ -2,11 +2,11 @@
 /**
  * MSW Resource Search API — Node.js (CommonJS) wrapper.
  *
- * Node.js 구현. MSW 리소스 검색 REST API의 모든 엔드포인트를
- * 함수와 CLI 서브커맨드 형태로 제공한다.
+ * Node.js implementation. Exposes every endpoint of the MSW resource search
+ * REST API as functions and CLI subcommands.
  *
  *   const api = require('./msw_resource_api');
- *   const hits = await api.searchResources('주황버섯', {
+ *   const hits = await api.searchResources('orange mushroom', {
  *     resourceTypeFilter: ['resource_pack'],
  *     categoryFilter: ['npc'],
  *     topK: 3,
@@ -14,25 +14,25 @@
  *   const detail = await api.getResource(hits.results[0].id);
  *
  * CLI:
- *   node msw_resource_api.cjs search "주황버섯" \
+ *   node msw_resource_api.cjs search "orange mushroom" \
  *     --resource-type resource_pack --category npc --topK 3
  *   node msw_resource_api.cjs get 0017da7385e04bc4b2ddbe5949b4b462
  *   node msw_resource_api.cjs avatar-render \
  *     --ruids body_ruid head_ruid hat_ruid --actions stand1 walk1
  *
- * 설계 메모:
- *  - 외부 의존성 없음. Node 18+ 내장 `fetch`/`AbortController`만 사용.
- *  - 모든 POST 본문은 UTF-8 JSON으로 인코딩되어
- *    `Content-Type: application/json; charset=utf-8`로 전송됨.
- *    한국어/일본어/이모지 페이로드도 안전.
- *  - 리스트류 엔드포인트의 기본 페이지 크기는 3 (SKILL.md 규약).
+ * Design notes:
+ *  - No external dependencies. Uses only Node 18+ built-in `fetch`/`AbortController`.
+ *  - All POST bodies are encoded as UTF-8 JSON and sent with
+ *    `Content-Type: application/json; charset=utf-8`.
+ *    Korean / Japanese / emoji payloads are safe.
+ *  - Default page size for list-style endpoints is 3 (per the SKILL.md convention).
  */
 
 'use strict';
 
 const BASE_URL = 'https://maplestoryworlds-resourcesearch-new.nexon.com';
-const DEFAULT_TIMEOUT_MS = 15_000; // SKILL.md 권장 15s
-const DEFAULT_LIMIT = 3;           // 스킬 규약 (서버 기본값은 5/10)
+const DEFAULT_TIMEOUT_MS = 15_000; // SKILL.md recommends 15s
+const DEFAULT_LIMIT = 3;           // skill convention (server defaults are 5/10)
 
 class MswApiError extends Error {
   constructor(status, url, body) {
@@ -50,9 +50,9 @@ class MswApiError extends Error {
 // ---------------------------------------------------------------------------
 
 /**
- * 쿼리 객체를 URLSearchParams 문자열로 직렬화.
- * - null/undefined 값은 제거.
- * - 배열/튜플은 동일 키로 반복(`types=a&types=b`).
+ * Serialize a query object to a URLSearchParams string.
+ * - null / undefined values are dropped.
+ * - Arrays / tuples are repeated under the same key (`types=a&types=b`).
  */
 function _buildQuery(query) {
   if (!query) return '';
@@ -121,15 +121,15 @@ const _enc = (s) => encodeURIComponent(s);
 // ---------------------------------------------------------------------------
 
 /**
- * 자연어 시맨틱 검색.
- * `POST /v3/search/resources` (SearchRequest 스키마).
- * sprite / animationclip / resource_pack / sound / avataritem 검색에 사용.
- * 아바타 코스튬은 `searchAvatarItems` 사용 권장 — 그쪽이
- * `resourceTypeFilter=["avataritem"]`을 자동으로 고정.
+ * Natural-language semantic search.
+ * `POST /v3/search/resources` (SearchRequest schema).
+ * Used to search sprite / animationclip / resource_pack / sound / avataritem.
+ * For avatar costumes, prefer `searchAvatarItems` — it pins
+ * `resourceTypeFilter=["avataritem"]` automatically.
  *
- * 본문 키는 OpenAPI 스펙 그대로 (`topK`, `resourceTypeFilter`,
- * `categoryFilter` …). 과거 wrapper의 `limit` / `types` / `categories`는
- * 서버가 조용히 무시.
+ * Body keys follow the OpenAPI spec verbatim (`topK`, `resourceTypeFilter`,
+ * `categoryFilter`, …). The legacy wrapper's `limit` / `types` / `categories`
+ * were silently ignored by the server.
  *
  * @param {string} query
  * @param {object} [opts]
@@ -163,7 +163,7 @@ async function searchResources(query, opts = {}) {
 }
 
 /**
- * 아바타 코스튬 아이템 검색 (cap, coat, pants, shoes, weapon, …).
+ * Search avatar costume items (cap, coat, pants, shoes, weapon, …).
  * `POST /v3/search/resources` + `resourceTypeFilter=["avataritem"]`.
  */
 async function searchAvatarItems(query, opts = {}) {
@@ -187,9 +187,9 @@ async function searchAvatarItems(query, opts = {}) {
 }
 
 /**
- * RUID와 유사한 리소스 검색.
- * `GET /v3/search/resources/similar/{id}`. 서버는 `topK` 사용
- * (default 20, max 100). 과거 wrapper의 `limit`은 무시됨.
+ * Find resources similar to a given RUID.
+ * `GET /v3/search/resources/similar/{id}`. The server uses `topK`
+ * (default 20, max 100). The legacy wrapper's `limit` was ignored.
  */
 async function findSimilarResources(ruid, opts = {}) {
   const {
@@ -216,17 +216,17 @@ async function findSimilarResources(ruid, opts = {}) {
 // Section: Resource Details & Tags
 // ---------------------------------------------------------------------------
 
-/** 단건 리소스 상세 조회. `GET /v3/resources/{ruid}`. */
+/** Fetch a single resource's details. `GET /v3/resources/{ruid}`. */
 async function getResource(ruid) {
   return _request('GET', `/v3/resources/${_enc(ruid)}`);
 }
 
-/** 다건 리소스 일괄 조회. `POST /v3/resources/batch`. */
+/** Batch-fetch multiple resources. `POST /v3/resources/batch`. */
 async function getResourcesBatch(ids) {
   return _request('POST', '/v3/resources/batch', { body: { ids: [...ids] } });
 }
 
-/** AI 다국어 태그 조회. `GET /v3/resources/tags/{ruid}`. */
+/** Fetch AI-generated multilingual tags. `GET /v3/resources/tags/{ruid}`. */
 async function getResourceTags(ruid) {
   return _request('GET', `/v3/resources/tags/${_enc(ruid)}`);
 }
@@ -236,11 +236,13 @@ async function getResourceTags(ruid) {
 // ---------------------------------------------------------------------------
 
 /**
- * Qdrant Scroll 기반 리소스 목록. `GET /v3/resources`.
- * `offset`은 직전 응답의 `nextOffset` 문자열 커서. 첫 페이지에서는 생략.
- * 과거 wrapper가 `offset=0`(int)을 보내 매칭이 0건이 되던 버그를 수정.
+ * Qdrant Scroll-based resource listing. `GET /v3/resources`.
+ * `offset` is the `nextOffset` string cursor from the previous response.
+ * Omit it for the first page.
+ * Fixes the legacy bug where the wrapper sent `offset=0` (int) and matched 0 items.
  *
- * 필터는 OpenAPI 정식 키인 `resourceTypeFilter` / `categoryFilter`로 전송.
+ * Filters are sent under the canonical OpenAPI keys
+ * `resourceTypeFilter` / `categoryFilter`.
  */
 async function listResources(opts = {}) {
   const {
@@ -269,8 +271,9 @@ async function listResources(opts = {}) {
 }
 
 /**
- * 랜덤 리소스 추천. `GET /v3/resources/random`.
- * 서버는 `count`(=`limit` 아님)와 `resourceTypeFilter`/`categoryFilter` 사용.
+ * Random resource recommendations. `GET /v3/resources/random`.
+ * The server uses `count` (NOT `limit`) along with
+ * `resourceTypeFilter` / `categoryFilter`.
  */
 async function randomResources(opts = {}) {
   const {
@@ -297,12 +300,12 @@ async function randomResources(opts = {}) {
 }
 
 /**
- * 주어진 RUID를 포함하는 리소스 팩 목록.
- * `GET /v3/resources/packs/{id}` — 경로 파라미터는 32-hex RUID
- * (팩 id가 아님). 서버는 `payload.elements`에 그 RUID가 들어있는 팩들을 반환.
+ * List resource packs that contain a given RUID.
+ * `GET /v3/resources/packs/{id}` — the path parameter is a 32-hex RUID
+ * (NOT a pack id). The server returns packs whose `payload.elements` include that RUID.
  *
- * 팩 자신의 메타데이터 + populated elements를 가져오려면 `getResource(packId)`
- * 사용 — 그 엔드포인트가 각 element의 payload를 채워서 반환함.
+ * To fetch a pack's own metadata + populated elements, use `getResource(packId)`
+ * — that endpoint fills in the payload of each element and returns it.
  */
 async function findPacksContaining(ruid, opts = {}) {
   const { limit = DEFAULT_LIMIT, offset, compact = true } = opts;
@@ -317,8 +320,8 @@ async function findPacksContaining(ruid, opts = {}) {
 // ---------------------------------------------------------------------------
 
 /**
- * 모든 아바타 아이템 목록 (서버 캐시).
- * `GET /v3/avatars`. 키워드 검색은 `searchAvatarItems` 사용.
+ * List every avatar item (server-cached).
+ * `GET /v3/avatars`. For keyword search, use `searchAvatarItems`.
  */
 async function listAvatars({ canonicalOnly = true } = {}) {
   return _request('GET', '/v3/avatars', {
@@ -326,19 +329,20 @@ async function listAvatars({ canonicalOnly = true } = {}) {
   });
 }
 
-/** 기본 body / head RUID 조회. `GET /v3/avatars/defaults`. */
+/** Fetch the default body / head RUIDs. `GET /v3/avatars/defaults`. */
 async function getAvatarDefaults() {
   return _request('GET', '/v3/avatars/defaults');
 }
 
 /**
- * 결합 아바타를 1개 이상의 액션 포즈로 렌더링.
- * `POST /v3/avatar/render`. `ruids`는 기본 body+head(`getAvatarDefaults`)와
- * 선택적 장착 아이템들. 서버 필수 파라미터인 `actions`는 미지정 시 `["stand1"]`
- * 자동 적용. `expressions`는 미지정 시 서버가 `["default"]` 적용.
+ * Render a composed avatar in one or more action poses.
+ * `POST /v3/avatar/render`. `ruids` is the default body+head (`getAvatarDefaults`)
+ * plus any optional equipped items. The server-required `actions` parameter
+ * defaults to `["stand1"]` if omitted. `expressions` defaults to `["default"]`
+ * on the server side when omitted.
  *
- * `renderingType`은 `"sprite"`(기본 — 프레임별 PNG) 또는
- * `"animationclip"`(액션별 WebP) 중 선택.
+ * `renderingType` is either `"sprite"` (default — per-frame PNG) or
+ * `"animationclip"` (per-action WebP).
  */
 async function renderAvatar(ruids, opts = {}) {
   const { actions, expressions, earType, renderingType } = opts;
@@ -352,7 +356,7 @@ async function renderAvatar(ruids, opts = {}) {
   return _request('POST', '/v3/avatar/render', { body: payload });
 }
 
-/** 아바타 렌더 프레임 이미지 URL 생성. */
+/** Build the URL for an avatar render frame image. */
 function avatarFrameUrl(filename) {
   return `${BASE_URL}/v3/avatar/render/${_enc(filename)}`;
 }
@@ -361,7 +365,7 @@ function avatarFrameUrl(filename) {
 // CLI
 // ---------------------------------------------------------------------------
 
-/** 매우 작은 argv 파서. argparse를 그대로 옮기진 않고 필요한 기능만 구현. */
+/** Tiny argv parser. Does not port argparse wholesale — only what we need. */
 function _parseArgs(argv, spec) {
   // spec: { positional: [{name, nargs?: '+'|undefined}], options: { flag: {dest, type, nargs?, const?, default?} } }
   const result = {};
@@ -544,7 +548,7 @@ const CLI_HANDLERS = {
       options: {
         ...COMMON_FILTERS,
         '--limit':  { dest: 'limit', type: 'int', default: DEFAULT_LIMIT },
-        '--offset': { dest: 'offset' }, // 문자열 커서
+        '--offset': { dest: 'offset' }, // string cursor
       },
     });
     return listResources({

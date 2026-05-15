@@ -86,3 +86,26 @@ Simulate a mouse input sequence. Supports move/click/scroll and similar actions.
 - Call `screenshot` only when the user explicitly requests it. Do not call it automatically.
 - After editing a file directly, always call `refresh` to push the change into Maker.
 - `save_workspace`, `backup_workspace`, `restore_workspace`, `undo`, `redo` and similar operations are not provided by MCP. If needed, instruct the user to perform them directly in the Maker editor.
+
+---
+
+## Initial Setup
+
+**Two MCP servers must be configured:**
+
+- **`msw-maker-mcp`** — local Maker application binary. Provides `play`, `stop`, `refresh`, `screenshot`, `logs`, `keyboard_input`, `mouse_input`. Requires the Maker app to be running.
+- **`msw-mcp`** — HTTP MCP server. Provides API search and resource search tools. Requires a Bearer token.
+
+### Setting the API token for `msw-mcp`
+
+1. Issue a token at: **https://maplestoryworlds-insight.nexon.com/credentials/api-keys**
+2. Set the token as `Authorization: Bearer <your-token>` in the `msw-mcp` server config.
+3. Reload the agent after saving.
+
+---
+
+## Troubleshooting
+
+### Codex: MCP connected but tools not visible
+
+**Fully restart Codex.** Reconnecting or reloading config alone does not re-register the tools.

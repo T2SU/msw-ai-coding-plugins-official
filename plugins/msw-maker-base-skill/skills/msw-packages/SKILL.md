@@ -29,8 +29,8 @@ system vs UI-only?     msw-search, etc.)
    ┌────┴───────────┐
    │ system         │ UI-only
    ▼                ▼
-Fetch package    Route to msw-ui-template
-README           (skip the rest of this skill)
+Fetch package    Route to msw-ui-system
+README           (+ references/templates/, skip the rest of this skill)
         │
         ▼
 Summarize for user
@@ -105,16 +105,16 @@ Map the user's answer to a destination:
 | User says... | Route to |
 |---|---|
 | "feature", "system", "logic", "save", "calculate", "handle", "process" | **Stay here (`msw-packages`)** — proceed to Fetch Protocol below |
-| "screen", "UI", "look", "visual", "just the layout", "show only" | **`msw-ui-template`** — pick a style template, build the screen only |
-| Low-level question (anchor, schema, component property) | **`msw-general/references/ui/`** — answer directly, no fetch needed |
+| "screen", "UI", "look", "visual", "just the layout", "show only" | **`msw-ui-system` skill** (+ `references/templates/`) — pick a style template, then build via the UI builder |
+| Low-level question (anchor, component property, enum) | **`msw-ui-system` skill** — answer directly via `references/component-api.md` (incl. §Enums) / `ui-fundamentals.md`, no fetch needed |
 
 ### When to skip the question
 
 Skip the Scope-First question and route directly when the user's request is already explicit:
 
-- "from scratch" / "just the UI" / "only the screen" → `msw-ui-template`
+- "from scratch" / "just the UI" / "only the screen" → `msw-ui-system` skill (+ `references/templates/`)
 - "full system" / "with backend" / "with data" / "save score" → stay in `msw-packages`
-- Pure low-level UI question (e.g. "how do I set anchor?") → `msw-general/references/ui/`
+- Pure low-level UI question (e.g. "how do I set anchor?") → `msw-ui-system` skill
 
 Only ask when the keyword matches a catalog package AND the scope is genuinely ambiguous.
 
@@ -189,7 +189,7 @@ After the user confirms integration:
 
 - **`.modpackage` files are NOT auto-installer scripts in this workflow** — they are Maker-editor metadata. Manual file copy is what actually integrates the package.
 - **Hardcoded sprite RUIDs in samples**: package samples often reference specific RUIDs for decoration sprites. These work but the user may want to substitute. Note this when summarizing.
-- **UI files use UIGroup root entities** — when copying, follow the same pitfalls as authoring new UIGroups (see `msw-general/references/ui.md` — Anchor/AlignmentOption/Pivot triplet, hex-only entity IDs, 4-Value Conversion Formula, etc.).
+- **UI files use UIGroup root entities** — when copying, route through `msw-ui-system` (`UIBuilder.read/load` to inspect, builder API to mutate; design rules — UIGroup root configuration, anchor mode pitfalls — live in the same skill). Do not hand-edit raw `.ui` JSON.
 - **`Sample/` content is illustrative, not production** — do not copy `Sample/` files unless the user explicitly asks. Sample scripts often bind to keyboard shortcuts that conflict with the user's controls.
 - **No package replaces understanding of mlua** — packages provide pre-built features but the user still needs `msw-scripting` knowledge to extend them.
 - **Don't bulk-install multiple packages speculatively** — each integration adds files and surface area. Install one feature at a time, validate, then move on.

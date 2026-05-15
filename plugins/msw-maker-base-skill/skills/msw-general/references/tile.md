@@ -18,7 +18,7 @@ Instead, **guide the user to place tiles themselves in the Maker editor**, using
 When a user asks the AI to "place tiles" / "fill tiles" / "draw the floor" / "build terrain":
 
 1. **Stop before editing the `.map`.** Tell the user explicitly that tile painting is a Maker-UI task.
-2. **Identify the map's `TileMapMode`** by reading the root `MapComponent` of the `.map` file (read-only).
+2. **Identify the map's `TileMapMode`** with `MapBuilder.read(...).getTileMapMode()`.
 3. **Pick the matching official doc** from the table above and either link it directly or summarize the painter steps relevant to the user's goal (selecting tileset, choosing brush, paint / erase / fill, save).
 4. **Offer pre-painting setup the AI CAN do** — choose / create the tileset (via the dedicated tileset skill if available), set `TileMapMode`, set `TileSetRUID`, prepare the `RectTileMap` / `TileMap` entity skeleton, configure player Body to match the mode.
 5. **After the user reports they finished painting in Maker** → call MCP **`refresh`** so on-disk changes propagate, then verify by reading the tile arrays back (no edit) to confirm dimensions and `tileIndex` validity.
@@ -35,14 +35,14 @@ In every other case, route to the Maker UI.
 
 | Old RPC concept | Current equivalent |
 |----------------|-----------|
-| Get/set tile map mode | Read and edit `MapComponent.TileMapMode` directly on the root entity of `./map/*.map` |
+| Get tile map mode | `MapBuilder.read(...).getTileMapMode()` |
 | List/get/create tile data sets | `.tileset` files (browse the workspace via MCP or open directly) |
 | Change tile placement | **User paints in the Maker tile editor UI** (see Policy section above and the official docs). AI does not edit the `Tiles` / `tileMap` arrays directly. |
 | Apply changes | After the user finishes painting, run MCP **`refresh`** to apply on-disk changes to the editor |
 
 **Summary**
 
-1. **Change `TileMapMode`** → safely edit only `MapComponent` in that map's `.map` file (keep Body / tile components / Foothold consistent).
+1. **Change `TileMapMode`** → user performs Maker Hierarchy right-click Switch; AI verifies with `MapBuilder.read(...).getTileMapMode()` afterward.
 2. **Tile placement** → guide the user to the Maker tile painter UI using the official docs above. Do **not** write `Tiles` / `tileMap` from the AI.
 3. **Runtime tile manipulation from scripts** → use the engine API (see runtime docs and `msw-search` for prerequisites such as map/entity load).
 4. **After Maker edits** → run MCP **`refresh`** to update the workspace/scene.
@@ -55,7 +55,7 @@ A single number in `MapComponent.TileMapMode` determines the Body, collision, mo
 
 > **TileMapMode ↔ Body mapping, check protocol, transition restrictions**: see [platform.md §4](platform.md).
 >
-> **Choosing the right mode for the user's game (recommendation matrix) + the Maker Hierarchy right-click switch procedure**: see the "Recommending the right mode" and "Changing `TileMapMode`" subsections in [../SKILL.md](../SKILL.md). For any new map (or when the current mode does not fit the user's intended gameplay), the AI must **recommend the appropriate mode in Korean first** and then guide the user to **right-click the map in the Maker Hierarchy → "Switch ..." menu** — never write a new `TileMapMode` value from a file edit.
+> **Choosing the right mode for the user's game (recommendation matrix) + the Maker Hierarchy right-click switch procedure**: see the "Recommending the right mode" and "Changing `TileMapMode`" subsections in [../SKILL.md](../SKILL.md). For any new map (or when the current mode does not fit the user's intended gameplay), the AI must **recommend the appropriate mode first** and then guide the user to **right-click the map in the Maker Hierarchy → "Switch ..." menu** — never write a new `TileMapMode` value from a file edit.
 
 ### Tile-map-specific dependencies (per-mode tile system differences)
 
@@ -187,8 +187,9 @@ A map may contain **multiple `RectTileMap`** entities (for layer separation), ea
 
 ## Related Skills
 
-- **`entity.md`** — `.map` entity / component common rules; `entity/map-schema.md`
-- **[platform.md](platform.md)** — TileMapMode ↔ Body, SpriteRUID, spawn rules
+- **`entity.md`** — `.map` entity / component common rules; `entity/map-builder.md`
+- **[platform.md](platform.md)** — TileMapMode ↔ Body, SpriteRUID, spawn rules (core)
+- **[platform-maple.md](platform-maple.md)** / **[platform-rect.md](platform-rect.md)** / **[platform-sideview.md](platform-sideview.md)** — Per-map-type physics, events, and troubleshooting
 - **`msw-defaultplayer`** — per-mode movement components (`KinematicbodyComponent`, `SideviewbodyComponent`, etc.)
 
 ---
