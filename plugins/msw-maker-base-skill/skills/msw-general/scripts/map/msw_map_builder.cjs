@@ -241,7 +241,8 @@ class MapBuilder {
   }
 
   _findIndex(identifier) {
-    const target = this._normalizePath(identifier);
+    const raw = String(identifier || "").trim();
+    const target = raw === this.mapName ? this.rootPath : this._normalizePath(identifier);
     return this.entities.findIndex((entity) => this._entityJson(entity).path === target || entity.path === target);
   }
 

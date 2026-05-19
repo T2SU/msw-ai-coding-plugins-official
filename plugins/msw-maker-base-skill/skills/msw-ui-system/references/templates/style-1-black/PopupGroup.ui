@@ -219,14 +219,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -360,14 +360,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -501,14 +501,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -536,14 +536,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -689,14 +689,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -877,14 +877,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -1018,14 +1018,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -1181,14 +1181,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -1322,14 +1322,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -1463,14 +1463,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -1604,14 +1604,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -1639,14 +1639,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -1792,14 +1792,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -1827,14 +1827,14 @@
               "Alignment": 0,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -1980,14 +1980,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -2121,14 +2121,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 0.54,
               "FillCenter": true,
               "FillClockWise": true,
@@ -2262,14 +2262,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -2403,14 +2403,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -2438,14 +2438,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -2591,14 +2591,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -2860,14 +2860,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -3001,14 +3001,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -3142,14 +3142,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -3177,14 +3177,14 @@
               "Alignment": 2,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -3330,14 +3330,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -3471,14 +3471,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -3612,14 +3612,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -3647,14 +3647,14 @@
               "Alignment": 2,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -3800,14 +3800,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -3941,14 +3941,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -4082,14 +4082,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -4117,14 +4117,14 @@
               "Alignment": 2,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -4270,14 +4270,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -4352,14 +4352,14 @@
               "Alignment": 4,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.2,
@@ -4590,14 +4590,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -4731,14 +4731,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -4872,14 +4872,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -4907,14 +4907,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -5060,14 +5060,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -5248,14 +5248,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -5517,14 +5517,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -5705,14 +5705,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -5740,14 +5740,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.8980392,
@@ -5893,14 +5893,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -6034,14 +6034,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -6222,14 +6222,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -6363,14 +6363,14 @@
                 "a": 0.7
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -6504,14 +6504,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -6539,14 +6539,14 @@
               "Alignment": 4,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 3,
               "FontColor": {
                 "r": 1.0,
@@ -6692,14 +6692,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -6833,14 +6833,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -6974,14 +6974,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -7115,14 +7115,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -7256,14 +7256,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -7291,14 +7291,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -7444,14 +7444,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 1.0
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -7585,14 +7585,14 @@
                 "a": 0.8
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -7726,14 +7726,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -7761,14 +7761,14 @@
               "Alignment": 3,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -7914,14 +7914,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -7949,14 +7949,14 @@
               "Alignment": 0,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -8102,14 +8102,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -8243,14 +8243,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 0.35,
               "FillCenter": true,
               "FillClockWise": true,
@@ -8384,14 +8384,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 0.35,
               "FillCenter": true,
               "FillClockWise": true,
@@ -8525,14 +8525,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -8560,14 +8560,14 @@
               "Alignment": 4,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -8713,14 +8713,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -8854,14 +8854,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -8995,14 +8995,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -9030,14 +9030,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -9183,14 +9183,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -9371,14 +9371,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -9512,14 +9512,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -9702,14 +9702,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -9843,14 +9843,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -9878,14 +9878,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -10031,14 +10031,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -10215,14 +10215,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -10403,14 +10403,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -10438,14 +10438,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -10591,14 +10591,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -10626,14 +10626,14 @@
               "Alignment": 3,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -10779,14 +10779,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -10920,14 +10920,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -10955,14 +10955,14 @@
               "Alignment": 4,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -11108,14 +11108,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -11292,14 +11292,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -11327,14 +11327,14 @@
               "Alignment": 0,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9824219,
@@ -11480,14 +11480,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -11515,14 +11515,14 @@
               "Alignment": 0,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -11668,14 +11668,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -11703,14 +11703,14 @@
               "Alignment": 0,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9843137,
@@ -11856,14 +11856,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -12040,14 +12040,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -12228,14 +12228,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -12369,14 +12369,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -12404,14 +12404,14 @@
               "Alignment": 2,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -12535,14 +12535,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -12688,14 +12688,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -12723,14 +12723,14 @@
               "Alignment": 5,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -12876,14 +12876,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -12911,14 +12911,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -13064,14 +13064,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -13099,14 +13099,14 @@
               "Alignment": 5,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -13252,14 +13252,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -13442,14 +13442,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -13477,14 +13477,14 @@
               "Alignment": 0,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -13715,14 +13715,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -13797,14 +13797,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -13950,14 +13950,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -14032,14 +14032,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -14185,14 +14185,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -14326,14 +14326,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -14467,14 +14467,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -14655,14 +14655,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -14796,14 +14796,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -14831,14 +14831,14 @@
               "Alignment": 3,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -14984,14 +14984,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -15125,14 +15125,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -15160,14 +15160,14 @@
               "Alignment": 5,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -15313,14 +15313,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -15348,14 +15348,14 @@
               "Alignment": 3,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -15501,14 +15501,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -15642,14 +15642,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -15783,14 +15783,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -15967,14 +15967,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -16155,14 +16155,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -16190,14 +16190,14 @@
               "Alignment": 4,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -16343,14 +16343,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -16533,14 +16533,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -16721,14 +16721,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -16862,14 +16862,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -17003,14 +17003,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -17038,14 +17038,14 @@
               "Alignment": 5,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -17191,14 +17191,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -17379,14 +17379,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -17520,14 +17520,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -17661,14 +17661,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -17802,14 +17802,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -17837,14 +17837,14 @@
               "Alignment": 5,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -17990,14 +17990,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -18131,14 +18131,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -18272,14 +18272,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -18307,14 +18307,14 @@
               "Alignment": 4,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -18460,14 +18460,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -18648,14 +18648,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -18789,14 +18789,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -18973,14 +18973,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -19055,14 +19055,14 @@
               "Alignment": 4,
               "Bold": true,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -19208,14 +19208,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -19398,14 +19398,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -19586,14 +19586,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -19727,14 +19727,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -19762,14 +19762,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -19915,14 +19915,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -19950,14 +19950,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 0.9137255,
@@ -20103,14 +20103,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -20244,14 +20244,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -20385,14 +20385,14 @@
                 "a": 0.4
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -20526,14 +20526,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -20561,14 +20561,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -20714,14 +20714,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -20796,14 +20796,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -20949,14 +20949,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -21031,14 +21031,14 @@
               "Alignment": 4,
               "Bold": false,
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "Font": 0,
               "FontColor": {
                 "r": 1.0,
@@ -21184,14 +21184,14 @@
                 "a": 0.2
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -21325,14 +21325,14 @@
                 "a": 0.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -21466,14 +21466,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
@@ -21607,14 +21607,14 @@
                 "a": 1.0
               },
               "DropShadow": false,
-              "DropShadowAngle": 30.0,
+              "DropShadowAngle": 120.0,
               "DropShadowColor": {
                 "r": 0.0,
                 "g": 0.0,
                 "b": 0.0,
                 "a": 0.72
               },
-              "DropShadowDistance": 32.0,
+              "DropShadowDistance": 3.0,
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,

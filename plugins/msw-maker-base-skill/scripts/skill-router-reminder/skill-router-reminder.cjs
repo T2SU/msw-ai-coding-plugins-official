@@ -3,19 +3,18 @@
 
 // MSW Skill Router Reminder Hook
 // Runs on every UserPromptSubmit: at the start of each turn, injects a strong
-// reminder via stdout (delivered as a system message) telling Claude to
+// reminder via stdout (delivered as a system message) telling the agent to
 // "re-classify this message against the domain matrix, and even if other
 // skills are already loaded, if a new domain matches you MUST load the
 // additional skill."
 //
 // Core principles:
-// - SKILL.md (the skill body) is ALWAYS loaded via the `Skill` tool.
-//   Do NOT try to locate paths like `plugins/msw-maker-base-skill/skills/...`
-//   directly with Read/ls/Glob/Grep — the plugin is installed in Claude Code's
-//   global plugin cache, not in the workspace, so those paths do not exist.
-// - For references/*.md: after SKILL.md is loaded via the `Skill` tool,
-//   use the absolute path shown in the result (or the relative link inside
-//   SKILL.md) and read the whole file in one shot with the `Read` tool.
+// - SKILL.md (the skill body) is ALWAYS loaded via the agent's skill system.
+//   The skill files live in the agent's skill directory (not in the workspace's
+//   plugins/ folder), so use the skill-loading mechanism provided by your agent.
+// - For references/*.md: after SKILL.md is loaded, use the absolute path shown
+//   in the result (or the relative link inside SKILL.md) and read the whole
+//   file in one shot with the Read tool.
 //
 // This hook also forcibly breaks the following two inertias every turn:
 // 1) The inertia of "the skill body is already in context, so I don't need
@@ -47,25 +46,28 @@ process.stdout.write(
   `you plan or implement.\n` +
   `\n` +
   `=== HOW TO LOAD AND READ A SKILL (HARD RULES — violating these means you have NOT loaded the skill) ===\n` +
-  `R1. Load every SKILL.md via the **Skill** tool — NEVER by path.\n` +
-  `    Invoke 'Skill' with an identifier like 'msw-maker-base-skill:msw-general'.\n` +
-  `    Do NOT pass 'plugins/msw-maker-base-skill/skills/...' to Read, ls, Glob, Grep,\n` +
-  `    or Search. This plugin lives in Claude Code's GLOBAL plugin cache, not in the\n` +
-  `    workspace's 'plugins/' folder — those calls will fail and waste tool slots.\n` +
-  `    The Skill tool already resolves the correct absolute path.\n` +
+  `R1. Load every SKILL.md via the agent's **skill-loading system**.\n` +
+  `    Use whichever mechanism your agent provides:\n` +
+  `      - Claude Code  → 'Skill' tool with identifier '<name>'\n` +
+  `      - Cursor       → the skill is auto-discovered under the agent skills directory;\n` +
+  `                        load it via the /skill command or Read from the path shown in agent_skills\n` +
+  `      - Codex        → Read from the skills directory (e.g. .codex/skills/<name>/SKILL.md)\n` +
+  `      - Copilot      → auto-discovered under .github/skills/ or ~/.copilot/skills/\n` +
+  `    Do NOT pass 'plugins/msw-maker-base-skill/skills/...' to Read, ls, Glob, or Grep.\n` +
+  `    The skill files live in the agent's skill directory, not in the workspace's 'plugins/' folder.\n` +
   `R2. Read 'references/*.md' files in full via the **Read** tool, using paths\n` +
-  `    derived from the loaded skill. The Skill tool's output and the loaded SKILL.md\n` +
-  `    expose the skill's absolute folder; combine that with the relative reference\n` +
-  `    link shown in SKILL.md (e.g. 'references/component-api.md') and issue ONE full Read call.\n` +
-  `    NEVER use Bash 'cat', 'head', 'tail', 'less', 'more', 'type', 'Get-Content' / 'gc',\n` +
-  `    or pipes like 'cat ... | head -N' to read any skill or reference .md file —\n` +
-  `    they routinely show only a prefix and skip the parts that actually answer\n` +
-  `    the request.\n` +
+  `    derived from the loaded skill. The loaded SKILL.md exposes the skill's absolute\n` +
+  `    folder; combine that with the relative reference link shown in SKILL.md\n` +
+  `    (e.g. 'references/component-api.md') and issue ONE full Read call.\n` +
+  `    NEVER use shell commands ('cat', 'head', 'tail', 'less', 'more', 'type',\n` +
+  `    'Get-Content' / 'gc', or pipes like 'cat ... | head -N') to read any skill or\n` +
+  `    reference .md file — they routinely show only a prefix and skip the parts that\n` +
+  `    actually answer the request.\n` +
   `R3. Read each reference IN FULL in a single Read call. Do NOT pass 'offset' or 'limit'.\n` +
   `    SKILL.md and reference .md files are sized to be read whole; partial reads\n` +
   `    (e.g. only the first 80–150 lines) routinely miss the section you need.\n` +
   `R4. **Loading SKILL.md alone is NOT "skill loaded"** when references/*.md siblings exist\n` +
-  `    (combat / scripting / general / search all have them). After the Skill tool returns:\n` +
+  `    (combat / scripting / general / search all have them). After SKILL.md is loaded:\n` +
   `      (a) scan SKILL.md for links to 'references/*.md' AND inspect its 'Per-task routing' /\n` +
   `          'Reference Documents' / 'Cross-references' sections,\n` +
   `      (b) for every reference whose topic intersects with THIS turn's request, Read it\n` +
@@ -74,13 +76,12 @@ process.stdout.write(
   `          — if a trigger fires, the listed reference is required, not optional.\n` +
   `R5. Self-correction. If you catch yourself about to:\n` +
   `      - call Read('plugins/msw-maker-base-skill/...') or any other path under workspace-local 'plugins/',\n` +
-  `      - run ls / Glob / Grep / Search to locate '**/SKILL.md', '**/msw-maker-base-skill/**',\n` +
+  `      - run ls / Glob / Grep to locate '**/SKILL.md', '**/msw-maker-base-skill/**',\n` +
   `        or similar plugin files,\n` +
-  `      - type 'cat plugins/msw-maker-base-skill/skills/...' or pass 'offset'/'limit' to Read\n` +
-  `        on a skill/reference file,\n` +
-  `    STOP. The skill is NOT in the workspace. Re-issue the call as\n` +
-  `      'Skill: msw-maker-base-skill:<name>' (for SKILL.md) or as a full Read against the\n` +
-  `      absolute path provided by the loaded skill (for references/*.md).\n` +
+  `      - use shell commands to read a skill/reference file, or pass 'offset'/'limit' to Read,\n` +
+  `    STOP. The skill is NOT in the workspace 'plugins/' folder. Re-load it via the\n` +
+  `      agent's skill system (R1), or Read the reference using the absolute path\n` +
+  `      provided by the loaded skill.\n` +
   `R6. **Foundation Skills + Foundation references — ALWAYS load/read on EVERY turn (you do NOT know MSW).**\n` +
   `    Generic LLM knowledge of "Galaga / Mario / Bomberman / dungeon RPG / boss fight / side-scrolling platformer / top-down / popup UI / Entity-Component"\n` +
   `    matches MSW only superficially. The actual silent-failure zones diverge:\n` +
@@ -97,18 +98,18 @@ process.stdout.write(
   `    Therefore the following two layers are MSW's "rules of physics" — both REQUIRED before\n` +
   `    Plan on EVERY turn, REGARDLESS of which domain triggers fire:\n` +
   `\n` +
-  `    (a) **Foundation Skills (3)** — load via the Skill tool, in this order:\n` +
-  `        1. Skill: msw-maker-base-skill:msw-general\n` +
+  `    (a) **Foundation Skills (3)** — load via the agent's skill system (R1), in this order:\n` +
+  `        1. msw-general\n` +
   `             foundation — workspace structure, platform rules, MCP tools, authoring rules for\n` +
   `             .model/.map/.ui/.dataset, and the verified template catalog. Every other MSW skill\n` +
   `             assumes this one is already loaded.\n` +
-  `        2. Skill: msw-maker-base-skill:msw-packages\n` +
+  `        2. msw-packages\n` +
   `             Catalog of standard game systems (inventory / shop / ranking / mail / quest /\n` +
   `             collection / key binding / GM / drop table, etc.).\n` +
   `             An MSW world IS a game, and almost every game includes one or two standard systems.\n` +
   `             Starting from scratch without knowing this catalog is the single biggest time sink.\n` +
   `             **Always check the catalog for a match FIRST, every turn.**\n` +
-  `        3. Skill: msw-maker-base-skill:msw-ui-system\n` +
+  `        3. msw-ui-system\n` +
   `             The single entry point for UI — score/HP/lives HUD, popups, toasts, menus, tabs, dialogs, etc.\n` +
   `             An MSW world with zero UI is virtually nonexistent — even a simple "Galaga"-style mini-game\n` +
   `             needs a score/lives HUD, so planning without UI-system knowledge breaks on the very first screen.\n` +
@@ -116,7 +117,7 @@ process.stdout.write(
   `        ※ Do NOT reason that "this task has no UI / no system, so I can skip (2)/(3)."\n` +
   `          The Galaga case (missing score HUD) was exactly that anti-pattern.\n` +
   `\n` +
-  `    (b) **Foundation references (4)** — immediately after (a) is loaded via the Skill tool, Read in FULL every turn, unconditionally:\n` +
+  `    (b) **Foundation references (4)** — immediately after (a) is loaded, Read in FULL every turn, unconditionally:\n` +
   `        • msw-general/references/platform.md (core)\n` +
   `             8 core / TileMapMode↔Body / LEA-3004 / coordinate system / SortingLayer / SpriteRUID /\n` +
   `             SpawnByModelId / .directory / .config / CoreVersion — every other reference is\n` +
@@ -178,7 +179,7 @@ process.stdout.write(
   `    The following shell commands are FORBIDDEN for workspace exploration:\n` +
   `      ls, dir, Get-ChildItem, gci, cat, type, Get-Content, gc, head, tail, more, less,\n` +
   `      find, where, grep, findstr, Select-String, sls, rg/ripgrep (called directly).\n` +
-  `    The Bash tool is reserved for actual shell programs (git, npm, pnpm, MCP, build); even then:\n` +
+  `    The shell tool (Bash/Shell) is reserved for actual shell programs (git, npm, pnpm, MCP, build); even then:\n` +
   `      (a) prefer workspace-relative paths ('RootDesk/MyDesk/Foo.mlua'),\n` +
   `      (b) if an absolute path is unavoidable, use forward slashes + double quotes\n` +
   `          (e.g. \"D:/msw-world-projects/.../map/\" — never the 'D:\\\\...' form),\n` +
@@ -186,13 +187,13 @@ process.stdout.write(
   `    Warning sign — if you see an error like \"ls: cannot access 'D:msw-...': No such file or directory\",\n` +
   `    stop immediately and retry the same operation with Glob/Read/Grep.\n` +
   `\n` +
-  `Domain matrix (Korean / English trigger phrases → skill to LOAD via Skill tool + references to READ in full).\n` +
+  `Domain matrix (Korean / English trigger phrases → skill to LOAD + references to READ in full).\n` +
   `**This matrix sits ON TOP of the 3 Foundation Skills (R6 (a)) and 4 Foundation references (R6 (b))** —\n` +
   `Foundation is loaded EVERY turn unconditionally; the matrix below adds further skills/references when triggered.\n` +
   `When multiple sub-triggers fire under one domain, LOAD the skill AND READ every matching reference.\n` +
   `\n` +
   `[SCRIPTING] script / mlua / component / event / logic / lifecycle / Component / @Logic / @Event\n` +
-  `  → Skill: msw-maker-base-skill:msw-scripting\n` +
+  `  → Load skill: msw-scripting\n` +
   `  Sub-trigger refinements (read in ADDITION to SKILL.md):\n` +
   `  - DataStorage / save / persist / player data / _DataStorageService\n` +
   `      → Read: references/datastorage.md\n` +
@@ -217,14 +218,14 @@ process.stdout.write(
   `      → Read: references/runtime-patterns.md\n` +
   `\n` +
   `[ENTITY/MAP] entity placement / .map / spawn / SpawnByModelId / position / coordinate / transform / map editing\n` +
-  `  → Skill: msw-maker-base-skill:msw-general\n` +
+  `  → Load skill: msw-general\n` +
   `  + Read: references/entity.md (Entity Work Preflight — MUST, Absolute Principle #0)\n` +
   `  Sub-trigger refinements:\n` +
   `  - .map builder / entity placement / component patching\n` +
   `      → Read: references/entity/map-builder.md\n` +
   `\n` +
   `[MODEL] .model / model authoring / template / EntryKey / Properties / Values / model catalog\n` +
-  `  → Skill: msw-maker-base-skill:msw-general\n` +
+  `  → Load skill: msw-general\n` +
   `  + Read: references/model.md\n` +
   `  Sub-trigger refinements:\n` +
   `  - .model JSON schema / serialization format details\n` +
@@ -233,7 +234,7 @@ process.stdout.write(
   `      → Read: references/monster.md\n` +
   `\n` +
   `[PLATFORM/TILE] TileMapMode / Body / sideview / topdown / gravity / SortingLayer / SpriteRUID / 8 core / CoreVersion / spawn / SpawnByModelId / MovementComponent / InputSpeed / coordinates / visible screen range / .directory\n` +
-  `  → Skill: msw-maker-base-skill:msw-general\n` +
+  `  → Load skill: msw-general\n` +
   `  + Read: references/platform.md (core — common to all map types: 8 core, TileMapMode↔Body mapping, LEA-3004, coordinate system, RUID, spawn, ID, .config)\n` +
   `  Sub-trigger refinements (the SKILL.md only carries summary; the full implementation lives in these references — read in ADDITION when topic matches):\n` +
   `  - MapleTile (TileMapMode = 0) work — Foothold / Gravity / WalkSpeed / WalkJump / PredictFootholdEnd / IsOnGround / DownJump / FootholdEnter·LeaveEvent / Maple-style side-scroller\n` +
@@ -248,26 +249,26 @@ process.stdout.write(
   `      → Read: references/tile.md\n` +
   `\n` +
   `[DATASET/I18N] DataSet / userdataset / .csv / localize / i18n / translation / LocaleDataSet / _LocalizationService\n` +
-  `  → Skill: msw-maker-base-skill:msw-general\n` +
+  `  → Load skill: msw-general\n` +
   `  + Read: references/dataset.md\n` +
   `\n` +
   `[MCP/WORKSPACE] MCP tool calls / refresh / play / stop / logs / screenshot / Room / DataStorage location / mode switching\n` +
-  `  → Skill: msw-maker-base-skill:msw-general\n` +
+  `  → Load skill: msw-general\n` +
   `  + Read: references/mcp-tools.md\n` +
   `  + Read: references/workspace.md\n` +
   `\n` +
   `[AUTHORING] file-authoring principles / common schema / direct-edit risks\n` +
-  `  → Skill: msw-maker-base-skill:msw-general\n` +
+  `  → Load skill: msw-general\n` +
   `  + Read: references/authoring.md\n` +
   `\n` +
   `[AVATAR] avatar / costume / equipment / outfit / animation / attack motion / costume / avatar / state / action\n` +
-  `  → Skill: msw-maker-base-skill:msw-avatar (no references/ siblings)\n` +
+  `  → Load skill: msw-avatar (no references/ siblings)\n` +
   `\n` +
   `[DEFAULTPLAYER] DefaultPlayer / player / jump / move speed / HP / camera / respawn / jump / camera / respawn\n` +
-  `  → Skill: msw-maker-base-skill:msw-defaultplayer (no references/ siblings)\n` +
+  `  → Load skill: msw-defaultplayer (no references/ siblings)\n` +
   `\n` +
   `[COMBAT] attack / hit / damage / monster combat / critical / knockback / hit effect / attack / hit / damage / combat / monster\n` +
-  `  → Skill: msw-maker-base-skill:msw-combat-system\n` +
+  `  → Load skill: msw-combat-system\n` +
   `  Sub-trigger refinements (the SKILL.md covers concepts + API tables only — full implementation\n` +
   `  for each sub-topic lives in the matching reference below; loading SKILL.md alone is NOT enough\n` +
   `  when a sub-trigger fires):\n` +
@@ -283,7 +284,7 @@ process.stdout.write(
   `      → Read: references/ai-bt.md\n` +
   `\n` +
   `[SEARCH] sprite / animation resource / sound / RUID / resource search / API example search / sprite / sound / find\n` +
-  `  → Skill: msw-maker-base-skill:msw-search\n` +
+  `  → Load skill: msw-search\n` +
   `  Sub-trigger refinements (the SKILL.md's own routing tables map each query type to a specific\n` +
   `  references/resource/*.md — follow them):\n` +
   `  - searchResources / searchAvatarItems / findSimilarResources / resource_pack·sprite·animationclip·sound·avataritem search\n` +
@@ -302,16 +303,16 @@ process.stdout.write(
   `    (no references/ siblings; each catalog package's README is fetched on demand from GitHub.)\n` +
   `\n` +
   `Notation in this matrix:\n` +
-  `- 'Skill: msw-maker-base-skill:<name>' = invoke the Skill tool with that identifier.\n` +
-  `  It resolves the global plugin path automatically — never pass a 'plugins/...' path.\n` +
+  `- 'Load skill: <name>' = load the skill's SKILL.md via your agent's skill system (see R1).\n` +
+  `  The skill files live in the agent's skill directory — never pass a 'plugins/...' path.\n` +
   `- 'Read: references/<file>.md' = once the skill is loaded, Read the file at\n` +
   `  <skill_folder>/references/<file>.md. The skill's absolute folder is shown in the\n` +
-  `  Skill tool's output header — that is the only correct base path.\n` +
+  `  loaded result — that is the only correct base path.\n` +
   `\n` +
   `Decision rule:\n` +
   `1. **Foundation Skills + Foundation references FIRST, sub-triggers SECOND.** Per R6, on EVERY turn,\n` +
   `   regardless of any domain trigger:\n` +
-  `     (a) Skill: msw-maker-base-skill:msw-general → msw-packages → msw-ui-system  (3 Foundation Skills)\n` +
+  `     (a) Load skills: msw-general → msw-packages → msw-ui-system  (3 Foundation Skills)\n` +
   `     (b) Read msw-general/references/{platform.md (core), workspace.md, entity.md, authoring.md} in full\n` +
   `         (4 Foundation references)\n` +
   `   Once TileMapMode is identified, the matching ONE of platform-{maple|rect|sideview}.md joins Foundation.\n` +
@@ -324,12 +325,5 @@ process.stdout.write(
   `   the listed references/*.md is REQUIRED in ADDITION to Foundations, not optional — SKILL.md alone is insufficient.\n` +
   `5. If unsure which additional skill applies → load all 3 Foundations (rule 1) anyway, then route from there.\n` +
   `6. Never answer a cross-domain request from a previously-loaded skill alone.\n` +
-  `7. Never use Bash 'cat'/'head'/'tail'/'Get-Content' for skill or reference files. Use Read.\n` +
-  `8. Never use Read/ls/Glob/Grep/Search to look up 'plugins/msw-maker-base-skill/...' paths.\n` +
-  `   The plugin is not in the workspace. Use the Skill tool to load the skill; only then is the\n` +
-  `   real absolute path available for Read calls on references/*.md.\n` +
-  `9. Never use Bash shell for workspace file/folder exploration (see R7). Use Glob/Read/Grep\n` +
-  `   tools regardless of host OS. Reserve Bash for git/npm/MCP/build only, with relative paths\n` +
-  `   or forward-slash + double-quoted absolutes.\n` +
   `</msw-skill-router-reminder>\n`
 );

@@ -35,7 +35,7 @@ map.write("map/map01.map");
 | `getMapInfo()` | summary | TileMapMode, gravity, instance flag, counts |
 | `getTileMapMode()` | `0`/`1`/`2` | MapleTile / RectTile / SideViewRectTile |
 | `listEntities()` | array | Compact entity list |
-| `find(name)` | entity record | Lookup by relative name or `/maps/...` path |
+| `find(name)` | entity record | Lookup by map root name, relative child name, or `/maps/...` path |
 | `component(name, compType)` | component object | Read a component on an entity |
 | `placeModel(name, modelPath, opts)` | `MapBuilder` | Place a `.model` instance (`pos`, `componentOverrides`, …) |
 | `sprite(name, opts)` | `MapBuilder` | Inline sprite entity (`ruid`, `pos`, `order`) |
@@ -64,7 +64,8 @@ MapBuilder.snapshot("map/map01.map");
 map.getMapInfo();       // TileMapMode, Gravity, IsInstanceMap, entity/tile/foothold counts
 map.getTileMapMode();   // 0 MapleTile, 1 RectTile, 2 SideViewRectTile
 map.listEntities();     // compact entity list
-map.find("Monster01");  // entity by relative name or /maps/... path
+map.find("map01");      // root map entity by map name
+map.find("Monster01");  // child entity by relative name or /maps/... path
 map.component("Monster01", "MOD.Core.TransformComponent");
 ```
 

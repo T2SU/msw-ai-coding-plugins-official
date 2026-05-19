@@ -37,7 +37,19 @@ When creating a new folder, create the folder only. Maker Refresh generates fold
 
 ## 2. Template Catalog
 
-Never start from a blank model. Pick the closest template from `../models/`, then load it with `ModelBuilder.fromTemplate()`.
+Never start from a blank model. Pick the closest template from the skill-local `models/` folder, then load it with `ModelBuilder.fromTemplate()`.
+
+### 2.0 Template Path
+
+Templates live in this skill's own `models/` folder, sibling to `scripts/` and `references/`. The `../models/<Name>.model` notation in the tables below is a **catalog identifier** — not the literal string to pass to `fromTemplate`.
+
+`fromTemplate`'s first argument is resolved against `process.cwd()`, so always pass either an **absolute path** or a `__dirname`-derived path. Never guess. Templates are NOT under `Global/`, `RootDesk/`, `MyDesk/`, or a top-level `Models/` — those are output locations. An error like `model file not found: ./Global/<Name>.model` means the path was fabricated; recompute it from the skill location, do not create a file there.
+
+```javascript
+const path = require("path");
+const templateDir = path.join(__dirname, "..", "models"); // from a script under scripts/model/
+ModelBuilder.fromTemplate(path.join(templateDir, "ChaseMonster.model"), "MyMonster");
+```
 
 ### Base
 
@@ -132,10 +144,11 @@ For full UI layout work, use the `msw-ui-system` skill instead of authoring UI m
 ### Create from Template
 
 ```javascript
+const path = require("path");
 const { ModelBuilder, vector3 } = require("../scripts/model/msw_model_builder.cjs");
 
 const b = ModelBuilder.fromTemplate(
-  "./skills/msw-general/models/TransformOnly.model",
+  path.join(__dirname, "..", "models", "TransformOnly.model"),
   "MyObject"
 );
 
@@ -366,6 +379,7 @@ If this order is inconvenient, keep the `.model` native-only and attach the scri
 ## 7. Checklist
 
 - [ ] Used `ModelBuilder.read()` / `snapshot()` / `fromTemplate()`, not raw `.model` reading.
+- [ ] `fromTemplate` path is absolute or `__dirname`-derived (§2.0); never `./Global/...`, `./Models/...`, or a guess.
 - [ ] Saved under `RootDesk/MyDesk/Models/{Category}/`.
 - [ ] Created any needed folder only; left folder metadata to Maker Refresh.
 - [ ] Picked the Body component matching `TileMapMode`.

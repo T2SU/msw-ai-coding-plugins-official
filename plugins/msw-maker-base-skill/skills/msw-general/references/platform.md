@@ -434,6 +434,14 @@ Example: bdadf19a-cc27-4a45-99c6-7a439c858a1b
 
 ## 15. .config File Structure
 
+### Environment/config
+
+```json
+{
+  "CoreVersion": "26.5.0.0"
+}
+```
+
 ### WorldConfig.config
 
 ```json
@@ -476,5 +484,5 @@ Collision group matrix. Defines which groups collide with which.
 ## 16. CoreVersion Compatibility
 
 - Currently supported version: **`26.5.0.0`**
-- Location: `Global/WorldConfig.config` → `CoreVersion`
+- Location: `Environment/config` → `CoreVersion`
 - **Do not proceed if CoreVersion mismatches** (Global Rule).

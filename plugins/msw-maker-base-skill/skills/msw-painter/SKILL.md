@@ -44,19 +44,25 @@ This skill is dedicated to the sprite category. It does not handle animation / a
 ### Minimal SVG template
 
 ```xml
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="128" height="128"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
+     width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
      style="image-rendering: pixelated;">
   <rect x="6" y="2" width="1" height="1" fill="#4A90D9"/>
   <!-- Place dots one by one with 1px rects -->
 </svg>
 ```
 
+> ⚠️ Use `width="100%" height="100%"` (NOT a fixed pixel count). The SVG element draws at its **own** declared size inside the render.cjs viewport — if you hard-code 128 but render at `--width 1024`, the SVG fills only the top-left 128px and the rest of the PNG is transparent. `100%` makes the SVG fill whatever canvas `--width`/`--height` specifies.
+
 ### Minimal Canvas template
 
 ```javascript
 // `c` (canvas element) and `ctx` (2D context) are auto-exposed by render.cjs.
 // ctx.imageSmoothingEnabled = false is applied automatically as well.
-const scale = 8;  // Map a 16×16 grid onto a 128×128 canvas
+// IMPORTANT: derive scale from c.width, not a hard-coded constant — otherwise
+// a different --width leaves the bottom-right of the canvas blank.
+const GRID = 16;
+const scale = c.width / GRID;  // 16×16 logical grid → canvas-sized output
 ctx.fillStyle = '#4A90D9';
 ctx.fillRect(6 * scale, 2 * scale, scale, scale);
 ```
@@ -197,6 +203,8 @@ Entity creation/movement/spawn, script authoring, and UI editing are outside the
 
 - **Not running `npm install` before `render.cjs`** → `Cannot find module 'puppeteer'`. Only needed the first time.
 - **Omitting `--width` / `--height`** → It falls back to 128×128, and if the user wanted a different size you have to redraw. Always specify it.
+- **SVG/Canvas content drawn only in the top-left corner of the PNG** → The drawing code declared its own dimensions (e.g. SVG `width="128" height="128"` or Canvas `scale = 8`) but render.cjs was invoked with a larger `--width`/`--height`. The content fills only its declared size and the rest of the PNG stays transparent. Fix: SVG uses `width="100%" height="100%"`; Canvas derives scale from `c.width`. The Minimal templates above already follow this.
+- **Always Read the output PNG before uploading** → A misconfigured SVG/Canvas can silently produce a blank or off-canvas PNG. One `Read` on the output catches the size-mismatch and blank-canvas bugs in seconds; uploading first means re-doing the 2-step upload.
 - **Background comes out black** → You drew a background inside the SVG/Canvas/HTML. To keep it transparent, remove the background shape itself.
 - **Curves look smooth** → Pixel art rule violation. Remove `arc()`/`bezierCurveTo()`/gradients and redraw with dots.
 - **PUT step fails with 401/403** → The presigned URL expired or is wrong. Restart from step 1.
