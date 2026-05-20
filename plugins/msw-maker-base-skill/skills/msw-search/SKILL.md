@@ -255,7 +255,7 @@ const result = await searchResources("orange mushroom", {
 
 The wrapper handles all of this — you do not need to set it manually.
 
-- Base URL: `https://maplestoryworlds-resourcesearch-new.nexon.com`
+- Base URL: `https://maplestoryworlds-resourcesearch-new.nexon.com/api`
 - No auth (public), `/v3/` prefix, POST bodies are `application/json; charset=utf-8`
 - Default timeout: 15s (override via the wrapper's `_request(method, path, { timeout })`)
 

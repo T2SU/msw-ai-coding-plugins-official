@@ -30,7 +30,7 @@
 
 'use strict';
 
-const BASE_URL = 'https://maplestoryworlds-resourcesearch-new.nexon.com';
+const BASE_URL = 'https://maplestoryworlds-resourcesearch-new.nexon.com/api';
 const DEFAULT_TIMEOUT_MS = 15_000; // SKILL.md recommends 15s
 const DEFAULT_LIMIT = 3;           // skill convention (server defaults are 5/10)
 

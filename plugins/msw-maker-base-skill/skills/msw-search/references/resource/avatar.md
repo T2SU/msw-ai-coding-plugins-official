@@ -250,7 +250,7 @@ under `animationclip_actions[action][expression]` instead.
 Each frame image is served at:
 
 ```
-https://maplestoryworlds-resourcesearch-new.nexon.com/v3/avatar/render/{filename}
+https://maplestoryworlds-resourcesearch-new.nexon.com/api/v3/avatar/render/{filename}
 ```
 
 The wrapper provides a helper that builds this URL safely (URL-encoding the
