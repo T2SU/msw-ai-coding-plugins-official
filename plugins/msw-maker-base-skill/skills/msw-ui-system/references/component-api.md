@@ -314,6 +314,8 @@ Displays text. Supports font, alignment, overflow, drop shadow, and outline.
 
 Renders 2D images / sprites.
 
+> See the `msw-sprite-ruid` skill for `ImageRUID` native type support (`sprite` / `animationclip`), `animationclip` animated UI, and the `thumbnail://` prefix for rendering `skeleton` / `avataritem` thumbnails (especially useful for avatar item icons).
+
 ### Properties
 
 | Name | Type | Default | Description |

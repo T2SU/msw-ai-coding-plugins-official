@@ -32,6 +32,7 @@ Branch to sub-references based on request keywords.
 | Enum values (`AlignmentType`, `OverflowType`, `ImageType`, `UIBasicParticleType`…) | `references/component-api.md` §Enums |
 | Runtime mlua patterns (popup open/close, toast fade, HP bar, GridView, drag, tab, cooldown), Runtime UI Caveats (client-only, server-side nil, etc.) | `references/runtime-patterns.md` |
 | **`.ui` builder invocation methods** (UIBuilder API, anchor presets, write auto-lint, component add/patch/remove) | `references/builder-protocol.md` |
+| "sound", "sfx", "click sound", "hover sound", "button audio", "PlaySound" | `references/ui-sound.md` |
 
 ---
 
@@ -45,7 +46,8 @@ Branch to sub-references based on request keywords.
 (5) Inject bindings       Auto-inject .mlua property default UUIDs via b.write(path, { bind: {...} }) or b.inject_bindings(...) (builder-protocol.md §"Binding Injection")
 (6) Self-verify           write() auto-runs scripts/ui_lint.cjs (strict ON by default)
 (7) Preview               Visual check via scripts/preview_ui_layout.cjs
-(8) Maker Refresh         Apply to engine
+(8) Sound pass            For any interactive button, offer click/hover SFX wiring (references/ui-sound.md)
+(9) Maker Refresh         Apply to engine
 ```
 
 ## 2. Global Rules
@@ -65,6 +67,7 @@ Branch to sub-references based on request keywords.
 4. Separate popups and toasts into their **own UIGroup**, standalone show/hide
 5. Verify text `Alignment` default is `UpperLeft(0)` — 95% of "I centered it but it sticks to the left" issues
 6. Button touch target ≥ 88×88 (mobile support)
+7. **After creating any interactive button** — proactively suggest wiring click/hover SFX via `references/ui-sound.md` (default UI SFX RUIDs available). Skip only if the user explicitly opts out or the button is purely decorative.
 
 ---
 
@@ -75,6 +78,7 @@ Branch to sub-references based on request keywords.
 - `references/component-api.md` — §"Component Selection Guide" (which/when/why) + full component property/method/event tables (what) + all UI-related enum values (§Enums)
 - `references/layout-recipes.md` — Layout template collection
 - `references/runtime-patterns.md` — `.mlua` runtime patterns (popup/toast/HP/grid/drag…) + Runtime UI Caveats
+- `references/ui-sound.md` — UI sound integration (`_SoundService:PlaySound`, click/hover hook, default UI SFX RUIDs)
 - `references/builder-protocol.md` — `.ui` CJS builder call protocol (panel/text/sprite/button/slider/scroll/script/group/mask/grid/avatar/touch_receive/skeleton/area_particle/basic_particle, component add/replace/patch/remove, anchor presets, write auto-lint, `.mlua` property UUID auto-binding)
 - `references/templates/templates.md` — Pre-built style bundle index (`style-N-*` `.ui`, `ruid-map.md`, `Popupbutton.mlua`)
 

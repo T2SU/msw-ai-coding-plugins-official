@@ -244,6 +244,16 @@ self.Entity.SpriteRendererComponent.SpriteRUID = "ruid-string-here"
 }
 ```
 
+**`animationclip` and `thumbnail://`**: `SpriteRUID` also accepts an `animationclip` RUID directly for looping animation playback. To display any resource (`animationclip` / `skeleton` / `avataritem`) as a **static thumbnail**, prepend `thumbnail://` — see `msw-sprite-ruid` skill.
+
+```lua
+-- Animation playback
+self.Entity.SpriteRendererComponent.SpriteRUID = animationClipRuid
+
+-- Static thumbnail of any resource type
+self.Entity.SpriteRendererComponent.SpriteRUID = "thumbnail://" .. anyRuid
+```
+
 **Searching for RUID**: Query assets via `_ResourceService`. Only resources registered in the project can be used. (Or use the `msw-search` skill — more accurate.)
 
 ---
