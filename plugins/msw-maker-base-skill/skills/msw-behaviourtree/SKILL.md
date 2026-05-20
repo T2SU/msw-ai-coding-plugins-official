@@ -1,23 +1,67 @@
 ---
-name: msw-behaviourtree-creator
-description: "Authors MSW `.behaviourtree` files end-to-end. Generates the wrapper, mints UUIDs, wires the RootNode → Nodes graph, populates Blackboard variables with the right MODNativeType strings, distinguishes built-in composite nodes from `codeblock://`-backed custom action/decorator nodes, links `nodeProperties` to Blackboard variable names, and self-validates parent/child consistency. Reads the project's pre-generated catalog at `.behaviourDocs/bt-spec.md` (built by the `msw-behaviourtree-spec-builder` skill) for UUIDs, propertyKey lists, and version-stamped type strings. Triggers: 'create behaviourtree', 'new BT', 'add a behaviour tree', 'BT node graph', '비헤이비어 트리 만들어', '.behaviourtree 생성', 'SequenceNode SelectorNode', 'Blackboard variable', 'definitionId codeblock', 'startNodeId'."
+name: msw-behaviourtree
+description: "Authors MSW `.behaviourtree` files end-to-end **and** maintains the project-specific authoring spec (`.behaviourDocs/bt-spec.md`) that drives it. Step 0 of this skill (re)builds the compact catalog of custom action/decorator UUIDs, propertyKey names, and version-stamped MODNativeType strings by scanning every `.codeblock` whose paired `.mlua` extends `ActionNode`/`DecoratorNode`. Steps 1–7 then generate the wrapper, mint UUIDs, wire the RootNode → Nodes graph, populate Blackboard variables with the right type strings, distinguish built-in composite nodes from `codeblock://`-backed custom nodes, link `nodeProperties` to Blackboard variable names, and self-validate parent/child consistency. Triggers: 'create behaviourtree', 'new BT', 'add a behaviour tree', 'BT node graph', '비헤이비어 트리 만들어', '.behaviourtree 생성', 'SequenceNode SelectorNode', 'Blackboard variable', 'definitionId codeblock', 'startNodeId', 'build BT spec', 'refresh bt-spec', 'generate behaviourtree catalog', 'BT 스펙 생성', 'bt-spec.md 만들어', 'rescan BT nodes'."
 ---
 
-# MSW BehaviourTree Creator
+# MSW BehaviourTree
 
-Authors `.behaviourtree` files. The project's discovered node catalog lives in `.behaviourDocs/bt-spec.md`; fixed graph rules and skeletons live in this skill's `references/` folder.
+End-to-end authoring skill for MSW `.behaviourtree` files. Owns **both** the project-specific authoring spec (`<ProjectRoot>/.behaviourDocs/bt-spec.md`) and the tree generation itself. Fixed graph rules and skeletons live in this skill's `references/`; the per-project spec is (re)built by this skill's local `scripts/build-spec.cjs`.
 
 ---
 
 ## 🚦 Execution order (follow this sequence)
 
-### 0. Locate / refresh the project spec
+### 0. Build / refresh the project spec (`bt-spec.md`)
 
-- Read `<ProjectRoot>/.behaviourDocs/bt-spec.md`. **It is the source of truth** for project-specific data: every custom action / decorator node's `definitionId`, `btNodeType`, visible `propertyKey` names, and the serialized `Type.type` strings stamped to this project's `CoreVersion`.
-- The compact spec intentionally lists only property names. When constructing `nodeProperties`, resolve each property's mlua type/default from the paired `.mlua` file, then use the type map in `bt-spec.md` §4 for `propertyType.type`.
-- If the file is missing, **stop and invoke `msw-behaviourtree-spec-builder` first**. If running manually, execute that skill's local `scripts/build-spec.cjs` with `--projectRoot` set to the MSW project root.
-- If the user says they recently added/changed a BT codeblock or a `.mlua property`, refresh the spec (re-run the builder skill) before proceeding — stale UUIDs / missing properties silently produce broken trees.
-- Also read [`references/skeleton-minimal.json`](references/skeleton-minimal.json) for the smallest valid tree, [`references/skeleton-full.json`](references/skeleton-full.json) for a Composite+Decorator+Action+Blackboard example with all optional fields populated, [`references/node-catalog.md`](references/node-catalog.md) for fixed graph rules, and any existing `.behaviourtree` in the project (`**/*.behaviourtree`) to mirror conventions. Replace `{CORE_VERSION}` in the skeletons with the `CoreVersion` from `bt-spec.md` — both at the top level **and** inside every `MOD.Core.*` type string in Blackboard variables and `nodeProperties`.
+The spec is the **source of truth** for every project-specific data point: each custom action/decorator node's `definitionId`, `btNodeType`, visible `propertyKey` names, and the serialized `Type.type` strings stamped to this project's `CoreVersion`.
+
+**When to (re)build:**
+
+- First time working on BT in a project (no `.behaviourDocs/bt-spec.md` yet).
+- After **any** change that affects BT node surface area:
+  - new / renamed / removed `.codeblock` whose paired `.mlua` extends `ActionNode` / `DecoratorNode`
+  - added / removed / renamed `property` lines in such a `.mlua`
+  - `Environment/config` `CoreVersion` bumped (the serialized type strings are version-tagged).
+- The user says they recently added/changed a BT codeblock or a `.mlua` property — stale UUIDs / missing properties silently produce broken trees.
+- The downstream validation (Step 7) flags a `definitionId`, `propertyKey`, or version mismatch.
+
+**How to run** — invoke this skill's local script:
+
+```bash
+node "<path-to-msw-behaviourtree>/scripts/build-spec.cjs" --projectRoot "<MSW project root>"
+```
+
+If the current working directory is already the MSW project root, `--projectRoot` can be omitted. Requires Node.js on `PATH` (no other dependencies — pure stdlib `fs`/`path`).
+
+Optional overrides (long flags, case-insensitive):
+
+| Flag | Default | Notes |
+|------|---------|-------|
+| `--projectRoot` | current working directory | MSW project root to scan |
+| `--outputPath` | `<ProjectRoot>/.behaviourDocs/bt-spec.md` | folder is created if missing |
+| `--coreVersion` | read from `<ProjectRoot>/Environment/config` (`CoreVersion` field) | required if the config is missing |
+
+Example with overrides:
+
+```bash
+node "<path-to-msw-behaviourtree>/scripts/build-spec.cjs" --projectRoot "C:/path/to/project" --coreVersion 26.5.0.0
+```
+
+The script throws if `Environment/config` is absent and `--coreVersion` is not passed — there is no fallback default.
+
+**What the spec contains:**
+
+1. Project metadata — project root, `CoreVersion`, generated time, discovered node counts.
+2. Built-in composite node names and their fixed `definitionId` / `btNodeType`.
+3. Custom action nodes — `Name`, `definitionId`, `btNodeType`, visible property names.
+4. Custom decorator nodes — same shape as action nodes.
+5. Type map — mlua type to serialized `MODNativeType.type` plus Blackboard `ObjectValue` shape.
+
+UUIDs come from real `.codeblock` files in the project — the spec never invents them. `@HideFromInspector` properties are filtered out automatically. Fixed authoring rules, file skeletons, and validation checklists live in this skill's `references/` rather than in the generated spec.
+
+**After (re)building**, read the freshly written `<ProjectRoot>/.behaviourDocs/bt-spec.md` and continue with the steps below. The compact spec intentionally lists only property names; when constructing `nodeProperties`, resolve each property's mlua type/default from the paired `.mlua` file, then use the type map in `bt-spec.md` §4 for `propertyType.type`.
+
+Also read [`references/skeleton-minimal.json`](references/skeleton-minimal.json) for the smallest valid tree, [`references/skeleton-full.json`](references/skeleton-full.json) for a Composite+Decorator+Action+Blackboard example with all optional fields populated, [`references/node-catalog.md`](references/node-catalog.md) for fixed graph rules, and any existing `.behaviourtree` in the project (`**/*.behaviourtree`) to mirror conventions. Replace `{CORE_VERSION}` in the skeletons with the `CoreVersion` from `bt-spec.md` — both at the top level **and** inside every `MOD.Core.*` type string in Blackboard variables and `nodeProperties`.
 
 ### 1. Collect input from the user
 
@@ -32,7 +76,7 @@ Confirm via context, or ask via AskUserQuestion if anything is ambiguous:
 | Blackboard variables | Variable name + type + initial value | `TargetEntity: Entity`, `MoveSpeed: number = 10.0` |
 | Node properties | For each custom node, which property maps to which Blackboard variable | `Chase.TargetEntityKey = "TargetEntity"` |
 
-**Custom-node existence check (mandatory):** every custom action/decorator name the user mentions must appear in `bt-spec.md` §2 / §3. If a referenced node is not in the spec, **stop** and ask the user — do not invent a UUID, do not assume a node exists by name, and do not skip running the spec builder.
+**Custom-node existence check (mandatory):** every custom action/decorator name the user mentions must appear in `bt-spec.md` §2 / §3. If a referenced node is not in the spec, **stop** and ask the user — do not invent a UUID, do not assume a node exists by name, and do not skip rerunning Step 0.
 
 ### 2. Mint UUIDs
 
@@ -163,7 +207,7 @@ Write the JSON file, then run this checklist. In particular:
 - [ ] Every `nodeProperties[].propertyKey` matches a property in `bt-spec.md` for that node.
 - [ ] Every `*Key` property's `propertyValue` matches a `Blackboard.Variables[].Name` of the right type.
 - [ ] Every type string is copied verbatim from `bt-spec.md` §4 — version-tagged, typo-fragile.
-- [ ] **Version cross-check:** every `MOD.Core.*` type string's `Version=X.Y.Z.Z` substring (in `Blackboard.Variables[].Type.type` and `Nodes[].nodeProperties[].propertyType.type`) equals the file's top-level `CoreVersion`. Mismatch silently breaks deserialization — common when `bt-spec.md` is stale relative to the project's current `CoreVersion`. If they differ, refresh the spec before writing. (`System.*` types use the immutable `Version=4.0.0.0` and are exempt.)
+- [ ] **Version cross-check:** every `MOD.Core.*` type string's `Version=X.Y.Z.Z` substring (in `Blackboard.Variables[].Type.type` and `Nodes[].nodeProperties[].propertyType.type`) equals the file's top-level `CoreVersion`. Mismatch silently breaks deserialization — common when `bt-spec.md` is stale relative to the project's current `CoreVersion`. If they differ, **re-run Step 0** before writing. (`System.*` types use the immutable `Version=4.0.0.0` and are exempt.)
 - [ ] JSON parses:
   ```bash
   node -e "JSON.parse(require('node:fs').readFileSync(process.argv[1],'utf8'))" "<path>"
@@ -175,7 +219,8 @@ If any check fails, fix it before reporting done.
 
 ## 📂 Files in / consumed by this skill
 
-- `<ProjectRoot>/.behaviourDocs/bt-spec.md` — compact generated catalog. **Source of truth** for node names, `definitionId`, `btNodeType`, property names, and type strings. Built by the `msw-behaviourtree-spec-builder` skill.
+- [`scripts/build-spec.cjs`](scripts/build-spec.cjs) — Node.js script that scans the project and emits `<ProjectRoot>/.behaviourDocs/bt-spec.md`. Invoked in Step 0.
+- `<ProjectRoot>/.behaviourDocs/bt-spec.md` — compact generated catalog. **Source of truth** for node names, `definitionId`, `btNodeType`, property names, and type strings. Written by the script above; consumed by Steps 1–7.
 - [`references/skeleton-minimal.json`](references/skeleton-minimal.json) — smallest valid tree (empty Blackboard, single Composite root with no children).
 - [`references/skeleton-full.json`](references/skeleton-full.json) — Composite → Decorator → Action with `nodeProperties` (literal + `Key`-suffix) and a populated `Blackboard`. Use this as the shape reference whenever the tree is non-trivial.
 - [`references/node-catalog.md`](references/node-catalog.md) — narrative explanation of `btNodeType` values, valid graph shapes, the `Key`-suffix convention, and how the spec builder discovers nodes (kept for reference; the runtime catalog itself lives in `bt-spec.md`).
@@ -188,4 +233,5 @@ If any check fails, fix it before reporting done.
 2. Never change the file's wrapper UUID (`EntryKey` / `ContentProto.Json.id`) — external references break.
 3. Adding a node: mint a fresh `nodeId`, append to `Nodes`, update the parent Composite's `childNodes`, set the new node's `nodeParentId`.
 4. Removing a node: remove from `Nodes`, remove its ID from any Composite's `childNodes`. If it was a Composite, decide whether to re-parent or remove its children — never leave dangling `nodeParentId` references.
-5. Re-run the validation checklist after every edit.
+5. If the edit involves a custom node name, property, or type that may have changed in the project since the spec was last built, **re-run Step 0** first.
+6. Re-run the Step 7 validation checklist after every edit.
