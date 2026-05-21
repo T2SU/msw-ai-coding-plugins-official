@@ -40,8 +40,8 @@ const result = await searchResources("orange mushroom", {
 | Body field (server) | Wrapper arg / CLI flag | Type | Required | Description |
 |---------------------|------------------------|------|----------|-------------|
 | `query` | `query` (positional) | string | O | Search term (natural language, RUID, or pack ID — exact-match patterns trigger ID lookup) |
-| `resourceTypeFilter` | `resourceTypeFilter` / `--resource-type` | string[] | - | `sprite`, `animationclip`, `resource_pack`, `bgm`, `voice`, `effect`, `avataritem` |
-| `categoryFilter` | `categoryFilter` / `--category` | string[] | - | `mob`, `npc`, `map`, `item`, `effect`, `skill`, `object`, `background`, `foothold`, `ladder`, `rope`, `etc` (or avatar slot when `resourceTypeFilter=["avataritem"]`) |
+| `resourceTypeFilter` | `resourceTypeFilter` / `--resource-type` | string[] | - | `sprite`, `animationclip`, `resource_pack`, `bgm`, `voice`, `effect` (all three are audio), `avataritem` |
+| `categoryFilter` | `categoryFilter` / `--category` | string[] | - | `mob`, `npc`, `item`, `skill`, `object`, `background`, `foothold`, `rope`, `ladder`, `etc` (or avatar slot when `resourceTypeFilter=["avataritem"]`). **`map` / `effect` / `ui` are NOT valid** — see SKILL.md "Categories" |
 | `topK` | `topK` / `--topK` | int (1–100) | - | Number of results (server default 20 / **this skill's recommended default 3** — always send explicitly) |
 | `offset` | `offset` / `--offset` | int (0–5000) | - | Result offset; default 0 |
 | `canonicalOnly` | `canonicalOnly` / `--canonical-only` | bool | - | Server default `true` (sprite/animationclip/avataritem dedup) |
@@ -110,9 +110,10 @@ const result = await searchResources("orange mushroom", {
 ### Choosing `resourceTypeFilter`
 
 - **Default:** `resource_pack` — a finished asset bundling sprites + animations + sounds; suitable for most searches
-- **Sound / audio:** `bgm` / `voice` / `effect`
+- **Sound / audio:** `bgm` (background music) / `voice` (NPC voice) / `effect` (sound effect — **not visual**)
 - **Individual sprite:** `sprite`
 - **Individual animation:** `animationclip`
+- **Visual effect / particle / hit FX:** `sprite` or `animationclip` + `categoryFilter: ["skill","mob","etc"]` — there is no visual `effect` resource_type or category
 - **Avatar costume item:** `avataritem` (or just call `searchAvatarItems`)
 
 ### Using `categoryFilter`
@@ -121,11 +122,17 @@ const result = await searchResources("orange mushroom", {
 |-------------|----------|
 | Monster, mob | `mob` |
 | NPC | `npc` |
-| Map, background, terrain | `map` |
 | Item | `item` |
-| Effect | `effect` |
-| Skill | `skill` |
-| UI element | `ui` |
+| Skill resource / skill effect | `skill` |
+| Tree / rock / map object / decoration | `object` |
+| Background / map tile / scenery / BGM | `background` |
+| Walkable platform | `foothold` |
+| Rope | `rope` |
+| Ladder | `ladder` |
+| Uncategorized / misc | `etc` |
+| Visual effect / particle | use `categoryFilter: ["skill","mob","etc"]` with `resourceTypeFilter: ["sprite","animationclip"]` — no dedicated `effect` category |
+| Sound effect (audio) | use `resourceTypeFilter: ["effect"]` — `effect` is an audio **resource_type**, not a category |
+| UI element | not indexed under a `ui` category — search `sprite` + `category: "etc"` or by direct name |
 
 ### Search Tips
 

@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { appendLspLog } = require('./lsp-log.cjs');
-const { resolveLspCommand, spawnLspSync } = require('./resolve-cmd.cjs');
+const { resolveLspCommand, spawnLspDetached } = require('./resolve-cmd.cjs');
 
 function readInput() {
   try {
@@ -41,13 +41,11 @@ if (!projectRoot) process.exit(0);
 const resolved = resolveLspCommand();
 const subArgs = ['start', projectRoot];
 const args = resolved.baseArgs.concat(subArgs);
-const timeout = Number.parseInt(process.env.MLUA_LSP_HOOK_START_TIMEOUT_MS || '120000', 10);
 
 const startedAt = Date.now();
-const result = spawnLspSync(resolved, subArgs, {
-  timeout: Number.isFinite(timeout) ? timeout : 120000,
-});
+const dispatched = spawnLspDetached(resolved, subArgs);
 const durationMs = Date.now() - startedAt;
+const result = dispatched.error ? { error: dispatched.error } : { status: 0, stdout: '', stderr: '' };
 
 appendLspLog({
   cwd: input.cwd || process.cwd(),
@@ -62,15 +60,17 @@ appendLspLog({
   summary: {
     cmd_source: resolved.source,
     use_shell: resolved.useShell,
+    background: true,
+    pid: dispatched.pid,
   },
 });
 
-if (result.error || result.status !== 0) {
-  const message = result.error?.message || result.stderr || `exit ${result.status}`;
+if (dispatched.error) {
+  const message = dispatched.error.message || String(dispatched.error);
   process.stdout.write(JSON.stringify({
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
-      additionalContext: `mLua LSP daemon start failed: ${String(message).trim()}`,
+      additionalContext: `mLua LSP daemon background start failed: ${String(message).trim()}`,
     },
   }));
 }

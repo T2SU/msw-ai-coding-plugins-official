@@ -1,6 +1,6 @@
 ---
 name: msw-search
-description: "MSW search integration — (1) vector search for API docs and implementation guides via the msw-mcp MCP server (mlua_api_retriever / mlua_document_retriever), (2) REST API search for resources (sprite / animation / sound / resource pack / avatar). Use for 'find details, examples, or related APIs not in .d.mlua', 'need a SpriteRUID', 'monster sprite', 'background image', 'find a sound', 'avatar rendering', etc. Keywords: document search, API details, examples, guide, retriever, resource, sprite, animation, sound, RUID, resource pack, avatar."
+description: "MSW search integration — (1) vector search for API docs and implementation guides via the msw-mcp MCP server (mlua_api_retriever / mlua_document_retriever), (2) REST API search for resources (sprite / animation / sound / resource pack / avatar). Use for 'find details, examples, or related APIs not in .d.mlua', 'need a SpriteRUID', 'monster sprite', 'background image', 'find a sound', 'avatar item lookup', etc. Keywords: document search, API details, examples, guide, retriever, resource, sprite, animation, sound, RUID, resource pack, avatar."
 ---
 
 # MSW Search
@@ -23,7 +23,7 @@ MSW has **two distinct search targets**:
 | "I need a SpriteRUID", "Find a sprite for monster / NPC / background" | **Resource search** → **start with `resource_pack`** |
 | "Find an animation / sound / resource pack" | **Resource search** → **start with `resource_pack`** |
 | "Details for this RUID", "Similar resources" | **Resource search** |
-| "Avatar rendering / default avatar" | **Resource search** |
+| "Avatar item / default avatar lookup" | **Resource search** |
 | "Upload / list / update / delete my own assets" | Call `msw-mcp` `asset_*` tools directly (`account_get_my_user_id` first for `ownerId`) |
 
 > **★ Resource search default — always `resource_pack` first**
@@ -218,7 +218,7 @@ const {
   searchResources, searchAvatarItems, findSimilarResources,
   getResource, getResourcesBatch, getResourceTags,
   listResources, randomResources, findPacksContaining,
-  listAvatars, getAvatarDefaults, renderAvatar, avatarFrameUrl,
+  listAvatars, getAvatarDefaults,
 } = require('./msw_resource_api.cjs');
 
 const result = await searchResources("orange mushroom", {
@@ -243,8 +243,6 @@ const result = await searchResources("orange mushroom", {
 | `findPacksContaining` | `packs` | `GET /v3/resources/packs/{ruid}` (lists packs **containing** a RUID — pack id is NOT accepted here) |
 | `listAvatars` | `avatars` | `GET /v3/avatars` |
 | `getAvatarDefaults` | `avatar-defaults` | `GET /v3/avatars/defaults` |
-| `renderAvatar` | `avatar-render` | `POST /v3/avatar/render` |
-| `avatarFrameUrl` | `avatar-frame-url` | (URL builder, no request) |
 
 > **No `/v3/avatars/{ruid}` endpoint exists.** To inspect an avataritem
 > (color_hex, group members, …), call `getResource(ruid)` — the
@@ -300,7 +298,9 @@ into the `resourceTypeFilter` array when searching):
 | `sprite` | Static image (PNG) |
 | `animationclip` | Frame-based animation |
 | `resource_pack` | Finished asset bundling sprites + animations + sounds |
-| `bgm` / `voice` / `effect` | Audio clips (categorized) |
+| `bgm` | Background music (audio) |
+| `voice` | Voice clip — NPC dialogue, etc. (audio) |
+| `effect` | **Sound effect (audio).** Not a visual effect. For visual particles / hit / skill FX, search `sprite` or `animationclip` (categories `skill` / `mob` / `etc`). |
 | `avataritem` | Avatar costume item (cap, coat, pants, shoes, weapon, …) — same `POST /v3/search/resources` endpoint with `resourceTypeFilter: ["avataritem"]`. See `references/resource/search.md` ("Avatar Item Search") and `references/resource/avatar.md`. |
 
 > All search and listing endpoints use the same type-filter field name: **`resourceTypeFilter`**
@@ -315,15 +315,35 @@ into the `resourceTypeFilter` array when searching):
 
 ## Categories
 
+`category` values that actually appear on responses. Use these with `categoryFilter`.
+
+### General resources (`sprite` / `animationclip` / `resource_pack` / `bgm` / `voice` / `effect`)
+
 | category | Description |
 |----------|-------------|
 | `mob` | Monster |
 | `npc` | NPC |
-| `map` | Map / background / terrain |
 | `item` | Item |
-| `effect` | Effect |
-| `skill` | Skill |
-| `ui` | UI element |
+| `skill` | Skill effect / skill resources |
+| `object` | Map object (tree, rock, decoration) |
+| `background` | Background / map tile / BGM |
+| `foothold` | Walkable platform |
+| `rope` | Rope |
+| `ladder` | Ladder |
+| `etc` | Uncategorized |
+
+### Avatar (`avataritem` only)
+
+| category | Slot |
+|----------|------|
+| `cap`, `hair`, `face`, `faceaccessory`, `eyeaccessory`, `earaccessory` | Head / face |
+| `coat`, `longcoat`, `pants`, `shoes`, `glove`, `cape` | Body |
+| `weapon`, `twohandweapon`, `subweapon`, `shield` | Weapon |
+
+> `map`, `effect`, `ui` are **not** valid category values — they return zero results.
+> - Looking for maps / backgrounds → `category: "background"` or `"object"`.
+> - Looking for **visual effects** → search `sprite` / `animationclip` with `category: "skill"` (or `mob`/`etc`); `effect` is the **audio** resource_type, not a category.
+> - There is no `ui` resource family in this index — UI sprites usually live as `sprite` + `category: "etc"`.
 
 ## RUID
 
@@ -338,8 +358,8 @@ A 32-character hex string that uniquely identifies every resource. Example: `"00
 ```json
 {
   "id": "32-char hex RUID",
-  "type": "sprite|animationclip|resource_pack|sound",
-  "category": "mob|npc|map|item|effect|skill|ui",
+  "type": "sprite|animationclip|resource_pack|bgm|voice|effect|avataritem",
+  "category": "mob|npc|item|skill|object|background|foothold|rope|ladder|etc | <avatar slot>",
   "names": {
     "ko": ["Korean name"],
     "en": ["English name"]
@@ -356,6 +376,24 @@ A 32-character hex string that uniquely identifies every resource. Example: `"00
 }
 ```
 
+## Pagination — same name, two flavors
+
+`nextOffset` appears in every list-style response but means **different things** depending on the endpoint. Round-tripping a value into the wrong endpoint silently misbehaves.
+
+| Endpoint | `nextOffset` type | Meaning | How to paginate |
+|---|---|---|---|
+| `POST /v3/search/resources` (search) | **integer** | Item offset (0-based) | Pass it back as `offset` (number) |
+| `GET /v3/search/resources/similar/{id}` (similar) | **integer** | Item offset | Same |
+| `GET /v3/resources` (list) | **opaque UUID string** | Qdrant Scroll cursor | Pass the string back as `offset`. **End-of-stream = `null`** |
+| `GET /v3/resources/packs/{ruid}` (packs) | **opaque UUID string** | Same cursor | Same |
+| `GET /v3/resources/random` | n/a | No pagination | — |
+
+**Rules:**
+
+1. Never feed a `list` cursor into a `search` call (or vice versa) — the server ignores the wrong-shape value and returns the first page.
+2. On the **first page**, omit `offset` entirely. Sending integer `0` to `list` / `packs` is interpreted as a cursor and yields **zero items** (silent failure).
+3. Stop paginating when the response returns `nextOffset: null` (list / packs) or returns fewer items than `topK` (search / similar).
+
 ## Endpoint Summary
 
 | Method | Endpoint | Purpose |
@@ -370,8 +408,6 @@ A 32-character hex string that uniquely identifies every resource. Example: `"00
 | GET | `/v3/resources/packs/{ruid}` | List resource packs **containing** the given RUID — the path parameter is a 32-char-hex RUID, not a pack id |
 | GET | `/v3/avatars` | List all avatar items (cached) |
 | GET | `/v3/avatars/defaults` | Default avatar body / head RUIDs |
-| POST | `/v3/avatar/render` | Render an avatar |
-| GET | `/v3/avatar/render/{filename}` | Fetch a rendered frame image (PNG / WebP) |
 
 > Single avataritem detail uses `/v3/resources/{ruid}` (no
 > `/v3/avatars/{ruid}` endpoint exists).
@@ -385,17 +421,18 @@ A 32-character hex string that uniquely identifies every resource. Example: `"00
 
 | Situation | Wrapper call (CLI subcommand) | Reference file |
 |-----------|-------------------------------|----------------|
-| "Find a slime / orange mushroom / monster / NPC / item / effect / map" (default — no type specified) | `searchResources(query, { resourceTypeFilter: ["resource_pack"], ... })` (`search ... --resource-type resource_pack`) | `references/resource/search.md` |
+| "Find a slime / orange mushroom / monster / NPC / item / background / map asset" (default — no type specified) | `searchResources(query, { resourceTypeFilter: ["resource_pack"], ... })` (`search ... --resource-type resource_pack`) | `references/resource/search.md` |
 | "Find an **individual sprite** / single image" (user explicitly asked for a sprite) | `searchResources(query, { resourceTypeFilter: ["sprite"], ... })` | `references/resource/search.md` |
 | "Find an **individual animationclip**" (user explicitly asked for an animation) | `searchResources(query, { resourceTypeFilter: ["animationclip"], ... })` | `references/resource/search.md` |
-| "Find a sound / BGM / voice / effect" (audio) | `searchResources(query, { resourceTypeFilter: ["bgm"\|"voice"\|"effect"], ... })` | `references/resource/search.md` |
+| "Find a **visual effect / particle / hit FX**" | `searchResources(query, { resourceTypeFilter: ["animationclip","sprite"], categoryFilter: ["skill","mob","etc"] })` — note: `effect` here would mean **audio**, not visual | `references/resource/search.md` |
+| "Find a **sound / BGM / voice / sound-effect**" (audio) | `searchResources(query, { resourceTypeFilter: ["bgm"\|"voice"\|"effect"], ... })` — `effect` resource_type = sound-effect (audio) | `references/resource/search.md` |
+| "Find a **background / map tile / scenery**" | `searchResources(query, { resourceTypeFilter: ["sprite","animationclip"], categoryFilter: ["background","object"] })` — there is no `map` category in the index | `references/resource/search.md` |
 | "Find a costume / hat / shoes / weapon (avatar item)" | `searchAvatarItems(...)` (`search-avatar`) | `references/resource/search.md` (Avatar Item Search section) + `references/resource/avatar.md` |
 | "Any more monsters like this one?" | `findSimilarResources(ruid, ...)` (`similar`) | `references/resource/search.md` |
 | "Details for RUID abc123" (any type incl. avataritem and resource_pack) | `getResource(ruid)` (`get`) | `references/resource/detail.md` |
 | "Show me a list of monster sprites" | `listResources(...)` (`list`) | `references/resource/browse.md` |
 | "Which resource packs include this RUID?" | `findPacksContaining(ruid, ...)` (`packs`) | `references/resource/browse.md` |
 | "Browse all avatar items" | `listAvatars(...)` (`avatars`) | `references/resource/avatar.md` |
-| "Render an avatar" | `renderAvatar(...)` (`avatar-render`) | `references/resource/avatar.md` |
 
 ### Typical Workflow (pack-first)
 
@@ -409,7 +446,7 @@ A 32-character hex string that uniquely identifies every resource. Example: `"00
    → avataritem:    payload has color_hex / group meta
 3. Pick the element from payload.elements and assign its RUID to
    SpriteRendererComponent.SpriteRUID / StateAnimationComponent.ActionSheet
-   (or pass avataritem RUIDs to renderAvatar(...))
+   (or assign avataritem RUIDs through the slot mapping in `msw-avatar`)
 ```
 
 > **Don't** call `findPacksContaining(packId)` to "open" a pack — that endpoint takes a 32-hex RUID and returns the **packs that include that RUID**, not the contents of a pack. Use `getResource(packId)` for pack contents.
@@ -426,6 +463,7 @@ Most MSW sprite / animationclip / resource_pack assets — especially `mob`, `np
 |-----------|-----------|
 | Spawn an entity that should face **right** | Set `FlipX = true` on `SpriteRendererComponent` (default is `false` = left-facing as authored) |
 | Custom AI / chase using `MovementComponent:MoveToDirection` | Update `FlipX` on direction change: `sprite.FlipX = velocity.x > 0` (right ⇒ flip) |
+| Monster model / monster collider alignment | Invert `TransformComponent.Scale.x` instead of `FlipX` so the sprite and collider stay aligned; see [`msw-general/references/monster.md`](../msw-general/references/monster.md) |
 | Native `AIChaseComponent` / `AIWanderComponent` | Engine flips automatically based on movement — do nothing |
 | Top-down (`RectTile`) movement | Decide per-axis: usually flip when `dx > 0`; sprites with up/down frames need the StateAnimationComponent action set instead |
 | `_EffectService:PlayEffect(...)` should face right | Pass `FlipX = true` in the `options` table |
@@ -444,7 +482,7 @@ end
 
 > **Sanity check** — the left-facing convention is not contractual. Open `payload.thumbnail` from `GET /v3/resources/{ruid}` to confirm.
 >
-> **Do not use `TransformComponent.Scale.x` to flip** — it breaks physics colliders. Always use `SpriteRendererComponent.FlipX`. (See `msw-combat-system/SKILL.md` line 423: "Facing decision ★".)
+> **Do not use `TransformComponent.Scale.x` as a general renderer flip** — for players / effects / non-monster renderers, use `SpriteRendererComponent.FlipX`. **Monster exception**: monster models should invert `TransformComponent.Scale.x` so the sprite and collider stay aligned. Related: [`msw-combat-system/SKILL.md` "Direction check ★"](../msw-combat-system/SKILL.md), [`msw-general/references/monster.md`](../msw-general/references/monster.md).
 
 ---
 

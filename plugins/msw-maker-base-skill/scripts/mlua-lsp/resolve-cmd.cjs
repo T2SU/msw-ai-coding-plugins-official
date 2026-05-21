@@ -7,9 +7,10 @@
 // order of priority:
 //
 //   1) `MLUA_LSP_CMD` (+ `MLUA_LSP_ARGS`) env vars (explicit user / hooks.json override).
-//   2) Use `mlua-lsp` from PATH if it is installed there (fastest).
-//   3) Fall back to `npx -y @maplestoryworlds/mlua-lsp@<ver>` if `npx` is on PATH.
-//   4) Last resort: the literal `mlua-lsp` (spawn will fail if it does not exist).
+//   2) Use the @maplestoryworlds/mlua-lsp dependency bundled with ai-cli.
+//   3) Use `mlua-lsp` from PATH if it is installed there.
+//   4) Fall back to `npx -y @maplestoryworlds/mlua-lsp@<ver>` if `npx` is on PATH.
+//   5) Last resort: the literal `mlua-lsp` (spawn will fail if it does not exist).
 //
 // Windows caveats:
 //   - Node 18+ security policy prevents `spawn` from launching `.cmd` / `.bat`
@@ -23,9 +24,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { spawnSync, spawn } = require('child_process');
 
-const DEFAULT_NPX_SPEC = '@maplestoryworlds/mlua-lsp@1.1.0';
+const DEFAULT_NPX_SPEC = '@maplestoryworlds/mlua-lsp@1.1.1';
+const MLUA_LSP_PACKAGE_NAME = '@maplestoryworlds/mlua-lsp';
 
 function splitArgs(raw) {
   return String(raw || '').trim().split(/\s+/).filter(Boolean);
@@ -57,6 +59,88 @@ function stripOuterQuotes(s) {
   if (typeof s !== 'string') return s;
   if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1);
   return s;
+}
+
+function safeRealpath(filePath) {
+  try {
+    return fs.realpathSync(filePath);
+  } catch (_) {
+    return filePath;
+  }
+}
+
+function readPackageJson(packageJsonPath) {
+  try {
+    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  } catch (_) {
+    return null;
+  }
+}
+
+function packageRootToBin(packageRoot) {
+  if (!packageRoot) return null;
+  const packageJsonPath = path.join(packageRoot, 'package.json');
+  const pkg = readPackageJson(packageJsonPath);
+  const bin = pkg && pkg.bin && (typeof pkg.bin === 'string' ? pkg.bin : pkg.bin['mlua-lsp']);
+  if (!bin || typeof bin !== 'string') return null;
+  const binAbs = path.resolve(packageRoot, bin);
+  try {
+    if (fs.statSync(binAbs).isFile()) return binAbs;
+  } catch (_) {
+    return null;
+  }
+  return null;
+}
+
+function resolvePackageRootWithNode(paths) {
+  try {
+    const opts = paths && paths.length > 0 ? { paths } : undefined;
+    return path.dirname(require.resolve(`${MLUA_LSP_PACKAGE_NAME}/package.json`, opts));
+  } catch (_) {
+    return null;
+  }
+}
+
+function candidateBundledPackageRoots() {
+  const roots = [];
+
+  if (process.env.MSWAI_MLUA_LSP_PACKAGE_ROOT) {
+    roots.push(stripOuterQuotes(process.env.MSWAI_MLUA_LSP_PACKAGE_ROOT));
+  }
+
+  const localResolved = resolvePackageRootWithNode();
+  if (localResolved) roots.push(localResolved);
+
+  const mswai = findOnPath('mswai');
+  if (mswai) {
+    const realMswai = safeRealpath(mswai);
+    // POSIX global npm commonly symlinks <prefix>/bin/mswai to
+    // <prefix>/lib/node_modules/@maplestoryworlds/ai-cli/bin/cli.js.
+    roots.push(path.join(path.dirname(path.dirname(realMswai)), 'node_modules', MLUA_LSP_PACKAGE_NAME));
+
+    // Windows global npm creates mswai.cmd next to node_modules.
+    roots.push(path.join(path.dirname(mswai), 'node_modules', '@maplestoryworlds', 'ai-cli', 'node_modules', '@maplestoryworlds', 'mlua-lsp'));
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  for (const root of roots) {
+    if (!root) continue;
+    const normalized = path.resolve(root);
+    const key = process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(normalized);
+  }
+  return deduped;
+}
+
+function resolveBundledLspBin() {
+  for (const root of candidateBundledPackageRoots()) {
+    const bin = packageRootToBin(root);
+    if (bin) return bin;
+  }
+  return null;
 }
 
 /**
@@ -103,10 +187,10 @@ function quoteForCmd(arg) {
  * @returns {{
  *   cmd: string,            // Executable name or absolute path.
  *   baseArgs: string[],     // Base arguments prefixed before the subcommand
- *                           // (e.g. ['-y', '@maplestoryworlds/mlua-lsp@1.1.0']).
+ *                           // (e.g. ['-y', '@maplestoryworlds/mlua-lsp@1.1.1']).
  *   useShell: boolean,      // Whether cmd.exe must be used on Windows
  *                           // (true for .cmd/.bat targets or env-var overrides).
- *   source: 'env'|'path'|'npx'|'fallback',
+ *   source: 'env'|'bundled'|'path'|'npx'|'fallback',
  * }}
  */
 function resolveLspCommand() {
@@ -121,6 +205,11 @@ function resolveLspCommand() {
       useShell: process.platform === 'win32',
       source: 'env',
     };
+  }
+
+  const bundledBin = resolveBundledLspBin();
+  if (bundledBin) {
+    return { cmd: process.execPath, baseArgs: [bundledBin], useShell: false, source: 'bundled' };
   }
 
   if (process.platform === 'win32') {
@@ -185,11 +274,57 @@ function spawnLspSync(resolved, subArgs, spawnOpts) {
   }));
 }
 
+/**
+ * Starts `mlua-lsp` in the background and returns immediately.
+ *
+ * Used by SessionStart prewarm so a first-run VSIX download or daemon warmup
+ * never blocks the agent session. Follow-up diagnose calls still use
+ * `spawnLspSync` because they need the diagnostics payload.
+ *
+ * @param {ReturnType<typeof resolveLspCommand>} resolved
+ * @param {string[]} subArgs
+ * @param {Parameters<typeof spawn>[2]} [spawnOpts]
+ * @returns {{ pid?: number, error?: Error }}
+ */
+function spawnLspDetached(resolved, subArgs, spawnOpts) {
+  const opts = Object.assign({
+    windowsHide: true,
+  }, spawnOpts || {});
+  const allArgs = (resolved.baseArgs || []).concat(subArgs || []);
+
+  try {
+    let child;
+    if (process.platform === 'win32' && resolved.useShell) {
+      const tokens = [resolved.cmd, ...allArgs].map(quoteForCmd);
+      const cmdLine = `"${tokens.join(' ')}"`;
+      const comspec = process.env.ComSpec || process.env.COMSPEC || 'cmd.exe';
+      child = spawn(comspec, ['/d', '/s', '/c', cmdLine], Object.assign({}, opts, {
+        shell: false,
+        windowsVerbatimArguments: true,
+        detached: true,
+        stdio: 'ignore',
+      }));
+    } else {
+      child = spawn(resolved.cmd, allArgs, Object.assign({}, opts, {
+        shell: resolved.useShell || false,
+        detached: true,
+        stdio: 'ignore',
+      }));
+    }
+    child.unref();
+    return { pid: child.pid };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
 module.exports = {
   resolveLspCommand,
   spawnLspSync,
+  spawnLspDetached,
   splitArgs,
   findOnPath,
+  resolveBundledLspBin,
   quoteForCmd,
   DEFAULT_NPX_SPEC,
 };

@@ -1,8 +1,7 @@
-# Avatar Lookup & Rendering
+# Avatar Lookup
 
 Search avatar costume items, browse the full avatar catalog, look up
-default parts, inspect item details, and render a combined avatar in a
-specific pose.
+default parts, and inspect item details.
 
 > **All examples in this file go through the Node.js wrapper
 > `skills/msw-search/msw_resource_api.cjs`.** Use it either as a CLI from a
@@ -98,7 +97,7 @@ const avatars = await listAvatars({ canonicalOnly: true });
 
 ## GET /v3/avatars/defaults
 
-Fetch the default avatar body / head RUIDs — the required base parts for avatar rendering.
+Fetch the default avatar body / head RUIDs.
 
 ### Usage
 
@@ -124,7 +123,7 @@ const defaults = await getAvatarDefaults();
 }
 ```
 
-`body` and `head` are mandatory parts that must always be included when rendering an avatar.
+`body` and `head` are the base avatar parts used with costume item slots.
 
 ---
 
@@ -168,116 +167,7 @@ const item = await getResource("ITEM_RUID");
 }
 ```
 
----
-
-## POST /v3/avatar/render
-
-Render a combined avatar (multiple parts) in a specific action pose.
-
-### Usage
-
-```bash
-# CLI — body + head are required; equipment slots are optional.
-# --actions defaults to ["stand1"] when omitted.
-node ../../msw_resource_api.cjs \
-    avatar-render \
-    --ruids body_ruid head_ruid hat_ruid weapon_ruid \
-    --actions stand1 walk1
-```
-
-```js
-// Node.js
-const { renderAvatar } = require('../../msw_resource_api.cjs');
-
-const result = await renderAvatar(
-  ["body_ruid", "head_ruid", "hat_ruid", "weapon_ruid"],
-  { actions: ["stand1", "walk1"] },
-);
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `ruids` | string[] (1–20) | O | Array of part RUIDs. **body + head should be included**; equipment is optional. Same-category items: only the first one is used. |
-| `actions` | string[] (1–40) | O (wrapper defaults to `["stand1"]`) | Action poses to render |
-| `expressions` | string[] (1–25) | - | Default `["default"]`. Other values: `angry`, `bewildered`, `blaze`, `bowing`, `cheers`, `chu`, `cry`, `dam`, `despair`, `glitter`, `hit`, `hot`, `hum`, `love`, `oops`, `pain`, `qBlue`, `shine`, `smile`, `stunned`, `troubled`, `vomit`, `wink` |
-| `earType` (body field `ear_type`) | string | - | `humanear` (default), `ear`, `lefear`, `highlefear` |
-| `renderingType` (body field `rendering_type`) | string | - | `sprite` (default — per-frame PNGs) or `animationclip` (per-action WebPs) |
-
-**Common actions:**
-
-| Action | Description |
-|--------|-------------|
-| `stand1`, `stand2` | Idle standing |
-| `walk1`, `walk2` | Walking |
-| `alert` | Alert stance |
-| `swingO1` … `swingOF` / `stabO1` … `stabOF` | One-handed weapon |
-| `swingT1` … / `stabT1` … | Two-handed weapon |
-| `swingP1` … | Pole-arm |
-| `shoot1`, `shoot2`, `shootF` | Ranged |
-| `prone`, `proneStab` | Prone / prone stab |
-| `fly`, `jump`, `sit`, `ladder`, `rope`, `heal`, `dead` | Misc |
-
-### Response (sprite mode)
-
-```json
-{
-  "rendering_type": "sprite",
-  "actions": {
-    "stand1": {
-      "default": {
-        "frames": [
-          {
-            "filename": "<hash>_stand1_0.png",
-            "width": 44,
-            "height": 77,
-            "delay": 500.0,
-            "pivot_x": 23,
-            "pivot_y": 0
-          }
-        ]
-      }
-    }
-  },
-  "animationclip_actions": {}
-}
-```
-
-When `rendering_type=animationclip`, the per-action WebP info appears
-under `animationclip_actions[action][expression]` instead.
-
-### Rendered Image URL
-
-Each frame image is served at:
-
-```
-https://maplestoryworlds-resourcesearch-new.nexon.com/api/v3/avatar/render/{filename}
-```
-
-The wrapper provides a helper that builds this URL safely (URL-encoding the
-filename):
-
-```bash
-# CLI
-node ../../msw_resource_api.cjs \
-    avatar-frame-url rendered_frame_name
-```
-
-```js
-// Node.js
-const { avatarFrameUrl } = require('../../msw_resource_api.cjs');
-
-const url = avatarFrameUrl("rendered_frame_name");
-```
-
----
-
 ## Workflows
-
-### Rendering an avatar
-1. `getAvatarDefaults()` → get default body / head RUIDs
-2. `searchAvatarItems("...")` → obtain equipment item RUIDs (hat, weapon, etc.)
-3. `renderAvatar([body, head, hat, weapon, ...], { actions: [...] })` → render the combination
-4. Build image URLs via `avatarFrameUrl(filename)` from the response
 
 ### Costume item search → application
 1. `searchAvatarItems("...", { topK: N, categoryFilter: [slot] })` → obtain RUID
@@ -287,4 +177,3 @@ const url = avatarFrameUrl("rendered_frame_name");
 ### Inspecting avatar item details
 1. `searchAvatarItems("...")` → search for a costume item and get its RUID
 2. `getResource(ruid)` → inspect color_hex / group meta / variants
-3. (Optional) `renderAvatar([body, head, ruid])` → preview the render

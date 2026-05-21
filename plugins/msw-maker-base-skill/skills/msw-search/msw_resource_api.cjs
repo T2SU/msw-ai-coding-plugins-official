@@ -17,9 +17,6 @@
  *   node msw_resource_api.cjs search "orange mushroom" \
  *     --resource-type resource_pack --category npc --topK 3
  *   node msw_resource_api.cjs get 0017da7385e04bc4b2ddbe5949b4b462
- *   node msw_resource_api.cjs avatar-render \
- *     --ruids body_ruid head_ruid hat_ruid --actions stand1 walk1
- *
  * Design notes:
  *  - No external dependencies. Uses only Node 18+ built-in `fetch`/`AbortController`.
  *  - All POST bodies are encoded as UTF-8 JSON and sent with
@@ -43,6 +40,39 @@ class MswApiError extends Error {
     this.url = url;
     this.body = body;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Input validation helpers
+// ---------------------------------------------------------------------------
+
+const HEX_RUID_RE = /^[0-9a-f]{32}$/i;
+const UUID_CURSOR_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Normalize the `offset` argument for list-style endpoints (`/v3/resources`,
+ * `/v3/resources/packs/{ruid}`) whose cursor is an opaque UUID string.
+ *
+ *  - `undefined` / `null` → undefined (first page).
+ *  - Valid UUID cursor → returned as-is.
+ *  - `0` / `"0"` / `""` / `"null"` → undefined (silent: common "first page"
+ *    confusion that would otherwise return zero items).
+ *  - Anything else → undefined, with a stderr warning so the caller learns
+ *    that the value was discarded.
+ */
+function _normalizeListOffset(offset) {
+  if (offset === undefined || offset === null) return undefined;
+  const s = String(offset);
+  if (UUID_CURSOR_RE.test(s)) return s;
+  if (s === '0' || s === '' || s === 'null' || s === 'undefined') return undefined;
+  if (typeof process !== 'undefined' && process.stderr && process.stderr.write) {
+    process.stderr.write(
+      `[msw-api warn] offset "${s}" is not a valid cursor `
+      + `(expected the UUID string returned in the previous response's nextOffset); `
+      + `ignoring and fetching the first page.\n`
+    );
+  }
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -258,7 +288,8 @@ async function listResources(opts = {}) {
   const query = { limit };
   if (resourceTypeFilter !== undefined) query.resourceTypeFilter = [...resourceTypeFilter];
   if (categoryFilter !== undefined) query.categoryFilter = [...categoryFilter];
-  if (offset !== undefined && offset !== null) query.offset = offset;
+  const cursor = _normalizeListOffset(offset);
+  if (cursor !== undefined) query.offset = cursor;
   if (canonicalOnly !== undefined && canonicalOnly !== null) query.canonicalOnly = canonicalOnly ? 'true' : 'false';
   if (widthMin !== undefined && widthMin !== null) query.widthMin = widthMin;
   if (widthMax !== undefined && widthMax !== null) query.widthMax = widthMax;
@@ -308,15 +339,23 @@ async function randomResources(opts = {}) {
  * — that endpoint fills in the payload of each element and returns it.
  */
 async function findPacksContaining(ruid, opts = {}) {
+  if (!HEX_RUID_RE.test(String(ruid || ''))) {
+    throw new Error(
+      `'packs' expects a 32-hex RUID, got "${ruid}". `
+      + `If you want a pack's contents, use getResource(packId) (CLI: 'get <packId>') instead — `
+      + `that endpoint returns the pack with each payload.elements[*] populated.`
+    );
+  }
   const { limit = DEFAULT_LIMIT, offset, compact = true } = opts;
   const query = { limit };
-  if (offset !== undefined && offset !== null) query.offset = offset;
+  const cursor = _normalizeListOffset(offset);
+  if (cursor !== undefined) query.offset = cursor;
   if (compact) query.compact = 'true';
   return _request('GET', `/v3/resources/packs/${_enc(ruid)}`, { query });
 }
 
 // ---------------------------------------------------------------------------
-// Section: Avatar — listings, defaults, render
+// Section: Avatar — listings and defaults
 // ---------------------------------------------------------------------------
 
 /**
@@ -332,33 +371,6 @@ async function listAvatars({ canonicalOnly = true } = {}) {
 /** Fetch the default body / head RUIDs. `GET /v3/avatars/defaults`. */
 async function getAvatarDefaults() {
   return _request('GET', '/v3/avatars/defaults');
-}
-
-/**
- * Render a composed avatar in one or more action poses.
- * `POST /v3/avatar/render`. `ruids` is the default body+head (`getAvatarDefaults`)
- * plus any optional equipped items. The server-required `actions` parameter
- * defaults to `["stand1"]` if omitted. `expressions` defaults to `["default"]`
- * on the server side when omitted.
- *
- * `renderingType` is either `"sprite"` (default — per-frame PNG) or
- * `"animationclip"` (per-action WebP).
- */
-async function renderAvatar(ruids, opts = {}) {
-  const { actions, expressions, earType, renderingType } = opts;
-  const payload = {
-    ruids: [...ruids],
-    actions: actions !== undefined && actions !== null ? [...actions] : ['stand1'],
-  };
-  if (expressions !== undefined && expressions !== null) payload.expressions = [...expressions];
-  if (earType !== undefined && earType !== null) payload.ear_type = earType;
-  if (renderingType !== undefined && renderingType !== null) payload.rendering_type = renderingType;
-  return _request('POST', '/v3/avatar/render', { body: payload });
-}
-
-/** Build the URL for an avatar render frame image. */
-function avatarFrameUrl(filename) {
-  return `${BASE_URL}/v3/avatar/render/${_enc(filename)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -466,9 +478,6 @@ Commands:
   packs <ruid> [--limit N] [--offset CURSOR] [--no-compact]
   avatars [--no-canonical-only]
   avatar-defaults
-  avatar-render --ruids R1 R2 ... [--actions A1 ...] [--expressions E1 ...]
-                [--ear-type ...] [--rendering-type sprite|animationclip]
-  avatar-frame-url <filename>
 `;
 
 const CLI_HANDLERS = {
@@ -601,36 +610,6 @@ const CLI_HANDLERS = {
     return listAvatars({ canonicalOnly: a.canonicalOnly !== false });
   },
   'avatar-defaults': async () => getAvatarDefaults(),
-  'avatar-render': async (argv) => {
-    const a = _parseArgs(argv, {
-      options: {
-        '--ruids':          { dest: 'ruids', nargs: '+' },
-        '--actions':        { dest: 'actions', nargs: '+' },
-        '--expressions':    { dest: 'expressions', nargs: '+' },
-        '--ear-type':       { dest: 'earType' },
-        '--rendering-type': { dest: 'renderingType' },
-      },
-    });
-    if (!a.ruids || a.ruids.length === 0) throw new Error('--ruids is required');
-    if (a.earType !== undefined
-        && !['humanear', 'ear', 'lefear', 'highlefear'].includes(a.earType)) {
-      throw new Error(`invalid --ear-type: ${a.earType}`);
-    }
-    if (a.renderingType !== undefined
-        && !['sprite', 'animationclip'].includes(a.renderingType)) {
-      throw new Error(`invalid --rendering-type: ${a.renderingType}`);
-    }
-    return renderAvatar(a.ruids, {
-      actions: a.actions,
-      expressions: a.expressions,
-      earType: a.earType,
-      renderingType: a.renderingType,
-    });
-  },
-  'avatar-frame-url': async (argv) => {
-    const a = _parseArgs(argv, { positional: [{ name: 'filename' }] });
-    return avatarFrameUrl(a.filename);
-  },
 };
 
 async function main(argv = process.argv.slice(2)) {
@@ -674,8 +653,6 @@ module.exports = {
   findPacksContaining,
   listAvatars,
   getAvatarDefaults,
-  renderAvatar,
-  avatarFrameUrl,
   main,
 };
 

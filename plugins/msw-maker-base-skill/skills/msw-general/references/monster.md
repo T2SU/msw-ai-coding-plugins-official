@@ -17,7 +17,7 @@ const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("../scrip
 | `[LWA-3019] ... Legacy` | Legacy AI/Hit defaults | Set `IsLegacy` to `false` on AI and Hit components |
 | Monster behind tiles | Wrong sorting layer | Set `SortingLayer = "MapLayer0"` and suitable `OrderInLayer` |
 | Hit or attack does nothing | Missing hit box / collision group | Set `HitComponent` box, offset, and monster collision group |
-| Monster faces wrong direction | Sprite resources usually face left | Flip `SpriteRendererComponent.FlipX` from movement direction, not `TransformComponent.Scale.x` |
+| Monster faces wrong direction | Sprite resources usually face left | Invert `TransformComponent.Scale.x` from movement direction, not `SpriteRendererComponent.FlipX`, so the sprite and collider stay aligned |
 
 Avatar animation keys are uppercase; monster `StateAnimationComponent` keys are lowercase. Do not mix them.
 

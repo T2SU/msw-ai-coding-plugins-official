@@ -293,7 +293,7 @@ process.stdout.write(
   `      → Read: references/resource/detail.md\n` +
   `  - listResources / findPacksContaining / catalog browsing\n` +
   `      → Read: references/resource/browse.md\n` +
-  `  - listAvatars / renderAvatar / full list & render of avatar items\n` +
+  `  - listAvatars / avatar catalog browsing\n` +
   `      → Read: references/resource/avatar.md\n` +
   `\n` +
   `[PACKAGES] inventory / shop / ranking / mail / quest / collection / key binding / GM / slash command / inventory / shop / ranking / mail / quest\n` +

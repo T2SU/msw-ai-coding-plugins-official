@@ -25,7 +25,9 @@
 
 ---
 
-## 2. Map Type Mismatch — The Most Common Silent Failure
+## 2. Map Type Mismatch
+
+**The most common silent failure when authoring maps.**
 
 ### LEA-3004 MissingComponent
 
