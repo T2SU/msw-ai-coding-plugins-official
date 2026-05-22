@@ -123,7 +123,13 @@ function clone(value) {
 }
 
 function tuple(value, fallback) {
+  if (value == null) return fallback;
   if (Array.isArray(value)) return value;
+  if (typeof value === "object") {
+    const arity = Array.isArray(fallback) ? fallback.length : 2;
+    const keys = ["x", "y", "z", "w"].slice(0, arity);
+    if (keys.some((k) => k in value)) return keys.map((k) => Number(value[k] ?? 0));
+  }
   return fallback;
 }
 

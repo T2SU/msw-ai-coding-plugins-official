@@ -168,7 +168,7 @@ Open the **entity record** of the target map under `./map/`.
 
 ## Mapping `GET /v3/avatars` results to slots
 
-Map the `category` field of an item returned by `GET /v3/avatars` to a `Custom*Equip` property. For the search method, see the `msw-search` skill → `references/resource/avatar.md`.
+Map the `category` field of an item returned by `GET /v3/avatars` to a `Custom*Equip` property. For the search method, see the `msw-search` skill → [`references/resource/avatar.md`](../msw-search/references/resource/avatar.md).
 
 | API `category` | `Custom*Equip` property | `MapleAvatarItemCategory` |
 |----------------|------------------------|--------------------------|
@@ -194,7 +194,7 @@ Map the `category` field of an item returned by `GET /v3/avatars` to a `Custom*E
 
 ## Avatar resource search reference
 
-- **`msw-search`** skill → `references/resource/avatar.md`: details on `GET /v3/avatars` (costume search), default body/head, `GET /v3/avatars/{ruid}`, render composition, etc.
+- **`msw-search`** skill → [`references/resource/avatar.md`](../msw-search/references/resource/avatar.md): details on `GET /v3/avatars` (costume search), default body/head, `GET /v3/avatars/{ruid}`, render composition, etc.
 - Combine the category search and detail API to collect equipment RUIDs.
 
 ---
@@ -591,7 +591,7 @@ end
 | Skill | Purpose |
 |-------|---------|
 | **msw-defaultplayer** | Structure of `./Global/DefaultPlayer.model` / `Player.model` and `Values` rules |
-| **msw-search** | RUID lookup, `references/resource/avatar.md` |
+| **msw-search** | RUID lookup, [`references/resource/avatar.md`](../msw-search/references/resource/avatar.md) |
 | **msw-maker-mcp** | **`refresh`**, optionally `get_component` / `set_property` (when combined with runtime tweaks) |
 
 ---

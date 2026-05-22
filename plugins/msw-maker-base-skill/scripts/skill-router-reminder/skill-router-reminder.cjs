@@ -222,7 +222,7 @@ process.stdout.write(
   `  + Read: references/entity.md (Entity Work Preflight — MUST, Absolute Principle #0)\n` +
   `  Sub-trigger refinements:\n` +
   `  - .map builder / entity placement / component patching\n` +
-  `      → Read: references/entity/map-builder.md\n` +
+  `      → Read: references/entity.md (MapBuilder Protocol)\n` +
   `\n` +
   `[MODEL] .model / model authoring / template / EntryKey / Properties / Values / model catalog\n` +
   `  → Load skill: msw-general\n` +
@@ -254,7 +254,6 @@ process.stdout.write(
   `\n` +
   `[MCP/WORKSPACE] MCP tool calls / refresh / play / stop / logs / screenshot / Room / DataStorage location / mode switching\n` +
   `  → Load skill: msw-general\n` +
-  `  + Read: references/mcp-tools.md\n` +
   `  + Read: references/workspace.md\n` +
   `\n` +
   `[AUTHORING] file-authoring principles / common schema / direct-edit risks\n` +

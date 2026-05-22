@@ -9,7 +9,7 @@ Authoring guide for **.map / .model / .ui / .dataset** files and tile map assets
 > - `.ui` anchor / pivot coordinate errors, missing RUID, parent-child `path` mismatch
 > - Dataset row / column schema violations
 >
-> Use the dedicated builder or skill for each file type before editing. `.model` files are builder-only. `.map` files are builder-first: use `entity/map-builder.md` and the matching script for covered operations; direct `.map` JSON edits are reserved for explicitly unsupported gaps and must be minimal plus verified by refresh/logs.
+> Use the dedicated builder or skill for each file type before editing. `.model` files are builder-only. `.map` files are builder-first: read [`entity.md`](entity.md#mapbuilder-protocol) and use the matching script for covered operations; direct `.map` JSON edits are reserved for explicitly unsupported gaps and must be minimal plus verified by refresh/logs.
 >
 > **Entity reference binding (Entity/EntityRef property) is injected by the AI as a UUID string directly** — do not ask the user to drag in the Maker editor. Detail: `msw-scripting §7 Entity/Component reference properties`.
 
@@ -22,7 +22,7 @@ Authoring guide for **.map / .model / .ui / .dataset** files and tile map assets
 | Edit **tile map / tile set** in `.map` (TileMapMode, `tileMap` array, `.tileset`) | [tile.md](tile.md) |
 | Create or modify a `.model` template | [model.md](model.md) — builder-only |
 | Place **entities** in `.map`, spawn, parent-child, manage runtime components | [entity.md](entity.md) |
-| `.map` builder protocol | [entity/map-builder.md](entity/map-builder.md) |
+| `.map` builder protocol | [entity.md](entity.md#mapbuilder-protocol) |
 | `.ui` authoring, component API, enums, mlua runtime patterns | **`msw-ui-system` skill** (single UI entry point — design guide + component API + builder invocation + runtime patterns) |
 | `.userdataset` / `.localedataset` structure, types, runtime API | [dataset.md](dataset.md) |
 | Template catalog when creating a new `.model` | [model.md §2.1](model.md) → `../models/*.model` |
@@ -30,12 +30,12 @@ Authoring guide for **.map / .model / .ui / .dataset** files and tile map assets
 
 ### Keyword → File Map
 
-- **tile, tile map, tileset, TileMapMode, RectTile, MapleTile, SideViewRectTile, tileIndex** → `tile.md`
-- **model, .model, template, NPC model, player, Foothold, Ladder, Rope, Portal, MapObject, particle, Sound, UIButton, Values, Children, BaseModelId** → `model.md` (+ builder + `../models/` catalog)
-- **create monster, monster ActionSheet, stand/move/attack/hit/die/jump, HitComponent, IsLegacy, CollisionGroup, AIChase, AIWander, script.Monster, script.MonsterAttack** → `monster.md` (+ `../models/MonsterCanonical.model`)
-- **entity, .map, placement, spawn, SpawnService, CurrentMap, componentNames, modelId reference, hierarchy, Foothold** → `entity.md`
+- **tile, tile map, tileset, TileMapMode, RectTile, MapleTile, SideViewRectTile, tileIndex** → [`tile.md`](tile.md)
+- **model, .model, template, NPC model, player, Foothold, Ladder, Rope, Portal, MapObject, particle, Sound, UIButton, Values, Children, BaseModelId** → [`model.md`](model.md) (+ builder + `../models/` catalog)
+- **create monster, monster ActionSheet, stand/move/attack/hit/die/jump, HitComponent, IsLegacy, CollisionGroup, AIChase, AIWander, script.Monster, script.MonsterAttack** → [`monster.md`](monster.md) (+ `../models/MonsterCanonical.model`)
+- **entity, .map, placement, spawn, SpawnService, CurrentMap, componentNames, modelId reference, hierarchy, Foothold** → [`entity.md`](entity.md)
 - **UI, button, text, image, canvas, UITransform, anchoredPosition, AlignmentOption, UIGroup, DefaultShow, GridView, popup, anchor** → `msw-ui-system` skill (design, component API, and builder integrated)
-- **dataset, UserDataSet, LocaleDataSet, translation, table, .userdataset, .localedataset, DataService** → `dataset.md`
+- **dataset, UserDataSet, LocaleDataSet, translation, table, .userdataset, .localedataset, DataService** → [`dataset.md`](dataset.md)
 
 ---
 
@@ -119,7 +119,6 @@ Based on FHD 1920x1080 with the origin at center. Place via `UITransformComponen
 | [platform.md](platform.md) (core) | TileMapMode ↔ Body, SpriteRUID, spawn, coordinates, folder metadata, ID generation, `.config` (common to all map types) |
 | [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md) | Per-map-type physics, events, patterns, and checklists |
 | [troubleshooting.md](troubleshooting.md) | Symptom → cause → fix reference (e.g., `LEA-3004`) |
-| [mcp-tools.md](mcp-tools.md) | MCP tool detail (refresh/play/stop/logs/screenshot) |
 | [workspace.md](workspace.md) | Workspace / hierarchy / file path rules |
 | `msw-scripting` | Component/Logic, properties, lifecycle, @ExecSpace |
 | `msw-defaultplayer` | Player model, Values, Body components |

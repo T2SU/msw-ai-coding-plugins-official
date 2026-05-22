@@ -20,14 +20,26 @@ function readJsonFile(filepath, label) {
 }
 
 function vector2(x = 0, y = 0) {
+  if (x && typeof x === "object") {
+    if (Array.isArray(x)) return { x: Number(x[0] ?? 0), y: Number(x[1] ?? 0) };
+    return { x: Number(x.x ?? 0), y: Number(x.y ?? 0) };
+  }
   return { x: Number(x), y: Number(y) };
 }
 
 function vector3(x = 0, y = 0, z = 0) {
+  if (x && typeof x === "object") {
+    if (Array.isArray(x)) return { x: Number(x[0] ?? 0), y: Number(x[1] ?? 0), z: Number(x[2] ?? 0) };
+    return { x: Number(x.x ?? 0), y: Number(x.y ?? 0), z: Number(x.z ?? 0) };
+  }
   return { x: Number(x), y: Number(y), z: Number(z) };
 }
 
 function quaternion(x = 0, y = 0, z = 0, w = 1) {
+  if (x && typeof x === "object") {
+    if (Array.isArray(x)) return { x: Number(x[0] ?? 0), y: Number(x[1] ?? 0), z: Number(x[2] ?? 0), w: Number(x[3] ?? 1) };
+    return { x: Number(x.x ?? 0), y: Number(x.y ?? 0), z: Number(x.z ?? 0), w: Number(x.w ?? 1) };
+  }
   return { x: Number(x), y: Number(y), z: Number(z), w: Number(w) };
 }
 
@@ -94,7 +106,7 @@ function defaultComponent(componentType, pos) {
   if (type === "MOD.Core.TransformComponent") {
     return {
       "@type": type,
-      Position: vector3(...(pos || [0, 0, 0])),
+      Position: vector3(pos || [0, 0, 0]),
       QuaternionRotation: quaternion(),
       Scale: vector3(1, 1, 1),
       Enable: true,
@@ -424,7 +436,7 @@ class MapBuilder {
     if (updates.pos) {
       const transform = this.component(entity, "MOD.Core.TransformComponent");
       if (!transform) throw new Error(`Entity ${identifier} has no TransformComponent`);
-      transform.Position = vector3(...updates.pos);
+      transform.Position = vector3(updates.pos);
     }
     for (const key of ["enable", "visible", "localize", "displayOrder"]) {
       if (Object.prototype.hasOwnProperty.call(updates, key)) js[key] = updates[key];

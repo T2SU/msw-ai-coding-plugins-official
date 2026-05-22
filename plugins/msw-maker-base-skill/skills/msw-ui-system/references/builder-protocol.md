@@ -1,6 +1,6 @@
 # UI Builder Protocol
 
-Handles MSW `.ui` layouts via builder calls instead of direct JSON editing. This is the **builder call manual** within this skill (`msw-ui-system`) — bundled together with the design guides (`ui-fundamentals.md`, `ui-hierarchy.md`, `component-api.md`, `layout-recipes.md`, `runtime-patterns.md`) of the same skill.
+Handles MSW `.ui` layouts via builder calls instead of direct JSON editing. This is the **builder call manual** within this skill (`msw-ui-system`) — bundled together with the design guides ([`ui-fundamentals.md`](ui-fundamentals.md), [`ui-hierarchy.md`](ui-hierarchy.md), [`component-api.md`](component-api.md), [`layout-recipes.md`](layout-recipes.md), [`runtime-patterns.md`](runtime-patterns.md)) of the same skill.
 
 ## ⚠️ Prerequisite: Read the Design Guide First
 
@@ -8,14 +8,14 @@ This document only covers **"how to call"** (how). Working only with the builder
 
 **Before** opening this document, be sure to read first:
 
-- `SKILL.md` — overall routing
-- At least 1 of the sub-references matching the request (`ui-fundamentals.md` / `ui-hierarchy.md` / `component-api.md` / `layout-recipes.md`)
+- [`SKILL.md`](../SKILL.md) — overall routing
+- At least 1 of the sub-references matching the request ([`ui-fundamentals.md`](ui-fundamentals.md) / [`ui-hierarchy.md`](ui-hierarchy.md) / [`component-api.md`](component-api.md) / [`layout-recipes.md`](layout-recipes.md))
 
 Role division (within the same skill):
 
 | Document | Responsibility |
 |------|------|
-| Other refs (`ui-fundamentals.md`, `component-api.md`, …) | UI knowledge — design decisions (which/when/why; see `component-api.md` §"Component Selection Guide"), component API fields & enum values (what), mlua runtime patterns |
+| Other refs ([`ui-fundamentals.md`](ui-fundamentals.md), [`component-api.md`](component-api.md), …) | UI knowledge — design decisions (which/when/why; see [`component-api.md`](component-api.md) §"Component Selection Guide"), component API fields & enum values (what), mlua runtime patterns |
 | This document (`builder-protocol.md`) | Builder call protocol (**how to mutate**) — `.ui` mutations **must** go through the builder |
 
 ## Purpose
@@ -68,7 +68,7 @@ See `scripts/ui_lint.cjs` header for descriptions of applied rule IDs (`L001`~`L
 
 ## pos/anchor Rules
 
-Canvas 1920×1080, center origin `(0, 0)`. X: ±960, Y: ±540. All values are in **UI pixels**. For the coordinate model, 16 anchor presets (`top-left`~`stretch` and `AlignmentOption` mappings), and the basic `pos = ±(margin + size/2)` formula, see `ui-fundamentals.md` §1~§6 — here only **builder-specific behavior** is covered.
+Canvas 1920×1080, center origin `(0, 0)`. X: ±960, Y: ±540. All values are in **UI pixels**. For the coordinate model, 16 anchor presets (`top-left`~`stretch` and `AlignmentOption` mappings), and the basic `pos = ±(margin + size/2)` formula, see [`ui-fundamentals.md`](ui-fundamentals.md) §1~§6 — here only **builder-specific behavior** is covered.
 
 ### Builder's Auto-Pivot — Edge Placement Formula Becomes Simpler
 
@@ -166,6 +166,8 @@ if (btn?.Enable) {
 ```
 
 ### Entity Creation (upsert — replaces if same path exists)
+
+Tuple-shaped options (`pos`, `rect_size`, `cell_size`, `padding`, `spacing`, `softness`, …) accept `[a, b]`/`[a, b, c, d]` (preferred) or `{ x, y, z, w }`. Both normalize to the same value.
 
 ```javascript
 b.panel(name, { anchor: "middle-center", pos: [0, 0], rect_size: [1920, 1080], enable: true, pivot: null });
@@ -480,7 +482,7 @@ Design separation (intended forced values per entity):
 - `sprite(raycast=False)` is the default (sprite = decoration). Explicitly set `raycast=True` for modal dimmers and drag areas
 - `text()`'s background sprite is fixed as a transparent sprite with `alpha=0`
 
-For the full list of enum values such as Alignment, Overflow, ImageType, etc., refer to `component-api.md` §Enums (or the inline values in the field tables of `component-api.md`).
+For the full list of enum values such as Alignment, Overflow, ImageType, etc., refer to [`component-api.md`](component-api.md) §Enums (or the inline values in the field tables of [`component-api.md`](component-api.md)).
 
 ### `UITransformComponent.ActivePlatform` — UI Not Displayed When Missing from JSON
 
@@ -496,7 +498,7 @@ The builder automatically injects `ActivePlatform: 255` (all platforms) when cre
 
 The `UIBuilder` default is `default_show=True` (recommended). If you save the root UIGroup as hidden with `default_show=False`, `OnBeginPlay` / `OnUpdate` for scripts inside the group will not be called. This is a common cause of issues like "the popup doesn't appear even after leveling up."
 
-**Standard Pattern** — Always keep the root UIGroup at `default_show=True`, and have scripts toggle the `Enable` property of child entities (`Enable` vs `Visible` difference is covered in `ui-hierarchy.md` §5 — summary: always use `Enable`. `Visible=False` keeps clicks alive and OnUpdate still runs).
+**Standard Pattern** — Always keep the root UIGroup at `default_show=True`, and have scripts toggle the `Enable` property of child entities (`Enable` vs `Visible` difference is covered in [`ui-hierarchy.md`](ui-hierarchy.md) §5 — summary: always use `Enable`. `Visible=False` keeps clicks alive and OnUpdate still runs).
 
 ```javascript
 const ui = new UIBuilder("LevelUpUI");          // defaultShow=true (default)
@@ -513,7 +515,7 @@ Only use `default_show=False` when the group contains **no** controller script a
 ## Out of Scope
 
 - Map entity modification: `references/map.md`
-- Model template modification: `references/model.md`
+- Model template modification: [`msw-general/references/model.md`](../../msw-general/references/model.md)
 - Writing files other than `.ui`
 
 ## Resources

@@ -1,6 +1,6 @@
 # MSW Troubleshooting — Symptom Dictionary
 
-**A debugging dictionary indexed by symptom.** When a user says things like "it's not moving" / "it's not showing" / `LEA-3004`, **open this file first**, find the matching row, and navigate to the referenced § in platform.md / platform-{type}.md.
+**A debugging dictionary indexed by symptom.** When a user says things like "it's not moving" / "it's not showing" / `LEA-3004`, **open this file first**, find the matching row, and navigate to the referenced § in [`platform.md`](platform.md) / `platform-{type}.md`.
 
 > This file was split from [`platform.md` §11 / §12](platform.md) as a unified troubleshooting index. Per-map-type troubleshooting details also appear in the "Troubleshooting" sections of [`platform-maple.md`](platform-maple.md) / [`platform-rect.md`](platform-rect.md) / [`platform-sideview.md`](platform-sideview.md).
 
@@ -52,7 +52,7 @@
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Entity doesn't move (no error) | Body ↔ TileMapMode mismatch | Body swap per `platform.md §4` mapping table |
+| Entity doesn't move (no error) | Body ↔ TileMapMode mismatch | Body swap per [`platform.md`](platform.md) §4 mapping table |
 | Monster floating in mid-air (MapleTile) | `Gravity = 0` | Set `Gravity` to a positive value |
 | Monster falls off platform edge (MapleTile) | No foothold-end handling | Reverse direction with `PredictFootholdEnd` |
 | Monster disappears off-map (RectTile) | Leftover gravity code | Remove gravity code in RectTile |

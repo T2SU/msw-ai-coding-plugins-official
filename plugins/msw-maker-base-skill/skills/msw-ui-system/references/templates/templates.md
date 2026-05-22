@@ -2,7 +2,7 @@
 
 > **Entry point**: This document is reached from [`../../SKILL.md`](../../SKILL.md). Read `msw-ui-system` first for routing, components, anchors, lifecycle, and builder protocol — then return here when you need style-coherent template bundles.
 
-Style-specific template files for building game UI. **Each style is a coherent bundle**: `.ui` structure templates + matching RUIDs (`ruid-map.md`) + button handler patterns (`Popupbutton.mlua`). Pick a style first, then use its files together for visual consistency.
+Style-specific template files for building game UI. **Each style is a coherent bundle**: `.ui` structure templates + matching RUIDs (each style's `ruid-map.md`, e.g. [`style-1-black/ruid-map.md`](style-1-black/ruid-map.md)) + button handler patterns (`Popupbutton.mlua`). Pick a style first, then use its files together for visual consistency.
 
 ## Style Selection Guide
 
@@ -19,8 +19,8 @@ Pick based on **UI complexity and interaction pattern**, not game genre.
 
 | File | style-1 | style-2 | style-3 | style-4 | Role |
 |------|:-------:|:-------:|:-------:|:-------:|------|
-| `ruid-map.md` | O | O | O | O | RUID lookup by UI role |
-| `structure.md` | O | O | O | O | Entity hierarchy, layout, sizes (compact) |
+| `ruid-map.md` | O | O | O | O | RUID lookup by UI role (e.g. [`style-1-black/ruid-map.md`](style-1-black/ruid-map.md)) |
+| `structure.md` | O | O | O | O | Entity hierarchy, layout, sizes (compact) (e.g. [`style-1-black/structure.md`](style-1-black/structure.md)) |
 | `HUDGroup.ui` | O | O | O | O | Always-visible HUD |
 | `DefaultGroup.ui` | O | N/A | O | O | Joystick, Chat |
 | `ToastGroup.ui` | O | O | O | O | Toast notifications |
@@ -70,8 +70,8 @@ Not all `.ui` files in a project define its visual style:
 - `DataId: ""` in templates means intentionally blank — fill via `msw-search` only if the element should be visible.
 
 **RUID source priority (when using a template style):**
-1. **`ruid-map.md`** — first choice. Look up the role (panel background, button, close icon, etc.) and use the listed DataId directly.
-2. **`msw-search`** — only when `ruid-map.md` has no suitable RUID for the needed role (e.g. game-specific sprites like a custom character icon).
+1. **The style's `ruid-map.md`** (e.g. [`style-1-black/ruid-map.md`](style-1-black/ruid-map.md)) — first choice. Look up the role (panel background, button, close icon, etc.) and use the listed DataId directly.
+2. **`msw-search`** — only when the style's `ruid-map.md` has no suitable RUID for the needed role (e.g. game-specific sprites like a custom character icon).
 
 ## Searching Template Files
 
@@ -154,7 +154,7 @@ The end-to-end UI authoring workflow (anchors, 4-value formula, `refresh_workspa
 ### Reading Template Files
 
 1. **Mention chosen style** — briefly tell the user which style is being used (e.g. "Using `style-3-wood` as reference"). Switch immediately if user prefers a different style.
-2. **Read `ruid-map.md` + `structure.md`** — these two files give you everything needed without reading full `.ui` files:
+2. **Read the style's `ruid-map.md` + `structure.md`** (e.g. [`style-1-black/ruid-map.md`](style-1-black/ruid-map.md) + [`style-1-black/structure.md`](style-1-black/structure.md)) — these two files give you everything needed without reading full `.ui` files:
    - `ruid-map.md` — which RUID to use for each UI role (buttons, panels, icons, etc.)
    - `structure.md` — entity hierarchy, alignment, position, size, components
 3. **Read `.mlua` handler** — `Popupbutton.mlua` for button handler patterns.

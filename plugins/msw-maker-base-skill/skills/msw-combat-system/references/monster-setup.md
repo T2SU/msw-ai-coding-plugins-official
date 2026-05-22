@@ -1,6 +1,6 @@
 # Monster setup — 9 components + ActionSheet
 
-> AI FSM / StateComponent details → `msw-combat-system/SKILL.md §7`
+> AI FSM / StateComponent details → [`msw-combat-system/SKILL.md`](../SKILL.md) §7
 
 ---
 
@@ -26,7 +26,7 @@
 | RectTile | `MOD.Core.KinematicbodyComponent` |
 | SideViewRectTile | `MOD.Core.SideviewbodyComponent` |
 
-Map type check: [`msw-general/references/platform.md` §4](../../msw-general/references/platform.md). Per-Body knockback differences: `msw-combat-system SKILL.md §3-1`.
+Map type check: [`msw-general/references/platform.md`](../../msw-general/references/platform.md) §4. Per-Body knockback differences: [`msw-combat-system/SKILL.md`](../SKILL.md) §3-1.
 
 ---
 

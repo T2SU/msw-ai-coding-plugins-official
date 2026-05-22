@@ -110,7 +110,7 @@ Popup (UIGroup)
 
 Rule: **Group vs group uses GroupOrder; within a group uses displayOrder.**
 
-For runtime reordering of overlapping siblings, use `_UILogic:SetSiblingIndex(UITransformComponent, index)` from client code. See `runtime-patterns.md` §7 for the dynamic card/drag/popup pattern. Do not assume Unity-style `SetAsLastSibling()` exists.
+For runtime reordering of overlapping siblings, use `_UILogic:SetSiblingIndex(UITransformComponent, index)` from client code. See [`runtime-patterns.md`](runtime-patterns.md) §7 for the dynamic card/drag/popup pattern. Do not assume Unity-style `SetAsLastSibling()` exists.
 
 ---
 

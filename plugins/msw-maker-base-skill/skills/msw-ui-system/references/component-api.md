@@ -4,7 +4,7 @@ Full list of properties, methods, and events per UI component. Use as a lookup w
 
 Before reading or writing a UI component field in `.mlua`, verify the exact field name here. Do not infer field names from Unity, UGUI, HTML, or other UI frameworks.
 
-> **Authoring `.ui` files**: this reference describes **what fields exist**. To **set** them, call the builder (`scripts/msw_ui_builder.cjs`; protocol in `builder-protocol.md`). Do not hand-edit `.ui` JSON.
+> **Authoring `.ui` files**: this reference describes **what fields exist**. To **set** them, call the builder (`scripts/msw_ui_builder.cjs`; protocol in [`builder-protocol.md`](builder-protocol.md)). Do not hand-edit `.ui` JSON.
 
 ---
 
@@ -120,17 +120,17 @@ Additional considerations:
 
 ### Combination Patterns (Common Component Groupings)
 
-Summary of component combinations to attach per entity. For builder call code and ASCII trees, see `layout-recipes.md`. For runtime code, see `runtime-patterns.md`.
+Summary of component combinations to attach per entity. For builder call code and ASCII trees, see [`layout-recipes.md`](layout-recipes.md). For runtime code, see [`runtime-patterns.md`](runtime-patterns.md).
 
 | Pattern | Core Structure | Builder Recipe | Runtime Code |
 |------|-----------|------------|-----------|
-| **Button (icon + text)** | Single entity with `Sprite(Sliced) + Button`. Separate Icon/Label as children — hover/pressed colors apply only to the background Sprite, keeping text stable | `layout-recipes.md` Recipe 1 | `runtime-patterns.md` §1, §6 |
-| **Clickable tile/card** | Single `b.button(...)` entity with `SpriteGUIRendererComponent + TextComponent + ButtonComponent`; runtime changes use `SpriteGUIRendererComponent.Color/ImageRUID` and `TextComponent.Text` | `layout-recipes.md` Recipe 8 | `runtime-patterns.md` §1, §6 |
-| **HP/MP bar** | Background Sprite + child Fill (`stretch` anchor, `SpriteGUIRenderer Type=Filled, FillMethod=Horizontal, FillOrigin=Left`) | `layout-recipes.md` Recipe 1 | `runtime-patterns.md` §3 (`fillSprite.FillAmount = hp/maxHp` — one line) |
+| **Button (icon + text)** | Single entity with `Sprite(Sliced) + Button`. Separate Icon/Label as children — hover/pressed colors apply only to the background Sprite, keeping text stable | [`layout-recipes.md`](layout-recipes.md) Recipe 1 | [`runtime-patterns.md`](runtime-patterns.md) §1, §6 |
+| **Clickable tile/card** | Single `b.button(...)` entity with `SpriteGUIRendererComponent + TextComponent + ButtonComponent`; runtime changes use `SpriteGUIRendererComponent.Color/ImageRUID` and `TextComponent.Text` | [`layout-recipes.md`](layout-recipes.md) Recipe 8 | [`runtime-patterns.md`](runtime-patterns.md) §1, §6 |
+| **HP/MP bar** | Background Sprite + child Fill (`stretch` anchor, `SpriteGUIRenderer Type=Filled, FillMethod=Horizontal, FillOrigin=Left`) | [`layout-recipes.md`](layout-recipes.md) Recipe 1 | [`runtime-patterns.md`](runtime-patterns.md) §3 (`fillSprite.FillAmount = hp/maxHp` — one line) |
 | **Avatar profile (circular)** | `Sprite(circular border) + Mask(Shape=Circle)` + child `AvatarGUIRenderer` | — | — |
-| **Modal popup** | Root: `UITransform(stretch) + UIGroup(GroupType=2, Order=10) + CanvasGroup(BlocksRaycasts=true)`. Children: semi-transparent Dimmer (`raycast=true`, blocks input to HUD behind) + Panel(middle-center) | `layout-recipes.md` Recipe 2 | `runtime-patterns.md` §1 |
-| **Scroll list (~50 items)** | `ScrollLayoutGroup(Type=Vertical/Horizontal/Grid) + Mask(Shape=Rect)`. Children are auto-arranged | `layout-recipes.md` Recipe 6 | `runtime-patterns.md` §4, §8 |
-| **Large list (virtualized)** | `GridView` + `ItemEntity = reference to child template entity` + `OnRefresh = fn(index, entity)`. Template entity has `enable=False`. | `layout-recipes.md` Recipe 5 | `runtime-patterns.md` §5 |
+| **Modal popup** | Root: `UITransform(stretch) + UIGroup(GroupType=2, Order=10) + CanvasGroup(BlocksRaycasts=true)`. Children: semi-transparent Dimmer (`raycast=true`, blocks input to HUD behind) + Panel(middle-center) | [`layout-recipes.md`](layout-recipes.md) Recipe 2 | [`runtime-patterns.md`](runtime-patterns.md) §1 |
+| **Scroll list (~50 items)** | `ScrollLayoutGroup(Type=Vertical/Horizontal/Grid) + Mask(Shape=Rect)`. Children are auto-arranged | [`layout-recipes.md`](layout-recipes.md) Recipe 6 | [`runtime-patterns.md`](runtime-patterns.md) §4, §8 |
+| **Large list (virtualized)** | `GridView` + `ItemEntity = reference to child template entity` + `OnRefresh = fn(index, entity)`. Template entity has `enable=False`. | [`layout-recipes.md`](layout-recipes.md) Recipe 5 | [`runtime-patterns.md`](runtime-patterns.md) §5 |
 
 > **GridView caution** — `OnRefresh` is called frequently during scrolling. Do not call DataStorage; read only from cached tables.
 
@@ -167,7 +167,7 @@ Manages position, size, anchors, rotation, and scale. Required on every UI entit
 |------|------|--------|------|
 | `anchoredPosition` | Vector2 | (0, 0) | Offset relative to the anchor (**use only this for UI positioning**) |
 | `RectSize` | Vector2 | (100, 100) | UI size |
-| `AlignmentOption` | AlignmentType | Center(0) | Anchor preset (0~15; see `ui-fundamentals.md §6` for full mapping) |
+| `AlignmentOption` | AlignmentType | Center(0) | Anchor preset (0~15; see [`ui-fundamentals.md`](ui-fundamentals.md) §6 for full mapping) |
 | `AnchorsMin` | Vector2 | (0.5, 0.5) | Bottom-left anchor (normalized) |
 | `AnchorsMax` | Vector2 | (0.5, 0.5) | Top-right anchor (normalized) |
 | `OffsetMin` | Vector2 | (0.5, 0.5) | Offset relative to AnchorsMin |
@@ -742,7 +742,7 @@ Builder shortcut: pass `world_ui: true` to `sprite()` / `text()` / `button()` / 
 All values are `int32`. Pass numeric values to builder `patch_component(...)` or use the enum identifier in `.mlua` runtime code (e.g. `TextAlignmentType.MiddleCenter`).
 
 > **Two "alignment" enums exist — do not confuse them:**
-> - **`AlignmentType` (0~15)** — anchor presets for `UITransformComponent.AlignmentOption`. Builder string mapping (`"top-left"` ↔ 4, etc.) is in `ui-fundamentals.md §6`. Not duplicated here.
+> - **`AlignmentType` (0~15)** — anchor presets for `UITransformComponent.AlignmentOption`. Builder string mapping (`"top-left"` ↔ 4, etc.) is in [`ui-fundamentals.md`](ui-fundamentals.md) §6. Not duplicated here.
 > - **`TextAlignmentType` / `ChildAlignmentType` (0~8)** — 9-cell text/child alignment, defined below. Used by `TextComponent.Alignment` and any `ChildAlignment` field. **Different enum from anchors above.**
 
 ### TextAlignmentType / ChildAlignmentType -- 9-cell alignment (0~8)
@@ -918,4 +918,4 @@ Used by `MaskComponent.Shape`.
 
 ### UIAreaParticleType / UIBasicParticleType
 
-UI particle preset enums. The builder handles preset names directly — pass numeric `particle_type=...` to `area_particle()` / `basic_particle()`. Full numeric tables live in `builder-protocol.md`. From runtime, use the enum identifiers (`UIAreaParticleType.FogCalm`, `UIBasicParticleType.Firework`).
+UI particle preset enums. The builder handles preset names directly — pass numeric `particle_type=...` to `area_particle()` / `basic_particle()`. Full numeric tables live in [`builder-protocol.md`](builder-protocol.md). From runtime, use the enum identifiers (`UIAreaParticleType.FogCalm`, `UIBasicParticleType.Firework`).

@@ -2,7 +2,7 @@
 
 Normal AI authoring must not use raw `.model` schema details.
 
-Use `../model.md` and `scripts/model/msw_model_builder.cjs` instead:
+Use [`../model.md`](../model.md) and `scripts/model/msw_model_builder.cjs` instead:
 
 - inspect with `ModelBuilder.read()` / `ModelBuilder.snapshot()`
 - create with `ModelBuilder.fromTemplate()`

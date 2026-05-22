@@ -178,7 +178,7 @@ Values that directly override a component property rather than going through a m
 
 ## Movement components per map mode
 
-> See `msw-general/references/platform.md §4` for the TileMapMode↔Body mapping table. Depending on the map mode, one of RigidbodyComponent / KinematicbodyComponent / SideviewbodyComponent is active.
+> See [`msw-general/references/platform.md`](../msw-general/references/platform.md) §4 for the TileMapMode↔Body mapping table. Depending on the map mode, one of RigidbodyComponent / KinematicbodyComponent / SideviewbodyComponent is active.
 
 ---
 

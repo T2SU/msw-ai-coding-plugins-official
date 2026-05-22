@@ -31,6 +31,26 @@
 - **Jump**: Optional (`EnableJump = true` is visual-only jump — no actual height change)
 - **Shadow**: `EnableShadow` shows shadow during jump
 
+### Engine defaults (`KinematicbodyComponent`)
+
+A freshly-added `KinematicbodyComponent` already has movement-enabling defaults. The most common "my entity is mysteriously slow / can't move / has no shadow" issues come from **overwriting** these defaults with zero / false, not from forgetting to set them.
+
+| Property | Default | Notes |
+|---|---|---|
+| `SpeedFactor` | `Vector2(1, 1)` | Per-axis multiplier. `(0, 0)` means cannot move at all; `(1, 0)` locks Y. |
+| `EnableTileCollision` | `true` | Set `false` only when an entity must pass through walls (projectiles, ghosts). |
+| `EnableJump` | `true` | Visual-only jump — does not change height. |
+| `JumpSpeed` | `6.3` | Upward velocity at jump start. |
+| `JumpDrag` | `20` | Downward acceleration during fall. |
+| `EnableShadow` | `true` | Shadow under the entity. |
+| `ShadowColor` | `Color(0.3, 0.3, 0.3, 0.8)` | RGBA. |
+| `ShadowOffset` | `Vector2(0, 0)` | Local offset in tiles. |
+| `ShadowSize` | `Vector2(0.7, 0.3)` | Width × height in tiles. |
+| `ShadowScalingRatio` | `0.5` | How much the shadow shrinks as the entity rises. |
+| `ApplyClimbableRotation` | `true` | Rotate sprite on climbable tiles. |
+
+> `KinematicbodyComponent.Acceleration` is **deprecated** — do not rely on it for new code. Use `SpeedFactor` plus `MoveVelocity` for tuning.
+
 ```lua
 -- KinematicbodyComponent key properties
 local kb = self.Entity.KinematicbodyComponent
@@ -51,6 +71,7 @@ kb.ShadowSize = Vector2(0.5, 0.2)   -- shadow size
 - Per-tile **Movable property**: passable/blocked setting (in tile editor).
 - `EnableTileCollision`: collision detection toggle.
 - Coordinate conversion: `ToCellPosition(worldPos)` ↔ `ToWorldPosition(cellPos)`
+- **The entity carrying `RectTileMapComponent` has its `TransformComponent` locked** at a fixed origin — direct `Position` / `EulerAngles` / `Scale` writes are silently rejected with `[LWA-3047]`. Game-side anchors (grid origin, spawn points, waypoints) must align to the locked origin and use `ToWorldPosition(cellPos)` to convert tile↔world. See [entity.md "Tile-map entity transform is locked"](entity.md#tile-map-entity-transform-is-locked).
 
 ```lua
 -- World coordinates → tile coordinates

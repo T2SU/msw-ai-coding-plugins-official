@@ -41,7 +41,7 @@ the corresponding `Custom*Equip` property — see the slot mapping table in the
 
 > **For full request/response details (fields like `dname`, `score`, `hasEmbedding`,
 > `payload.color_hex`, `categoryFilter` slot list, pagination via `nextOffset`/`offset`),
-> see the "Avatar Item Search" section in `references/resource/search.md`.**
+> see the "Avatar Item Search" section in [`references/resource/search.md`](search.md).**
 
 ---
 

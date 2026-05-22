@@ -1,6 +1,6 @@
 # Layout Recipes
 
-A collection of layout templates based on this skill's CJS UIBuilder (`scripts/msw_ui_builder.cjs`; see `builder-protocol.md` for the call protocol).
+A collection of layout templates based on this skill's CJS UIBuilder (`scripts/msw_ui_builder.cjs`; see [`builder-protocol.md`](builder-protocol.md) for the call protocol).
 
 Each recipe is copy-ready from file creation to placement. In actual use, change only path / size / color / RUID values to match your project.
 
@@ -58,7 +58,7 @@ b.write("ui/DefaultGroup.ui");
 
 ### HP Update at Runtime
 
-See `runtime-patterns.md §3 HP Bar (Progress Bar)`. Key point: a single line `self.fillImage.FillAmount = hp / maxHp`. Property binding is auto-injected via `b.write(path, { bind: {...} })`.
+See [`runtime-patterns.md`](runtime-patterns.md) §3 HP Bar (Progress Bar). Key point: a single line `self.fillImage.FillAmount = hp / maxHp`. Property binding is auto-injected via `b.write(path, { bind: {...} })`.
 
 ---
 
@@ -127,7 +127,7 @@ b.text("Toast/Message", "", { size: 28, color: "#FFFFFF", anchor: "stretch", ali
 b.write("ui/ToastGroup.ui");
 ```
 
-For the mlua-side logic, use the Toast pattern from `references/runtime-patterns.md`.
+For the mlua-side logic, use the Toast pattern from [`runtime-patterns.md`](runtime-patterns.md).
 
 ---
 
@@ -208,7 +208,7 @@ b.write("ui/InventoryGroup.ui");
 
 ### OnRefresh Callback (Runtime)
 
-See `runtime-patterns.md §5 GridView Large List`. Property binding injects two items — `grid` / `itemTemplate` — via `b.write(path, { bind: {...} })`.
+See [`runtime-patterns.md`](runtime-patterns.md) §5 GridView Large List. Property binding injects two items — `grid` / `itemTemplate` — via `b.write(path, { bind: {...} })`.
 
 > **Caution**: `OnRefresh` is called frequently during scrolling. Do not call DataStorage; only query the in-memory cache. (Common Pitfall #9)
 
@@ -371,7 +371,7 @@ Use this for card games, board cells, inventory slots, quick slots, tabs, and sa
 
 After running any recipe:
 
-1. **Binding Injection** — Auto-inject entity UUIDs into the corresponding `.mlua` property defaults via `b.write(filepath, { bind: { mlua, props } })` or `b.inject_bindings(mlua_path, props)`. See `builder-protocol.md` §"Binding Injection" for details.
+1. **Binding Injection** — Auto-inject entity UUIDs into the corresponding `.mlua` property defaults via `b.write(filepath, { bind: { mlua, props } })` or `b.inject_bindings(mlua_path, props)`. See [`builder-protocol.md`](builder-protocol.md) §"Binding Injection" for details.
 2. **Preview Check** — Visualize the layout with `scripts/preview_ui_layout.cjs`
 3. **Maker Refresh** — Reflect changes in the engine via MCP refresh
 4. **Play Mode Verification** — Verify on actual resolution and mobile scale

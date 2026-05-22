@@ -41,7 +41,7 @@ const result = await searchResources("orange mushroom", {
 |---------------------|------------------------|------|----------|-------------|
 | `query` | `query` (positional) | string | O | Search term (natural language, RUID, or pack ID — exact-match patterns trigger ID lookup) |
 | `resourceTypeFilter` | `resourceTypeFilter` / `--resource-type` | string[] | - | `sprite`, `animationclip`, `resource_pack`, `bgm`, `voice`, `effect` (all three are audio), `avataritem` |
-| `categoryFilter` | `categoryFilter` / `--category` | string[] | - | `mob`, `npc`, `item`, `skill`, `object`, `background`, `foothold`, `rope`, `ladder`, `etc` (or avatar slot when `resourceTypeFilter=["avataritem"]`). **`map` / `effect` / `ui` are NOT valid** — see SKILL.md "Categories" |
+| `categoryFilter` | `categoryFilter` / `--category` | string[] | - | `mob`, `npc`, `item`, `skill`, `object`, `background`, `foothold`, `rope`, `ladder`, `etc` (or avatar slot when `resourceTypeFilter=["avataritem"]`). **`map` / `effect` / `ui` are NOT valid** — see [`SKILL.md`](../../SKILL.md) "Categories" |
 | `topK` | `topK` / `--topK` | int (1–100) | - | Number of results (server default 20 / **this skill's recommended default 3** — always send explicitly) |
 | `offset` | `offset` / `--offset` | int (0–5000) | - | Result offset; default 0 |
 | `canonicalOnly` | `canonicalOnly` / `--canonical-only` | bool | - | Server default `true` (sprite/animationclip/avataritem dedup) |

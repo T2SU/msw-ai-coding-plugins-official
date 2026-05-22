@@ -1,6 +1,6 @@
 # UI Runtime Patterns
 
-`.mlua` patterns for controlling UI from scripts. These are **runtime code**, separate from `.ui` file authoring (which goes through the builder — see `builder-protocol.md`).
+`.mlua` patterns for controlling UI from scripts. These are **runtime code**, separate from `.ui` file authoring (which goes through the builder — see [`builder-protocol.md`](builder-protocol.md)).
 
 ---
 
@@ -507,13 +507,13 @@ Hard rules that show up as "UI doesn't respond" or "Server can't see UI". Memori
 2. **No UI entity access from server.** Referencing a UI entity in `@ExecSpace("Server")` / `@ExecSpace("ServerOnly")` returns **nil**. For server-to-UI updates, route through an `@ExecSpace("Client")` RPC.
 3. **All UI Logic / Component must declare `@ExecSpace("ClientOnly")`** — default ExecSpace doesn't guarantee client-only execution.
 4. **Do not attach UI components (ButtonComponent, etc.) to map / world entities** — UI-only. Trying to attach via builder/runtime silently misbehaves.
-5. **`UIGroup DefaultShow=false`** — not visible until `Enable=true`. Also, if `DefaultShow=false` AND the group has no controller script outside to flip `Enable`, scripts inside the group never run `OnBeginPlay` / `OnUpdate` (typical symptom: "level-up popup never shows"). See `ui-hierarchy.md` for the standard pattern.
+5. **`UIGroup DefaultShow=false`** — not visible until `Enable=true`. Also, if `DefaultShow=false` AND the group has no controller script outside to flip `Enable`, scripts inside the group never run `OnBeginPlay` / `OnUpdate` (typical symptom: "level-up popup never shows"). See [`ui-hierarchy.md`](ui-hierarchy.md) for the standard pattern.
 
 ### Movement / fade / visibility
 
 6. **Move via `anchoredPosition`** — never set `Position` directly (engine treats it as a derived cache, your writes get overwritten).
 7. **Fade via `CanvasGroupComponent.GroupAlpha`** — don't tween individual element alphas. One write covers the whole subtree consistently.
-8. **Show/hide via `Enable`** — `popupGroup.Enable = true/false`. `Visible = false` keeps clicks alive and OnUpdate running (see `ui-hierarchy.md §5`).
+8. **Show/hide via `Enable`** — `popupGroup.Enable = true/false`. `Visible = false` keeps clicks alive and OnUpdate running (see [`ui-hierarchy.md`](ui-hierarchy.md) §5).
 
 ### Resource cleanup
 

@@ -35,7 +35,7 @@ Retain the raw logs for Step 3.
 ### General
 - [ ] **Logic correctness** — Does it match what the user requested?
 - [ ] **ExecSpace** — Is `@ExecSpace` correct? (Server/Client/ServerOnly/ClientOnly)
-- [ ] **Override ExecSpace match** — When overriding a parent method (`extends`), does the child's `@ExecSpace` **byte-match** the parent? If the parent has no `@ExecSpace` (e.g. `AttackComponent.CalcDamage`/`IsAttackTarget`/`IsHitTarget`), the override must also **omit** `@ExecSpace`. Otherwise → LEA-3014 `SignatureMismatch` at play time. Detail: `msw-scripting/SKILL.md §9 "Method override"`.
+- [ ] **Override ExecSpace match** — When overriding a parent method (`extends`), does the child's `@ExecSpace` **byte-match** the parent? If the parent has no `@ExecSpace` (e.g. `AttackComponent.CalcDamage`/`IsAttackTarget`/`IsHitTarget`), the override must also **omit** `@ExecSpace`. Otherwise → LEA-3014 `SignatureMismatch` at play time. Detail: [`msw-scripting/SKILL.md`](../SKILL.md) §9 "Method override".
 - [ ] **Entity existence** — Do referenced entities actually exist? Are `nil` guards in place?
 - [ ] **Event wiring** — Are events connected for both existing and future entities/players?
 - [ ] **Edge cases** — Concurrent players, mid-spawn/destroy entry, map transition handling?

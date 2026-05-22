@@ -301,7 +301,7 @@ into the `resourceTypeFilter` array when searching):
 | `bgm` | Background music (audio) |
 | `voice` | Voice clip — NPC dialogue, etc. (audio) |
 | `effect` | **Sound effect (audio).** Not a visual effect. For visual particles / hit / skill FX, search `sprite` or `animationclip` (categories `skill` / `mob` / `etc`). |
-| `avataritem` | Avatar costume item (cap, coat, pants, shoes, weapon, …) — same `POST /v3/search/resources` endpoint with `resourceTypeFilter: ["avataritem"]`. See `references/resource/search.md` ("Avatar Item Search") and `references/resource/avatar.md`. |
+| `avataritem` | Avatar costume item (cap, coat, pants, shoes, weapon, …) — same `POST /v3/search/resources` endpoint with `resourceTypeFilter: ["avataritem"]`. See [`references/resource/search.md`](references/resource/search.md) ("Avatar Item Search") and [`references/resource/avatar.md`](references/resource/avatar.md). |
 
 > All search and listing endpoints use the same type-filter field name: **`resourceTypeFilter`**
 > (an array). Other names like `types` are silently ignored by the server.
@@ -421,18 +421,18 @@ A 32-character hex string that uniquely identifies every resource. Example: `"00
 
 | Situation | Wrapper call (CLI subcommand) | Reference file |
 |-----------|-------------------------------|----------------|
-| "Find a slime / orange mushroom / monster / NPC / item / background / map asset" (default — no type specified) | `searchResources(query, { resourceTypeFilter: ["resource_pack"], ... })` (`search ... --resource-type resource_pack`) | `references/resource/search.md` |
-| "Find an **individual sprite** / single image" (user explicitly asked for a sprite) | `searchResources(query, { resourceTypeFilter: ["sprite"], ... })` | `references/resource/search.md` |
-| "Find an **individual animationclip**" (user explicitly asked for an animation) | `searchResources(query, { resourceTypeFilter: ["animationclip"], ... })` | `references/resource/search.md` |
-| "Find a **visual effect / particle / hit FX**" | `searchResources(query, { resourceTypeFilter: ["animationclip","sprite"], categoryFilter: ["skill","mob","etc"] })` — note: `effect` here would mean **audio**, not visual | `references/resource/search.md` |
-| "Find a **sound / BGM / voice / sound-effect**" (audio) | `searchResources(query, { resourceTypeFilter: ["bgm"\|"voice"\|"effect"], ... })` — `effect` resource_type = sound-effect (audio) | `references/resource/search.md` |
-| "Find a **background / map tile / scenery**" | `searchResources(query, { resourceTypeFilter: ["sprite","animationclip"], categoryFilter: ["background","object"] })` — there is no `map` category in the index | `references/resource/search.md` |
-| "Find a costume / hat / shoes / weapon (avatar item)" | `searchAvatarItems(...)` (`search-avatar`) | `references/resource/search.md` (Avatar Item Search section) + `references/resource/avatar.md` |
-| "Any more monsters like this one?" | `findSimilarResources(ruid, ...)` (`similar`) | `references/resource/search.md` |
-| "Details for RUID abc123" (any type incl. avataritem and resource_pack) | `getResource(ruid)` (`get`) | `references/resource/detail.md` |
-| "Show me a list of monster sprites" | `listResources(...)` (`list`) | `references/resource/browse.md` |
-| "Which resource packs include this RUID?" | `findPacksContaining(ruid, ...)` (`packs`) | `references/resource/browse.md` |
-| "Browse all avatar items" | `listAvatars(...)` (`avatars`) | `references/resource/avatar.md` |
+| "Find a slime / orange mushroom / monster / NPC / item / background / map asset" (default — no type specified) | `searchResources(query, { resourceTypeFilter: ["resource_pack"], ... })` (`search ... --resource-type resource_pack`) | [`references/resource/search.md`](references/resource/search.md) |
+| "Find an **individual sprite** / single image" (user explicitly asked for a sprite) | `searchResources(query, { resourceTypeFilter: ["sprite"], ... })` | [`references/resource/search.md`](references/resource/search.md) |
+| "Find an **individual animationclip**" (user explicitly asked for an animation) | `searchResources(query, { resourceTypeFilter: ["animationclip"], ... })` | [`references/resource/search.md`](references/resource/search.md) |
+| "Find a **visual effect / particle / hit FX**" | `searchResources(query, { resourceTypeFilter: ["animationclip","sprite"], categoryFilter: ["skill","mob","etc"] })` — note: `effect` here would mean **audio**, not visual | [`references/resource/search.md`](references/resource/search.md) |
+| "Find a **sound / BGM / voice / sound-effect**" (audio) | `searchResources(query, { resourceTypeFilter: ["bgm"\|"voice"\|"effect"], ... })` — `effect` resource_type = sound-effect (audio) | [`references/resource/search.md`](references/resource/search.md) |
+| "Find a **background / map tile / scenery**" | `searchResources(query, { resourceTypeFilter: ["sprite","animationclip"], categoryFilter: ["background","object"] })` — there is no `map` category in the index | [`references/resource/search.md`](references/resource/search.md) |
+| "Find a costume / hat / shoes / weapon (avatar item)" | `searchAvatarItems(...)` (`search-avatar`) | [`references/resource/search.md`](references/resource/search.md) (Avatar Item Search section) + [`references/resource/avatar.md`](references/resource/avatar.md) |
+| "Any more monsters like this one?" | `findSimilarResources(ruid, ...)` (`similar`) | [`references/resource/search.md`](references/resource/search.md) |
+| "Details for RUID abc123" (any type incl. avataritem and resource_pack) | `getResource(ruid)` (`get`) | [`references/resource/detail.md`](references/resource/detail.md) |
+| "Show me a list of monster sprites" | `listResources(...)` (`list`) | [`references/resource/browse.md`](references/resource/browse.md) |
+| "Which resource packs include this RUID?" | `findPacksContaining(ruid, ...)` (`packs`) | [`references/resource/browse.md`](references/resource/browse.md) |
+| "Browse all avatar items" | `listAvatars(...)` (`avatars`) | [`references/resource/avatar.md`](references/resource/avatar.md) |
 
 ### Typical Workflow (pack-first)
 

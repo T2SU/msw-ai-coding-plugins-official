@@ -1,7 +1,7 @@
 # Projectile system — ProjectileComponent + SpawnByModelId
 
 > Verification basis: `SpawnService.d.mlua`, `TransformComponent.d.mlua` (2026-04-22)
-> Attack Resolution basics, per-Body knockback → `msw-combat-system/SKILL.md §1·§3`
+> Attack Resolution basics, per-Body knockback → [`msw-combat-system/SKILL.md`](../SKILL.md) §1·§3
 
 ---
 
@@ -173,10 +173,10 @@ After writing the `.mlua`, run Maker **Refresh** once → `ProjectileComponent.c
 |-----------|------------|
 | `MOD.Core.TransformComponent` | default (reduce `Scale` if needed) |
 | `MOD.Core.SpriteRendererComponent` | `SpriteRUID = <projectile sprite RUID>`, `OrderInLayer = 5`(above units), `SortingLayer = "MapLayer0"` |
-| `ProjectileAttackComponent` (custom, `AttackComponent`-derived) | Calls `AttackFrom` from `OnHit` → normal HitEvent pipeline. Override `CalcDamage`/`IsAttackTarget` for damage/target policy. **⚠ Do not add `@ExecSpace`** — the parent has an unspecified ExecSpace (=All), so adding `@ExecSpace("ServerOnly")` etc. in the child triggers LEA-3014. `msw-scripting/SKILL.md §9` |
+| `ProjectileAttackComponent` (custom, `AttackComponent`-derived) | Calls `AttackFrom` from `OnHit` → normal HitEvent pipeline. Override `CalcDamage`/`IsAttackTarget` for damage/target policy. **⚠ Do not add `@ExecSpace`** — the parent has an unspecified ExecSpace (=All), so adding `@ExecSpace("ServerOnly")` etc. in the child triggers LEA-3014. See [`msw-scripting/SKILL.md`](../../msw-scripting/SKILL.md) §9 |
 | `ProjectileComponent` | Set property defaults (Speed/Damage etc.) in `.model` so spawns don't need to reconfigure |
 
-> `ProjectileAttackComponent` (or an equivalent script) **must** be included for damage skin / hit effect / i-frame to work. Bypassing with simple `ai.HP -= damage` is wrong — see `msw-combat-system/SKILL.md §2-3`.
+> `ProjectileAttackComponent` (or an equivalent script) **must** be included for damage skin / hit effect / i-frame to work. Bypassing with simple `ai.HP -= damage` is wrong — see [`msw-combat-system/SKILL.md`](../SKILL.md) §2-3.
 
 Projectile sprite search:
 ```

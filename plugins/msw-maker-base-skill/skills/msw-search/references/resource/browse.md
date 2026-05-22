@@ -42,7 +42,7 @@ const nextPage = await listResources({
 | Query param (server) | Wrapper arg / CLI flag | Type | Description |
 |----------------------|------------------------|------|-------------|
 | `resourceTypeFilter` | `resourceTypeFilter` / `--resource-type` | string[] | `sprite`, `animationclip`, `resource_pack`, `bgm`, `voice`, `effect` (all three are audio), `avataritem` |
-| `categoryFilter` | `categoryFilter` / `--category` | string[] | `mob`, `npc`, `item`, `skill`, `object`, `background`, `foothold`, `rope`, `ladder`, `etc` (or avatar slot). **`map` / `effect` / `ui` are NOT valid** — they return zero items. See SKILL.md "Categories" |
+| `categoryFilter` | `categoryFilter` / `--category` | string[] | `mob`, `npc`, `item`, `skill`, `object`, `background`, `foothold`, `rope`, `ladder`, `etc` (or avatar slot). **`map` / `effect` / `ui` are NOT valid** — they return zero items. See [`SKILL.md`](../../SKILL.md) "Categories" |
 | `limit` | `limit` / `--limit` | int (1–100) | Page size (server default 50 / **this skill's recommended default 3**) |
 | `offset` | `offset` / `--offset` | **string** | Opaque cursor returned in `nextOffset`. **Omit on the first page** — sending `0` would be treated as a cursor and return empty. |
 | `canonicalOnly` | `canonicalOnly` / `--canonical-only` | bool | Server default `true` |

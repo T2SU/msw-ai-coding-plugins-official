@@ -19,6 +19,8 @@ Use:
 
 The builder owns `EntryKey`, `ContentProto.Json.Id/Name`, value type descriptors, inspector-property links, child model shape, and event link preservation.
 
+Prefer fluent chaining for normal create/update flows. The mutation methods above return the builder instance, and `write()` also returns the builder after saving. Keep inspection and conditional methods outside the chain: `snapshot()`, `validate()`, `build()`, `get*()`, `has*()`, `list*()`, and boolean-returning removals return data or booleans, not the builder.
+
 ## 1. When to Create a `.model`
 
 Default rule: if the same entity composition will appear two or more times, author a `.model` and place instances via `modelId`. Runtime spawning with `SpawnByModelId` also requires a registered model.
@@ -66,14 +68,14 @@ ModelBuilder.fromTemplate(path.join(templateDir, "ChaseMonster.model"), "MyMonst
 
 ### Monsters
 
-Read `monster.md` before authoring a monster.
+Read [`monster.md`](monster.md) before authoring a monster.
 
 | Template | Use |
 |---|---|
 | `../models/MonsterCanonical.model` | Default start for new monsters |
-| `../models/ChaseMonster.model` | Chasing side-view monster, with caveats in `monster.md` |
-| `../models/MoveMonster.model` | Patrol movement monster, with caveats in `monster.md` |
-| `../models/StaticMonster.model` | Stationary attacker, with caveats in `monster.md` |
+| `../models/ChaseMonster.model` | Chasing side-view monster, with caveats in [`monster.md`](monster.md) |
+| `../models/MoveMonster.model` | Patrol movement monster, with caveats in [`monster.md`](monster.md) |
+| `../models/StaticMonster.model` | Stationary attacker, with caveats in [`monster.md`](monster.md) |
 
 ### NPC / Interaction
 
@@ -154,10 +156,10 @@ const b = ModelBuilder.fromTemplate(
 
 b.component("SpriteRendererComponent")
   .value("SpriteRendererComponent", "SpriteRUID", "1705e3c5b2c146ac9a699f96fb067408", "string")
-  .value("TransformComponent", "Position", vector3(0, 1, 0), "vector3");
+  .value("TransformComponent", "Position", vector3(0, 1, 0), "vector3")
+  .write("RootDesk/MyDesk/Models/MapObjects/MyObject.model");
 
 console.log(b.snapshot());
-b.write("RootDesk/MyDesk/Models/MapObjects/MyObject.model");
 ```
 
 ### Patch Existing Model
@@ -166,10 +168,94 @@ b.write("RootDesk/MyDesk/Models/MapObjects/MyObject.model");
 const b = ModelBuilder.read("RootDesk/MyDesk/Models/Monsters/Slime.model");
 
 b.value("MovementComponent", "InputSpeed", 2.5, "float")
-  .value("SpriteRendererComponent", "SpriteRUID", "1705e3c5b2c146ac9a699f96fb067408", "string");
+  .value("SpriteRendererComponent", "SpriteRUID", "1705e3c5b2c146ac9a699f96fb067408", "string")
+  .write("RootDesk/MyDesk/Models/Monsters/Slime.model");
 
 console.log(b.snapshot());
-b.write("RootDesk/MyDesk/Models/Monsters/Slime.model");
+```
+
+When a mutation can fail and returns `false`, keep it separate and stop on failure:
+
+```javascript
+const b = ModelBuilder.read("RootDesk/MyDesk/Models/Monsters/Slime.model");
+
+if (!b.removeValue("MovementComponent", "InputSpeed")) {
+  throw new Error("MovementComponent.InputSpeed not found");
+}
+
+b.value("MovementComponent", "InputSpeed", 2.5, "float")
+  .write("RootDesk/MyDesk/Models/Monsters/Slime.model");
+```
+
+### Place The Model In A Map
+
+After writing a `.model`, place it in a `.map` with `MapBuilder.placeModel()`. Do not hand-write `modelId`, `origin`, `componentNames`, entity `id`, or child entity paths.
+
+When the Node script is run from the workspace root, load both builders from the skill path:
+
+```javascript
+const path = require("path");
+const { ModelBuilder, vector3 } = require("./skills/msw-general/scripts/model/msw_model_builder.cjs");
+const { MapBuilder } = require("./skills/msw-general/scripts/map/msw_map_builder.cjs");
+
+const skillRoot = path.join(process.cwd(), "skills", "msw-general");
+const modelPath = "RootDesk/MyDesk/Models/Monsters/Slime.model";
+
+const model = ModelBuilder.fromTemplate(
+  path.join(skillRoot, "models", "MonsterCanonical.model"),
+  "Slime"
+);
+
+model
+  .value("TransformComponent", "Position", vector3(0, 0, 0), "vector3")
+  .write(modelPath);
+
+const map = MapBuilder.read("map/map01.map");
+const placedEntityId = map.placeModel("Slime01", modelPath, {
+  pos: [3, 1, 0],
+  componentOverrides: {
+    "MOD.Core.SpriteRendererComponent": {
+      OrderInLayer: 10,
+    },
+  },
+});
+
+console.log({ placedEntityId });
+map.write("map/map01.map");
+```
+
+`placeModel(name, modelPathOrJson, options)`:
+
+- Reads the `.model`, derives `modelId` from `ContentProto.Json.Id` or `EntryKey`, mirrors its component list into the placed map entity, and applies model `Values` to matching component fields.
+- Returns the placed root entity id string, not the builder. Do not chain `.write()` after `placeModel()`.
+- Replaces an existing entity with the same map path and removes its existing descendants before placing the new model instance.
+- Places model children recursively, preserving parent-child paths and `origin` metadata.
+- Accepts `options.pos` as `[x, y, z]`, `{ x, y, z }`, or `vector3(...)`; arrays are preferred.
+- Accepts `options.componentOverrides` as a map keyed by component type. The target component must exist in the model or the builder throws.
+- Accepts `options.modelId` only for an intentional override. Usually omit it and let the builder use the model's own id.
+
+Use `MapBuilder.read(...).getTileMapMode()` before choosing movement/body components for the model being placed:
+
+| TileMapMode | Map type | Body component |
+|:--:|---|---|
+| `0` | MapleTile | `RigidbodyComponent` |
+| `1` | RectTile | `KinematicbodyComponent` |
+| `2` | SideViewRectTile | `SideviewbodyComponent` |
+
+`MapBuilder` returns `false` for missing targets in `patch()`, `rename()`, `upsertComponent()`, `patchComponent()`, `removeComponent()`, and `remove()`. Treat `false` as a failed edit and stop instead of writing the map.
+
+```javascript
+const map = MapBuilder.read("map/map01.map");
+
+if (!map.patch("Slime01", { pos: [5, 1, 0], enable: true })) {
+  throw new Error("Slime01 not found in map/map01.map");
+}
+
+if (!map.patchComponent("Slime01", "MOD.Core.SpriteRendererComponent", { OrderInLayer: 20 })) {
+  throw new Error("Slime01 has no SpriteRendererComponent");
+}
+
+map.write("map/map01.map");
 ```
 
 ### Inspector Property
@@ -342,6 +428,14 @@ b.build();
 b.write(filepath, { ensure_sprite_ruid: true });
 ```
 
+Chaining-safe mutators: `renameModel()`, `setBaseModelId()`, `component()`, `addComponent()`, `removeComponent()`, `value()`, `enable()`, `entityEnable()`, `entityVisible()`, `property()`, `child()`, `childFromTemplate()`, `childFromModel()`, `childComponent()`, `removeChildComponent()`, `childValue()`, `childEnable()`, `childVisible()`, `childProperty()`, `setChildBaseModelId()`, `moveChild()`, `renameChild()`, `childEventLink()`, `eventLink()`, `upsertEventLink()`, and `write()`.
+
+Do not chain through non-builder returns:
+
+- `removeComponent()` and `removeChildComponent()` return the builder, but removal is unconditional; use them only when missing targets are acceptable.
+- `removeValue()`, `removeProperty()`, `removeChildValue()`, `removeChildProperty()`, `removeChildEventLink()`, `removeChild()`, and `removeEventLink()` return `boolean`; check `false` before writing.
+- `snapshot()`, `validate()`, `build()`, `get*()`, `has*()`, and `list*()` return data for inspection; call them on their own line.
+
 `typeKey` values: `bool`, `int`, `long`, `float`, `double`, `string`, `vector2`, `vector3`, `quaternion`, `collision_group`, `data_ref`, `sync_string_dict`, `action_sheet`.
 
 Helpers: `vector2`, `vector3`, `quaternion`, `collisionGroup` / `collision_group`, `dataRef` / `data_ref`, `actionSheet`.
@@ -361,7 +455,7 @@ The default generated MOD.Core assembly version is `26.5.0.0`. If a different pr
 | Interactive NPC | `SpriteRendererComponent`, `TouchReceiveComponent` |
 | Attackable enemy | `AttackComponent`, `HitComponent` |
 
-Body component must match the target map's `TileMapMode`; see `platform.md §4`.
+Body component must match the target map's `TileMapMode`; see [`platform.md`](platform.md) §4.
 
 ## 6. Script Components
 
@@ -392,8 +486,8 @@ If this order is inconvenient, keep the `.model` native-only and attach the scri
 
 | Doc | Purpose |
 |---|---|
-| `entity.md` | Place created models in maps, spawn, runtime validation |
-| `monster.md` | Monster-specific canonical defaults and pitfalls |
+| [`entity.md`](entity.md) | Place created models in maps, spawn, runtime validation |
+| [`monster.md`](monster.md) | Monster-specific canonical defaults and pitfalls |
 | [platform.md](platform.md) (core) | File location rules, folder metadata, TileMapMode↔Body, ID generation |
 | [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md) | Map-type-specific Body and movement patterns |
 | `msw-scripting` | Authoring `.mlua` scripts to attach to models |

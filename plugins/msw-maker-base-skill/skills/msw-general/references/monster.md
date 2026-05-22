@@ -120,7 +120,7 @@ For MapleTile, spawn above the foothold so gravity lands the monster cleanly. A 
 After writing the model:
 
 1. Maker `refresh`.
-2. Place instances in `.map` via `modelId`; see `entity.md`.
+2. Place instances in `.map` via `modelId`; see [`entity.md`](entity.md).
 3. Do not partially override a system model through a map `modelId` instance. Bake monster defaults into a dedicated `.model`.
 4. For repeated monsters, all instances should share one model and only differ in transform/position.
 
@@ -137,7 +137,7 @@ After writing the model:
 |---|---|
 | [model.md](model.md) | Builder-only `.model` authoring rules and API |
 | [entity.md](entity.md) | Placing a monster in a `.map` |
-| [entity/map-builder.md](entity/map-builder.md) | Builder-only `.map` inspection and model placement |
+| [entity.md](entity.md#mapbuilder-protocol) | Builder-first `.map` inspection and model placement |
 | [platform-maple.md](platform-maple.md) | MapleTile physics, `PredictFootholdEnd`, foothold AI patterns, MapleTile-specific troubleshooting and checklists |
 | [platform.md](platform.md) §4 | TileMapMode↔Body mapping and LEA-3004 (common to all map types) |
 | [troubleshooting.md](troubleshooting.md) | Symptom → cause → fix reference ("falls off the foothold edge" / "floating in mid-air" etc.) |

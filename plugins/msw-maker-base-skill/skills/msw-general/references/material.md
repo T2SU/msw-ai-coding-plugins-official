@@ -210,7 +210,7 @@ Pick the place that matches *where* the material assignment should live for the 
 
    The value goes in as a plain `string` typeKey, exactly like `SpriteRUID`. Do **not** wrap it in `dataRef()`.
 
-2. **Inline on a `.map` entity** — for genuinely one-off scene entities. Use `MapBuilder` (see [entity/map-builder.md](entity/map-builder.md)) to set the same `MaterialId` value on the entity's `SpriteRendererComponent`.
+2. **Inline on a `.map` entity** — for genuinely one-off scene entities. Use `MapBuilder` (see [entity.md](entity.md#mapbuilder-protocol)) to set the same `MaterialId` value on the entity's `SpriteRendererComponent`.
 
 3. **In the Maker editor** — Property Editor → renderer component → `MaterialId` field → pick from Reference window. Use this only when the user is iterating live and you have no automation route.
 
@@ -362,9 +362,9 @@ Goal: monster flashes a red outline when hit.
 | Doc | Why |
 |---|---|
 | [model.md](model.md) | Setting `MaterialId` as a `.model` value via `ModelBuilder` (§4.2). |
-| [entity.md](entity.md) / [entity/map-builder.md](entity/map-builder.md) | Setting `MaterialId` on inline map entities, and the model-vs-inline decision. |
+| [entity.md](entity.md#mapbuilder-protocol) | Setting `MaterialId` on inline map entities, and the model-vs-inline decision. |
 | [platform.md](platform.md) | `SortingLayer` / `OrderInLayer` / `SpriteRUID` — separate from materials but often involved when the material "doesn't seem to show". |
-| `msw-scripting` skill | Authoring the `.mlua` that calls `ChangeMaterial` / `ChangeMaterialProperty`. Read `msw-scripting/SKILL.md` + `verify-checklist.md` before writing any `.mlua`. |
+| `msw-scripting` skill | Authoring the `.mlua` that calls `ChangeMaterial` / `ChangeMaterialProperty`. Read [`msw-scripting/SKILL.md`](../../msw-scripting/SKILL.md) + [`verify-checklist.md`](../../msw-scripting/references/verify-checklist.md) before writing any `.mlua`. |
 | `msw-search` skill | Finding sprite RUIDs that pair with the material (e.g. the base sprite under an outline). |
 | `msw-ui-system` skill | Applying materials to UI renderers (`RawImageGUIRendererComponent`, `PolygonGUIRendererComponent`) — UI work always routes through this skill first. |
 

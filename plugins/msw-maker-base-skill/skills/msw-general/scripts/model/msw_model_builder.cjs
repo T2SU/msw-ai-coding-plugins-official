@@ -159,15 +159,27 @@ function wrapValue(value, typeKey) {
   return clone(value);
 }
 
-function vector2(x, y) {
+function vector2(x = 0, y = 0) {
+  if (x && typeof x === "object") {
+    if (Array.isArray(x)) return { $type: `MOD.Core.MODVector2, ${MOD_CORE_SHORT}`, x: Number(x[0] ?? 0), y: Number(x[1] ?? 0) };
+    return { $type: `MOD.Core.MODVector2, ${MOD_CORE_SHORT}`, x: Number(x.x ?? 0), y: Number(x.y ?? 0) };
+  }
   return { $type: `MOD.Core.MODVector2, ${MOD_CORE_SHORT}`, x: Number(x), y: Number(y) };
 }
 
-function vector3(x, y, z) {
+function vector3(x = 0, y = 0, z = 0) {
+  if (x && typeof x === "object") {
+    if (Array.isArray(x)) return { $type: `MOD.Core.MODVector3, ${MOD_CORE_SHORT}`, x: Number(x[0] ?? 0), y: Number(x[1] ?? 0), z: Number(x[2] ?? 0) };
+    return { $type: `MOD.Core.MODVector3, ${MOD_CORE_SHORT}`, x: Number(x.x ?? 0), y: Number(x.y ?? 0), z: Number(x.z ?? 0) };
+  }
   return { $type: `MOD.Core.MODVector3, ${MOD_CORE_SHORT}`, x: Number(x), y: Number(y), z: Number(z) };
 }
 
-function quaternion(x, y, z, w) {
+function quaternion(x = 0, y = 0, z = 0, w = 1) {
+  if (x && typeof x === "object") {
+    if (Array.isArray(x)) return { $type: `MOD.Core.MODQuaternion, ${MOD_CORE_SHORT}`, x: Number(x[0] ?? 0), y: Number(x[1] ?? 0), z: Number(x[2] ?? 0), w: Number(x[3] ?? 1) };
+    return { $type: `MOD.Core.MODQuaternion, ${MOD_CORE_SHORT}`, x: Number(x.x ?? 0), y: Number(x.y ?? 0), z: Number(x.z ?? 0), w: Number(x.w ?? 1) };
+  }
   return { $type: `MOD.Core.MODQuaternion, ${MOD_CORE_SHORT}`, x: Number(x), y: Number(y), z: Number(z), w: Number(w) };
 }
 

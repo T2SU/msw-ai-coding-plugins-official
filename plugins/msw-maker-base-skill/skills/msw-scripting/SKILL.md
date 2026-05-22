@@ -87,9 +87,10 @@ MSW uses Lua + ECS + an MSW-specific execution-space model. **Applying Unity or 
 | `MonoBehaviour.gameObject` / `this.transform` to access the owning entity | `@Logic` has no `self.Entity` (that is `@Component`-only) | Inject via `property Entity x = "uuid"` on the Logic, or use `_EntityService:GetEntityByPath(...)` | `Logic.d.mlua`, `Component.d.mlua:16` |
 | `OnMouseDown` / `BoxCollider2D` is enough to receive clicks/touches | Physics colliders and Rigidbody **do not emit `TouchEvent`** | World: `TouchReceiveComponent` / UI: `ButtonComponent` or `UITouchReceiveComponent` | `EmitTouchEvent` in `TouchReceiveComponent.d.mlua`, §10 |
 | `OnCollisionEnter` + Rigidbody for collision callbacks | Entity-to-entity collisions use a **separate** `TriggerComponent` + `TriggerEnter/Leave/Stay` | Attach `TriggerComponent`, then `ConnectEvent(TriggerEnterEvent, ...)` | `TriggerComponent.d.mlua:56-62` |
-| UI `interactable` / `enabled` / `text` / `color` field names | UI component fields are MSW-specific; `ButtonComponent.Interactable` does not exist | Before every UI component field read/write, check `msw-ui-system/references/component-api.md`. Typical mappings: button disable -> `Enable`; text string -> `Text`; text color -> `FontColor`; sprite tint -> `Color`. | `msw-ui-system/references/component-api.md` |
-| Attach multiple Rigidbody/Collider freely | **One Body per map type** (MapleTile→Rigidbody, RectTile→Kinematicbody, SideViewRectTile→Sideviewbody) | Custom models include only the Body that matches the map type | `msw-general/references/platform.md §4`. `DefaultPlayer` has all three with engine auto-activation. |
-| Reference/modify UI objects from server code | **UI entities exist only on the client** — referencing them from server `@ExecSpace` returns nil | Server→UI must go through an `@ExecSpace("Client")` RPC | `msw-ui-system/references/runtime-patterns.md` *Runtime UI Caveats §2-3* |
+| UI `interactable` / `enabled` / `text` / `color` field names | UI component fields are MSW-specific; `ButtonComponent.Interactable` does not exist | Before every UI component field read/write, check [`msw-ui-system/references/component-api.md`](../msw-ui-system/references/component-api.md). Typical mappings: button disable -> `Enable`; text string -> `Text`; text color -> `FontColor`; sprite tint -> `Color`. | [`msw-ui-system/references/component-api.md`](../msw-ui-system/references/component-api.md) |
+| Attach multiple Rigidbody/Collider freely | **One Body per map type** (MapleTile→Rigidbody, RectTile→Kinematicbody, SideViewRectTile→Sideviewbody) | Custom models include only the Body that matches the map type | [`msw-general/references/platform.md`](../msw-general/references/platform.md) §4. `DefaultPlayer` has all three with engine auto-activation. |
+| Reference/modify UI objects from server code | **UI entities exist only on the client** — referencing them from server `@ExecSpace` returns nil | Server→UI must go through an `@ExecSpace("Client")` RPC | [`msw-ui-system/references/runtime-patterns.md`](../msw-ui-system/references/runtime-patterns.md) *Runtime UI Caveats §2-3* |
+| Host a Server RPC on a UI-attached `@Component` (`@ExecSpace("Server")` / `"ServerOnly"` / `"Multicast"` declared on a Component sitting on a UI entity) | UI entities are client-only, so those methods **never run on the server**. Runtime emits `'<entity>' is client only. '<component>.<method>' doesn't work normally.` and the RPC silently no-ops; `@Sync` properties on the same component also do not propagate. Build/static analysis passes, so the failure surfaces only as a single runtime log line | Put server-side callables on a non-UI `@Logic` or a map-entity `@Component` (e.g. `_GameLogic:DoServerWork(...)`); the UI's `ClientOnly` handler calls that — never the other direction | [`msw-ui-system/references/runtime-patterns.md`](../msw-ui-system/references/runtime-patterns.md) *Runtime UI Caveats §1* |
 | `Instantiate(prefab)` callable anywhere | `_SpawnService:SpawnByModelId(id, name, pos, parent)` — **`parent` is required**, server-only | Inside `ServerOnly`/`Server` RPC, pass `CurrentMap` as parent | `SpawnService.d.mlua:22` (no default for parent) |
 | `static` classes / hand-rolled singletons | `@Logic` is itself an engine singleton | Call from other scripts as `_ScriptName:Method()` (e.g., `_TweenLogic`, `_UtilLogic`, `_ScreenMessageLogic`) — never instantiate | §3.2 |
 
@@ -181,7 +182,7 @@ end
 ```
 
 - One per world (singleton)
-- Accessed from other scripts as `_GameManager` (underscore + script name)
+- Accessed from other scripts as `_GameManager` — underscore prepended to the **exact script name**, no suffix stripping. `TDHUDLogic.mlua` is exposed as `_TDHUDLogic` (NOT `_TDHUD`), `TowerDefenseConfig.mlua` is `_TowerDefenseConfig`. Heuristics like "drop the Logic suffix" silently return `nil` at the call site.
 - Supports `@Sync` properties — server→client sync behaves the same way
 
 > ⚠️ **Warning — `@Logic` does NOT have `self.Entity`**
@@ -212,6 +213,8 @@ end
 > Rule of thumb: *"Should this still be running after the player walks into another map?"* → **Yes** ⇒ `@Logic`. → **No, only in this map** ⇒ `@Component` on the map entity. → **No, only on this actor** ⇒ `@Component` on the actor.
 >
 > A Logic's `OnUpdate` runs **before** Components' `OnUpdate`.
+>
+> ⚠️ **`OnMapEnter` / `OnMapLeave` do NOT fire on `@Logic`** — they are dispatched only to Components attached to a map entity (or to entities living inside that map). Writing `method void OnMapEnter(Entity m) ... end` inside a Logic compiles cleanly but the method is **never invoked** at runtime (silent dead code). For per-map setup/cleanup either (1) move the behavior to a `@Component` on the map entity, or (2) inside the Logic, poll `_UserService.LocalPlayer.CurrentMap` from `OnUpdate` and react when it changes. See §5.
 
 ### 3.3 Extend scripts (extending an existing component)
 
@@ -271,23 +274,23 @@ mlua is based on Lua 5.3 but differs in the following ways.
 
 ## 5. Lifecycle
 
-Component and Logic share the same lifecycle.
+Component and Logic share most of the lifecycle. **Exception**: `OnMapEnter` / `OnMapLeave` are dispatched **only to Components**, not to Logics — writing them on a `@Logic` compiles but produces silent dead code (see §3.2).
 
 ```
 OnInitialize → OnBeginPlay → OnUpdate(delta) → OnEndPlay → OnDestroy
 ```
 
-Plus, on map transitions: `OnMapEnter` / `OnMapLeave`.
+Components additionally receive `OnMapEnter` / `OnMapLeave` on every map transition.
 
-| Method | When it fires | Purpose |
-|--------|------|------|
-| `OnInitialize` | Right after creation | Initialize internal variables (rarely used) |
-| `OnBeginPlay` | Game start / activation | **Wire up events, start timers, initial setup** |
-| `OnUpdate(delta)` | Every frame | Movement, animation, input handling |
-| `OnMapEnter` | Entering a map | Per-map initialization |
-| `OnMapLeave` | Leaving a map | Per-map cleanup |
-| `OnEndPlay` | Game end / deactivation | **Disconnect events, clear timers (mandatory!)** |
-| `OnDestroy` | On removal | Final cleanup (rarely used) |
+| Method | When it fires | Where it fires | Purpose |
+|--------|------|------|------|
+| `OnInitialize` | Right after creation | Component + Logic | Initialize internal variables (rarely used) |
+| `OnBeginPlay` | Game start / activation | Component + Logic | **Wire up events, start timers, initial setup** |
+| `OnUpdate(delta)` | Every frame | Component + Logic (Logic first) | Movement, animation, input handling |
+| `OnMapEnter` | Entering a map | **Component only** | Per-map initialization |
+| `OnMapLeave` | Leaving a map | **Component only** | Per-map cleanup |
+| `OnEndPlay` | Game end / deactivation | Component + Logic | **Disconnect events, clear timers (mandatory!)** |
+| `OnDestroy` | On removal | Component + Logic | Final cleanup (rarely used) |
 
 **Required pattern**: anything connected in `OnBeginPlay` must be released in `OnEndPlay`.
 
@@ -759,6 +762,71 @@ The "same signature" rule **includes `@ExecSpace`**. If the parent method's exec
 
 - For map-dependent logic, **`Entity.CurrentMap`** is safer and more readable.
 
+### Traversing children — `Children` / `GetChildByName` / `GetChildComponentsByTypeName`
+
+`Entity` exposes a small lookup toolkit for "every X in the map" / "the child named Y" queries — required for RTS unit lists, inventory grids, spawn pools, dialog graphs, anything that iterates map content from a script.
+
+| Member | Returns | Use |
+|---|---|---|
+| `Entity.Children` | `ReadOnlyList<Entity>` | Immediate children only |
+| `Entity:GetChildByName(name, recursive=false)` | `Entity` | Find a child by name |
+| `Entity:GetChild(id, recursive=false)` | `Entity` | Find a child by entity id (UUID) |
+| `Entity:GetChildComponentsByTypeName(typename, recursive=false)` | `table<Component>` | All matching components on descendants |
+| `Entity:GetFirstChildComponentByTypeName(typename, recursive=false)` | `Component` | First match (use this when you expect one) |
+
+`typename` is a fully-qualified string and accepts both native (`"MOD.Core.SpriteRendererComponent"`) and user (`"script.MyUnit"`) component types. `recursive=true` walks the full subtree; default `false` is depth-1.
+
+```lua
+-- All script.MyUnit instances currently in the map:
+local map = self.Entity.CurrentMap
+local units = map:GetChildComponentsByTypeName("script.MyUnit", false)
+for i = 1, #units do
+    local u = units[i]                 -- u is the Component
+    local e = u.Entity                  -- owning Entity
+    log(e.Name)
+end
+
+-- A named child placed in the .map at authoring time:
+local hq = map:GetChildByName("HQ", true)
+
+-- Iterate immediate children — Entity.Children is a ReadOnlyList<Entity>, so use :ToTable()
+-- (entity:GetChildren() does NOT exist; #entity.Children also does not work — convert first):
+for _, child in ipairs(self.Entity.Children:ToTable()) do
+    log(child.Name)
+end
+```
+
+> The collection is `Children`, not `ChildList`, `Childs`, or `ChildEntities`. Using the wrong name compiles but is reported as `LIA-1114 UnresolvedMember` at Info level (the runtime still returns nil, so the loop silently does nothing).
+
+> Runtime-spawned entities must be parented under `self.Entity.CurrentMap` (the `parent` arg of `_SpawnService:SpawnByModelId`) for these queries to find them.
+
+### Native vs user components — different access patterns
+
+`entity.SomeComponent` dot access only works for **engine-native** components (`TransformComponent`, `KinematicbodyComponent`, `SpriteRendererComponent`, `ButtonComponent`, …). For **user-defined `@Component` scripts**, dot access returns `nil` and shows `LIA-1114 UnresolvedMember` (Info) — the engine cannot auto-bind script-component names as entity fields.
+
+| Access | Works on | Example |
+|---|---|---|
+| `entity.NativeComponent` (dot) | **Engine native components only** | `self.Entity.TransformComponent.WorldPosition` |
+| `entity:GetComponentByTypeName(typename)` | Any component on **this** entity, including user `@Component` | `self.Entity:GetComponentByTypeName("script.MyUnit")` |
+| `entity:GetFirstChildComponentByTypeName(typename, recursive)` | First match on descendants | `map:GetFirstChildComponentByTypeName("script.MyUnit", true)` |
+
+User `@Component` typenames are **always prefixed with `script.`** — the script file `MyUnit.mlua` is `"script.MyUnit"`, not `"MyUnit"` and not `"script.MyUnit.MyUnit"`. The prefix is fixed; nesting under feature folders (`Combat/MeleeAttackComponent.mlua`) does **not** change it — the typename is still `"script.MeleeAttackComponent"`.
+
+```lua
+-- ❌ Wrong — user @Component is not auto-bound as a dot field
+local unit = self.Entity.MyUnit                 -- nil, LIA-1114
+unit.Hp = 0                                      -- runtime nil-access
+
+-- ✅ Same entity — explicit type-name lookup
+local unit = self.Entity:GetComponentByTypeName("script.MyUnit")
+if isvalid(unit) then unit.Hp = 0 end
+
+-- ✅ Sibling/descendant in the map
+local hq = self.Entity.CurrentMap:GetFirstChildComponentByTypeName("script.HQ", true)
+```
+
+If you need to pass a user-component reference between scripts, declare a typed property (`property MyUnit unit = ""`) and inject the UUID, **not** a dot-access expression.
+
 ### Runtime entity spawning needs a model
 
 - To create an entity at runtime, use `_SpawnService` (`SpawnByModelId` / `SpawnByEntity`, etc.). **A model (template) to spawn from must already exist.**
@@ -774,7 +842,7 @@ The "same signature" rule **includes `@ExecSpace`**. If the parent method's exec
 
 - On entities with a Body component (Kinematicbody/Rigidbody/Sideviewbody), setting `TransformComponent.WorldPosition` directly will be **overwritten by the physics engine on the next frame**. This is a top cause of "movement doesn't work."
 - Per-frame movement: `MovementComponent:MoveToDirection(direction, deltaTime)`.
-- Instant teleport: `MovementComponent:SetPosition(pos)` or the corresponding Body's `SetPosition(pos)`.
+- Instant teleport: `MovementComponent:SetPosition(pos)` (local), or the Body's own `:SetPosition(Vector2)` (local) / `:SetWorldPosition(Vector2)` (world). For a `KinematicbodyComponent` on a RectTile map specifically, `body:SetWorldPosition(Vector2(x, y))` is the standard absolute-place call — direct `TransformComponent.WorldPosition` writes are silently reset every frame by the body.
 - Direct `TransformComponent.WorldPosition` writes are limited to **entities without a Body** (decorations, effects, etc.).
 - **Do NOT remove the Body component as a workaround** — tile collision and enter/leave events all become disabled, and the engine logs `NativeIssue_MissingComponent`.
 
@@ -786,7 +854,7 @@ All services and logic are accessed via `_Name` (underscore + type name). Only t
 
 | Service / Logic | Purpose |
 |-------------|------|
-| `_SpawnService` | Spawn / despawn entities (`SpawnByModelId`, `SpawnByEntity`, `Despawn`) |
+| `_SpawnService` | Spawn entities (`SpawnByModelId`, `SpawnByEntity`). **There is no `Despawn` method** — remove spawned entities via `Entity:Destroy()` / `Entity:Destroy(delaySeconds)` (both `ControlOnly`). |
 | `_TimerService` | Timers (`SetTimer`, `SetTimerRepeat`, `ClearTimer`) |
 | `_EntityService` | Entity lookup (`GetEntity`, `GetEntities`, `GetEntitiesByPath`) |
 | `_InputService` | Input state queries; receives `ScreenTouchEvent` |
@@ -807,7 +875,12 @@ All services and logic are accessed via `_Name` (underscore + type name). Only t
 ```lua
 local rand    = _UtilLogic:RandomDouble()             -- 0.0~1.0
 local randInt = _UtilLogic:RandomIntegerRange(1, 10)  -- 1~10
-local elapsed = _UtilLogic.ElapsedSeconds             -- elapsed game time
+
+-- Wall-clock seconds since the world instance started. Both keep ticking
+-- across repeated play sessions in the Maker editor — they do NOT reset on
+-- OnBeginPlay. For per-session countdowns, see "Per-session timers" below.
+local elapsed       = _UtilLogic.ElapsedSeconds       -- since world init (server creation / client connection)
+local serverElapsed = _UtilLogic.ServerElapsedSeconds -- since the server created the world
 
 local rad = math.rad(angle)                           -- trig
 local x, y = math.cos(rad) * dist, math.sin(rad) * dist
@@ -838,6 +911,31 @@ Collections / utility types beyond the Lua standard library:
 | `Item` | Inventory item | Quantity, icon RUID, data-table linkage |
 
 > For detailed APIs, browse `Environment/NativeScripts/` or query the `msw-search` skill.
+
+### Per-session timers — never anchor on `ElapsedSeconds`
+
+A common trap is `self.deadline = _UtilLogic.ElapsedSeconds + 15` in `OnBeginPlay`. `ElapsedSeconds` (and `ServerElapsedSeconds`) measure the **world instance's** lifetime, and a single world instance in the Maker editor can survive multiple play sessions — so the saved deadline is often already in the past on the very first frame of the next play, firing immediately or even multiple times in a row.
+
+For a per-session countdown, store the remaining time as a property reset in `OnBeginPlay` and decrement by `delta` in `OnUpdate`:
+
+```lua
+@Sync property number waveCountdown = 0
+
+method void OnBeginPlay()
+    self.waveCountdown = 15
+end
+
+method void OnUpdate(number delta)
+    if self.waveCountdown > 0 then
+        self.waveCountdown = self.waveCountdown - delta
+        if self.waveCountdown <= 0 then
+            self:StartWave()
+        end
+    end
+end
+```
+
+If you genuinely need elapsed time relative to *this* session, capture a baseline in `OnBeginPlay` (`self.startTime = _UtilLogic.ElapsedSeconds`) and compute deltas as `_UtilLogic.ElapsedSeconds - self.startTime`. Never compare two raw `ElapsedSeconds` snapshots taken in different sessions.
 
 ### Type annotations (code hints)
 
@@ -882,7 +980,7 @@ rec["handler"]     = entity:ConnectEvent(...)
 | Need | Skill |
 |------|------|
 | Maker MCP (`refresh`, `logs`, `play`, `stop`, `screenshot`, etc.) | **`msw-general`** |
-| MCP wiring, `.mcp.json`, API key setup | **`msw-env-setup`** |
+| MCP wiring, `.mcp.json`, API key setup | Share this link with the user: https://maplestoryworlds-creators.nexon.com/ko/docs?postId=1368 |
 | Descriptions, examples, and implementation guides not in `.d.mlua` | **`msw-search`** |
 
 Core debug order: **build logs first → play → logs → stop → fix → diagnose → refresh → repeat**.
@@ -945,6 +1043,7 @@ When reading `logs` (and the script stack), do a **first-pass classification** w
 | **nil reference** | `attempt to index a nil value`, crash right before a field access | Init order, `isvalid`, 1-frame timing right after Spawn |
 | **component missing** | Component field is nil; `GetComponent` fails | `Components` array in `.model`; typos in name/path |
 | **network / sync** | Only client breaks; values mismatch; values converge after a delay | `@Sync`, only-on-server changes, `ExecSpace`, RPC flow |
+| **`Info` LIA 1113 / 1114 / 1115** (static-analysis false positives) | `[INFO] LIA&...&1113&...` *UnresolvedSymbol* — a user `_LogicName` global reference. `&1114&...` *UnresolvedMember* — user `@Component` dot-property access. `&1115&...` *UnresolvedFunction* — user `@Component` method call. `logType: "Info"`; build still passes with `errors=0` / `warnings=0` | Static-analysis limitation on **user-defined cross-script references** — the calls resolve at runtime. Treat as noise and verify behavior with `log()` evidence. If they drown real issues, scope the next `logs` call to higher severities. |
 
 **To narrow down a cause**: if logs alone are inconclusive, add `log()` outputs to the `.mlua` to inspect the relevant entity / component / property state.
 

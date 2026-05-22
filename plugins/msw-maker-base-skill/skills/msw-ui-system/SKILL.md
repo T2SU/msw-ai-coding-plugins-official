@@ -22,17 +22,17 @@ Branch to sub-references based on request keywords.
 
 | Trigger | Reference Document |
 |---------|--------------------|
-| "anchor/pivot/coordinates/why is the position wrong", "RectTransform", "stretch" | `references/ui-fundamentals.md` §1–§8 |
-| "mobile", "safe area", "1920", "MobileOnly", "ActivePlatform", "touch size", "PC reserved zone", "font size by device" | `references/ui-fundamentals.md` §9 |
-| "UIGroup", "above popup", "z-order", "displayOrder", "CanvasGroup", "opacity propagation", "Enable vs Visible" | `references/ui-hierarchy.md`; for runtime sibling reorder also read `references/runtime-patterns.md` §7 |
-| "which component", "Sprite vs Text vs Button", "9-slice", "scroll list", "GridView vs ScrollLayoutGroup" | `references/component-api.md` §"Component Selection Guide" |
-| "make a HUD", "popup placement", "toast", "menu", "inventory grid", "scroll list" | `references/layout-recipes.md` |
-| "connect .mlua after building with .ui builder", "property default UUID", "binding without drag" | `references/builder-protocol.md` §"Binding Injection" |
-| Runtime UI component field read/write, component property name/type (`ButtonComponent.Colors`, `TextComponent.Overflow`, `SpriteGUIRendererComponent.FillAmount`…) | `references/component-api.md` **required before every `.mlua` access to UI component fields** |
-| Enum values (`AlignmentType`, `OverflowType`, `ImageType`, `UIBasicParticleType`…) | `references/component-api.md` §Enums |
-| Runtime mlua patterns (popup open/close, toast fade, HP bar, GridView, drag, tab, cooldown), Runtime UI Caveats (client-only, server-side nil, etc.) | `references/runtime-patterns.md` |
-| **`.ui` builder invocation methods** (UIBuilder API, anchor presets, write auto-lint, component add/patch/remove) | `references/builder-protocol.md` |
-| "sound", "sfx", "click sound", "hover sound", "button audio", "PlaySound" | `references/ui-sound.md` |
+| "anchor/pivot/coordinates/why is the position wrong", "RectTransform", "stretch" | [`references/ui-fundamentals.md`](references/ui-fundamentals.md) §1–§8 |
+| "mobile", "safe area", "1920", "MobileOnly", "ActivePlatform", "touch size", "PC reserved zone", "font size by device" | [`references/ui-fundamentals.md`](references/ui-fundamentals.md) §9 |
+| "UIGroup", "above popup", "z-order", "displayOrder", "CanvasGroup", "opacity propagation", "Enable vs Visible" | [`references/ui-hierarchy.md`](references/ui-hierarchy.md); for runtime sibling reorder also read [`references/runtime-patterns.md`](references/runtime-patterns.md) §7 |
+| "which component", "Sprite vs Text vs Button", "9-slice", "scroll list", "GridView vs ScrollLayoutGroup" | [`references/component-api.md`](references/component-api.md) §"Component Selection Guide" |
+| "make a HUD", "popup placement", "toast", "menu", "inventory grid", "scroll list" | [`references/layout-recipes.md`](references/layout-recipes.md) |
+| "connect .mlua after building with .ui builder", "property default UUID", "binding without drag" | [`references/builder-protocol.md`](references/builder-protocol.md) §"Binding Injection" |
+| Runtime UI component field read/write, component property name/type (`ButtonComponent.Colors`, `TextComponent.Overflow`, `SpriteGUIRendererComponent.FillAmount`…) | [`references/component-api.md`](references/component-api.md) **required before every `.mlua` access to UI component fields** |
+| Enum values (`AlignmentType`, `OverflowType`, `ImageType`, `UIBasicParticleType`…) | [`references/component-api.md`](references/component-api.md) §Enums |
+| Runtime mlua patterns (popup open/close, toast fade, HP bar, GridView, drag, tab, cooldown), Runtime UI Caveats (client-only, server-side nil, etc.) | [`references/runtime-patterns.md`](references/runtime-patterns.md) |
+| **`.ui` builder invocation methods** (UIBuilder API, anchor presets, write auto-lint, component add/patch/remove) | [`references/builder-protocol.md`](references/builder-protocol.md) |
+| "sound", "sfx", "click sound", "hover sound", "button audio", "PlaySound" | [`references/ui-sound.md`](references/ui-sound.md) |
 
 ---
 
@@ -67,24 +67,24 @@ Branch to sub-references based on request keywords.
 4. Separate popups and toasts into their **own UIGroup**, standalone show/hide
 5. Verify text `Alignment` default is `UpperLeft(0)` — 95% of "I centered it but it sticks to the left" issues
 6. Button touch target ≥ 88×88 (mobile support)
-7. **After creating any interactive button** — proactively suggest wiring click/hover SFX via `references/ui-sound.md` (default UI SFX RUIDs available). Skip only if the user explicitly opts out or the button is purely decorative.
+7. **After creating any interactive button** — proactively suggest wiring click/hover SFX via [`references/ui-sound.md`](references/ui-sound.md) (default UI SFX RUIDs available). Skip only if the user explicitly opts out or the button is purely decorative.
 
 ---
 
 ## 3. Sub-documents
 
-- `references/ui-fundamentals.md` — Coordinate system, RectTransform 3 elements, anchor mode determination (§1–§8) + Resolution·safe area·PC reserved zones·touch targets·font sizes·platform separation (§9)
-- `references/ui-hierarchy.md` — UIGroup / displayOrder / CanvasGroup / Enable vs Visible
-- `references/component-api.md` — §"Component Selection Guide" (which/when/why) + full component property/method/event tables (what) + all UI-related enum values (§Enums)
-- `references/layout-recipes.md` — Layout template collection
-- `references/runtime-patterns.md` — `.mlua` runtime patterns (popup/toast/HP/grid/drag…) + Runtime UI Caveats
-- `references/ui-sound.md` — UI sound integration (`_SoundService:PlaySound`, click/hover hook, default UI SFX RUIDs)
-- `references/builder-protocol.md` — `.ui` CJS builder call protocol (panel/text/sprite/button/slider/scroll/script/group/mask/grid/avatar/touch_receive/skeleton/area_particle/basic_particle, component add/replace/patch/remove, anchor presets, write auto-lint, `.mlua` property UUID auto-binding)
-- `references/templates/templates.md` — Pre-built style bundle index (`style-N-*` `.ui`, `ruid-map.md`, `Popupbutton.mlua`)
+- [`references/ui-fundamentals.md`](references/ui-fundamentals.md) — Coordinate system, RectTransform 3 elements, anchor mode determination (§1–§8) + Resolution·safe area·PC reserved zones·touch targets·font sizes·platform separation (§9)
+- [`references/ui-hierarchy.md`](references/ui-hierarchy.md) — UIGroup / displayOrder / CanvasGroup / Enable vs Visible
+- [`references/component-api.md`](references/component-api.md) — §"Component Selection Guide" (which/when/why) + full component property/method/event tables (what) + all UI-related enum values (§Enums)
+- [`references/layout-recipes.md`](references/layout-recipes.md) — Layout template collection
+- [`references/runtime-patterns.md`](references/runtime-patterns.md) — `.mlua` runtime patterns (popup/toast/HP/grid/drag…) + Runtime UI Caveats
+- [`references/ui-sound.md`](references/ui-sound.md) — UI sound integration (`_SoundService:PlaySound`, click/hover hook, default UI SFX RUIDs)
+- [`references/builder-protocol.md`](references/builder-protocol.md) — `.ui` CJS builder call protocol (panel/text/sprite/button/slider/scroll/script/group/mask/grid/avatar/touch_receive/skeleton/area_particle/basic_particle, component add/replace/patch/remove, anchor presets, write auto-lint, `.mlua` property UUID auto-binding)
+- [`references/templates/templates.md`](references/templates/templates.md) — Pre-built style bundle index (`style-N-*` `.ui`, [`ruid-map.md`](references/templates/style-1-black/ruid-map.md), `Popupbutton.mlua`)
 
 ## 4. Scripts
 
-- `scripts/msw_ui_builder.cjs` — `.ui` builder core (UIBuilder class). Read `references/builder-protocol.md` for the call protocol before use
+- `scripts/msw_ui_builder.cjs` — `.ui` builder core (UIBuilder class). Read [`references/builder-protocol.md`](references/builder-protocol.md) for the call protocol before use
 - `scripts/preview_ui_layout.cjs` — `.ui` layout visual check + touch target warnings
 - `scripts/ui_lint.cjs` — `.ui` file self-verification (auto-called by `write()`)
 - `scripts/ui_recipe.cjs` — Recipe-based scaffolding

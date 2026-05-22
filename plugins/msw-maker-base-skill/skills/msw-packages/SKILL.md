@@ -106,7 +106,7 @@ Map the user's answer to a destination:
 |---|---|
 | "feature", "system", "logic", "save", "calculate", "handle", "process" | **Stay here (`msw-packages`)** — proceed to Fetch Protocol below |
 | "screen", "UI", "look", "visual", "just the layout", "show only" | **`msw-ui-system` skill** (+ `references/templates/`) — pick a style template, then build via the UI builder |
-| Low-level question (anchor, component property, enum) | **`msw-ui-system` skill** — answer directly via `references/component-api.md` (incl. §Enums) / `ui-fundamentals.md`, no fetch needed |
+| Low-level question (anchor, component property, enum) | **`msw-ui-system` skill** — answer directly via [`references/component-api.md`](../msw-ui-system/references/component-api.md) (incl. §Enums) / [`ui-fundamentals.md`](../msw-ui-system/references/ui-fundamentals.md), no fetch needed |
 
 ### When to skip the question
 

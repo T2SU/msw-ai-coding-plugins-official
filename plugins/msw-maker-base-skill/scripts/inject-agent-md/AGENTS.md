@@ -82,11 +82,11 @@ When a sub-trigger fires, the listed `references/*.md` is **required** in additi
 | attack / hit / damage / monster combat / critical / knockback / hit effect | Combat, damage, monster battles | `Skill: msw-combat-system` (concepts + API tables only; full implementation in `references/`) | Monster `.model` / ActionSheet / MonsterAI → `references/monster-setup.md`  •  HP gauge / `PixelRendererComponent` → `references/hp-gauge.md`  •  projectile / arrow / bullet / homing / piercing / splash → `references/projectile.md`  •  FSM / `StateComponent` / `@State` / boss phase → `references/fsm-state.md`  •  BT / `AIComponent` / `@BTNode` / Composite / Decorator / Threat → `references/ai-bt.md` |
 | inventory / shop / ranking / mail / quest / collection / key binding / GM / slash command | Standard game systems — **check before writing from scratch** | `Skill: msw-packages` | (no `references/`; each package's README is fetched on demand from GitHub) |
 | popup / HUD / button / toast / menu / tab / layout / `.ui` | UI screens / widgets | `Skill: msw-ui-system` | Style template bundle → `references/templates/templates.md` + chosen `references/templates/style-N-*/{ruid-map.md, structure.md, Popupbutton.mlua}`  •  Component API / enum tables → `references/component-api.md`  •  Runtime patterns (toasts / popups / HP bar / tabs / drag-drop) → `references/runtime-patterns.md`  •  Builder protocol → `references/builder-protocol.md` |
-| entity placement / `.map` / spawn / `SpawnByModelId` / coordinate / transform | Entity placement, `.map` editing | `Skill: msw-general` | Entity Work Preflight → `references/entity.md`  •  `.map` builder / entity placement / component patching → `references/entity/map-builder.md` |
+| entity placement / `.map` / spawn / `SpawnByModelId` / coordinate / transform | Entity placement, `.map` editing | `Skill: msw-general` | Entity Work Preflight + `.map` builder / entity placement / component patching → `references/entity.md` |
 | `.model` / template / EntryKey / Properties / Values / model catalog | `.model` authoring | `Skill: msw-general` | `.model` authoring / `Values` serialization → `references/model.md`  •  JSON schema details → `references/model/model-schema.md`  •  monster `.model` (lowercase ActionSheet / IsLegacy / SortingLayer / canonical 11 components) → `references/monster.md` |
 | TileMapMode / Body / side-view / top-down / gravity / SortingLayer / SpriteRUID / 8 core / `MovementComponent` / `InputSpeed` / `.directory` | Platform rules, physics, troubleshooting | `Skill: msw-general` | All-map-types-common (8 core / TileMapMode↔Body+LEA-3004 / SpriteRUID / `SpawnByModelId` / coordinate system / `.config`·CoreVersion) → `references/platform.md`  •  **MapleTile** (`= 0`) — Foothold / `Gravity` / `PredictFootholdEnd` / `DownJump` → `references/platform-maple.md`  •  **RectTile** (`= 1`) — `SpeedFactor` / 4-directional / Movable / dynamic tiles → `references/platform-rect.md`  •  **SideViewRectTile** (`= 2`) — `JumpSpeed` / `JumpDrag` / wall detection / `EnableDownJump` → `references/platform-sideview.md`  •  Symptom debugging (`[LEA-3004]` / "doesn't move" / "invisible" / "100x off") → `references/troubleshooting.md`  •  tile painting / `RectTileMap` / `FootholdComponent` → `references/tile.md` |
 | DataSet / userdataset / `.csv` / localize / i18n / LocaleDataSet / `_LocalizationService` | Datasets / i18n | `Skill: msw-general` | UserDataSet / LocaleDataSet runtime / ClientOnly rule → `references/dataset.md` |
-| MCP tool calls / `refresh` / `play` / `stop` / `logs` / `screenshot` / Room / DataStorage location | MCP tools, workspace flow | `Skill: msw-general` | MCP tool spec → `references/mcp-tools.md`  •  Workspace / Room / DataStorage / Play mode / recovery → `references/workspace.md`  •  Shared authoring → `references/authoring.md` |
+| MCP tool calls / `refresh` / `play` / `stop` / `logs` / `screenshot` / Room / DataStorage location | MCP tools, workspace flow | `Skill: msw-general` | Workspace / Room / DataStorage / Play mode / recovery → `references/workspace.md`  •  Shared authoring → `references/authoring.md`  •  MCP setup issues → share this link with the user: https://maplestoryworlds-creators.nexon.com/ko/docs?postId=1368 |
 
 **Routing notes:**
 
@@ -129,6 +129,16 @@ The `Bash` / shell tool is reserved for actual programs (`git`, `npm`, MCP, buil
 4. Prefer POSIX commands (`ls`, `mv`, `cp`, `rm`) over OS-specific (`dir`, `type`, `del`).
 
 > Symptom of violation: `ls: cannot access 'D:msw-world-projects...'` — the backslashes were eaten by bash. Stop and re-issue as `Glob` / `Read` / `Grep`.
+
+### Runtime interaction requires MCP — no exceptions
+
+⛔ **Never claim a runtime result without an actual MCP tool call.**
+
+- Saying "I clicked the button" without calling `mouse_input` is a hallucination.
+- Saying "it works" without calling `play` → `logs` is a hallucination.
+- Saying "no errors" without calling `logs(category="build")` or `logs(category="runtime")` is a hallucination.
+
+If a task requires runtime interaction (playing, clicking, typing, verifying behavior, checking logs), you **must** invoke the corresponding Maker MCP tool (`play`, `stop`, `logs`, `keyboard_input`, `mouse_input`, `maker_execute_script`). Text alone cannot substitute for tool execution. Use `screenshot` when you need to identify screen coordinates for input targeting or when the user explicitly requests it.
 
 ## 0. Plan (MANDATORY)
 
@@ -212,14 +222,14 @@ The camera perspective (`TileMapMode`) determines the entire physics, movement, 
 - `OnEndPlay` — when the entity is removed from the map.
 - `OnDestroy` — immediately before the entity is destroyed.
 
-**Logic lifecycle** — same method names as Component, but a Logic is an engine-managed global singleton: created **once per world session** and persists across **all** map transitions.
+**Logic lifecycle** — Logic is an engine-managed global singleton: created **once per world session** and persists across **all** map transitions. Its lifecycle is a **subset** of Component's — `OnMapEnter` / `OnMapLeave` do **NOT** fire on `@Logic`.
 
-- `OnBeginPlay` — once at world start.
+- `OnInitialize`, `OnBeginPlay` — once at world start.
 - `OnUpdate` — every frame; runs **before** any Component's `OnUpdate`.
-- `OnMapEnter` / `OnMapLeave` — every map transition. Use these (not `OnBeginPlay` / `OnEndPlay`) for per-map setup/cleanup inside a Logic.
 - `OnEndPlay` — only at world session end (e.g. shutdown). **Not** on map change.
+- `OnDestroy` — when the Logic is removed (rare).
 
-> ⚠️ Because a Logic survives map transitions, any timer / event handler / mutable state created in a Logic must be reset on `OnMapLeave` if it is map-specific, or it will leak into the next map. If the behavior is map-scoped, use a map-entity `@Component` instead (see "Pick the right script scope").
+> ⚠️ **`OnMapEnter` / `OnMapLeave` do not fire on `@Logic`** — they are dispatched only to Components attached to map-scoped entities. Writing `method void OnMapEnter(Entity m) ... end` on a Logic compiles but the method is never invoked (silent dead code). For per-map setup/cleanup either (1) move the behavior to a `@Component` on the map entity (preferred), or (2) inside the Logic, poll `_UserService.LocalPlayer.CurrentMap` from `OnUpdate` and react to changes. Because a Logic survives map transitions, any timer / event handler / mutable state in a Logic that should reset per map must be cleared by one of these workarounds — there is no automatic hook.
 
 **ExecSpace annotations** — control where code runs:
 
