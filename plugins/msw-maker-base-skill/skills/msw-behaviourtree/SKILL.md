@@ -28,7 +28,7 @@ The spec is the **source of truth** for every project-specific data point: each 
 **How to run** — invoke this skill's local script:
 
 ```bash
-node "<path-to-msw-behaviourtree>/scripts/build-spec.cjs" --projectRoot "<MSW project root>"
+node "<SKILL_PATH>/scripts/build-spec.cjs" --projectRoot "<MSW project root>"
 ```
 
 If the current working directory is already the MSW project root, `--projectRoot` can be omitted. Requires Node.js on `PATH` (no other dependencies — pure stdlib `fs`/`path`).
@@ -44,7 +44,7 @@ Optional overrides (long flags, case-insensitive):
 Example with overrides:
 
 ```bash
-node "<path-to-msw-behaviourtree>/scripts/build-spec.cjs" --projectRoot "C:/path/to/project" --coreVersion 26.5.0.0
+node "<SKILL_PATH>/scripts/build-spec.cjs" --projectRoot "C:/path/to/project" --coreVersion 26.5.0.0
 ```
 
 The script throws if `Environment/config` is absent and `--coreVersion` is not passed — there is no fallback default.

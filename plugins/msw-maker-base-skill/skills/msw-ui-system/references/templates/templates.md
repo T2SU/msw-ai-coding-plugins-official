@@ -85,32 +85,32 @@ Located in `./scripts/`:
 
 ```bash
 # Show all .ui files in a style (top-level only)
-node ./scripts/ui-structure.cjs --style 1 --depth 0
+node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --depth 0
 
 # Show specific file with full hierarchy
-node ./scripts/ui-structure.cjs --style 1 --file PopupGroup.ui
+node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --file PopupGroup.ui
 
 # Limit hierarchy depth
-node ./scripts/ui-structure.cjs --style 1 --file PopupGroup.ui --depth 2
+node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --file PopupGroup.ui --depth 2
 
 # Dump full JSON for an entity by exact name
-node ./scripts/ui-structure.cjs --style 1 --entity BasicPopup
+node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --entity BasicPopup
 
 # Search entity name across all files (substring match)
-node ./scripts/ui-structure.cjs --style 1 --grep ExitButton
+node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --grep ExitButton
 ```
 
 **`ruid-lookup.cjs`** — RUID lookup by style and role
 
 ```bash
 # List available styles
-node ./scripts/ruid-lookup.cjs
+node <SKILL_PATH>/scripts/ruid-lookup.cjs
 
 # Dump all RUIDs for a style
-node ./scripts/ruid-lookup.cjs --style 1
+node <SKILL_PATH>/scripts/ruid-lookup.cjs --style 1
 
 # Filter by role keyword (button, panel, slot, icon, gauge, etc.)
-node ./scripts/ruid-lookup.cjs --style 1 --role button
+node <SKILL_PATH>/scripts/ruid-lookup.cjs --style 1 --role button
 ```
 
 ### ripgrep patterns
@@ -139,7 +139,7 @@ rg '"enable": false' -B 3 ./style-1-black/PopupGroup.ui
 
 ## Workflow
 
-The end-to-end UI authoring workflow (anchors, 4-value formula, `refresh_workspace` cycle, lifecycle) lives in [`../../SKILL.md`](../../SKILL.md) and [`../builder-protocol.md`](../builder-protocol.md). The template-specific decision steps below feed into that workflow.
+The end-to-end UI authoring workflow (anchors, 4-value formula, `refresh_workspace` cycle, lifecycle) lives in [`../../SKILL.md`](../../SKILL.md) and [`../../../msw-general/references/builder-protocol.md`](../../../msw-general/references/builder-protocol.md) §3 (unified call entry point). The template-specific decision steps below feed into that workflow.
 
 ### Style-Source Decision (planning-time, BEFORE writing any `.ui`)
 

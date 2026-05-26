@@ -3,7 +3,7 @@
 Search MSW resources by natural language, and find resources similar to a given one.
 
 > **All examples in this file go through the Node.js wrapper
-> `skills/msw-search/msw_resource_api.cjs`.** Use it either as a CLI from a
+> `<SKILL_PATH>/msw_resource_api.cjs`.** Use it either as a CLI from a
 > shell or via `require(...)` inside Node.js — never assemble curl commands
 > by hand. The wrapper sends UTF-8 JSON bodies directly, so non-ASCII queries
 > (Korean / Japanese / Chinese / emoji) are safe and the
@@ -18,13 +18,13 @@ Natural-language semantic search. Supports queries in Korean, English, Japanese,
 
 ```bash
 # CLI — defaults: topK=3, --resource-type / --category optional
-node ../../msw_resource_api.cjs \
+node <SKILL_PATH>/msw_resource_api.cjs \
     search "orange mushroom" --resource-type resource_pack --category npc --topK 3
 ```
 
 ```js
 // Node.js — require and call
-const { searchResources } = require('../../msw_resource_api.cjs');
+const { searchResources } = require('<SKILL_PATH>/msw_resource_api.cjs');
 
 const result = await searchResources("orange mushroom", {
   resourceTypeFilter: ["resource_pack"],
@@ -34,7 +34,7 @@ const result = await searchResources("orange mushroom", {
 ```
 
 > Use `require(...)` with a relative path (e.g.
-> `require('./msw_resource_api.cjs')`) when calling from a sibling file —
+> `require('<SKILL_PATH>/msw_resource_api.cjs')`) when calling from a sibling file —
 > the wrapper is a single-file CommonJS drop-in with zero dependencies.
 
 | Body field (server) | Wrapper arg / CLI flag | Type | Required | Description |
@@ -158,13 +158,13 @@ narrow the search to a specific avatar slot by passing
 
 ```bash
 # CLI
-node ../../msw_resource_api.cjs \
+node <SKILL_PATH>/msw_resource_api.cjs \
     search-avatar "early dismissal" --topK 3 --category shoes
 ```
 
 ```js
 // Node.js
-const { searchAvatarItems } = require('../../msw_resource_api.cjs');
+const { searchAvatarItems } = require('<SKILL_PATH>/msw_resource_api.cjs');
 
 const result = await searchAvatarItems("early dismissal", {
   topK: 3,
@@ -244,13 +244,13 @@ Find resources that are visually or semantically similar to a given resource.
 
 ```bash
 # CLI
-node ../../msw_resource_api.cjs \
+node <SKILL_PATH>/msw_resource_api.cjs \
     similar 0017da7385e04bc4b2ddbe5949b4b462 --topK 3 --resource-type animationclip
 ```
 
 ```js
 // Node.js
-const { findSimilarResources } = require('../../msw_resource_api.cjs');
+const { findSimilarResources } = require('<SKILL_PATH>/msw_resource_api.cjs');
 
 const result = await findSimilarResources("0017da7385e04bc4b2ddbe5949b4b462", {
   topK: 3,

@@ -5,7 +5,7 @@ This reference is for building a working monster model on MapleTile side-view ma
 Use:
 
 ```javascript
-const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("../scripts/model/msw_model_builder.cjs");
+const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("<SKILL_PATH>/scripts/model/msw_model_builder.cjs");
 ```
 
 ## 1. Silent Failures to Avoid
@@ -44,7 +44,7 @@ A side-view monster usually needs:
 Start from `../models/MonsterCanonical.model`:
 
 ```javascript
-const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("../scripts/model/msw_model_builder.cjs");
+const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("<SKILL_PATH>/scripts/model/msw_model_builder.cjs");
 
 const b = ModelBuilder.fromTemplate(
   "./skills/msw-general/models/MonsterCanonical.model",
@@ -137,7 +137,7 @@ After writing the model:
 |---|---|
 | [model.md](model.md) | Builder-only `.model` authoring rules and API |
 | [entity.md](entity.md) | Placing a monster in a `.map` |
-| [entity.md](entity.md#mapbuilder-protocol) | Builder-first `.map` inspection and model placement |
+| [builder-protocol.md §1 + §4](builder-protocol.md) | Builder-first `.map` inspection + ModelBuilder → MapBuilder placement cross-flow (monster call protocol — read alongside [entity.md](entity.md) / [model.md](model.md) for domain context) |
 | [platform-maple.md](platform-maple.md) | MapleTile physics, `PredictFootholdEnd`, foothold AI patterns, MapleTile-specific troubleshooting and checklists |
 | [platform.md](platform.md) §4 | TileMapMode↔Body mapping and LEA-3004 (common to all map types) |
 | [troubleshooting.md](troubleshooting.md) | Symptom → cause → fix reference ("falls off the foothold edge" / "floating in mid-air" etc.) |

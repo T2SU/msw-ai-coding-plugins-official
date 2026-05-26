@@ -27,7 +27,7 @@ This skill is dedicated to the sprite category. It does not handle animation / a
 1. **Choose the medium** — One of SVG / Canvas / HTML. See "Choosing the medium" below.
 2. **Decide the size** — See [references/size-guide.md](references/size-guide.md). Default is 128×128.
 3. **Write the code** — Follow the pixel art rules. Full rules in [references/pixel-art-rules.md](references/pixel-art-rules.md).
-4. **Render to PNG** — Run `scripts/render.cjs`.
+4. **Render to PNG** — Run `<SKILL_PATH>/scripts/render.cjs`.
 5. **Upload the resource** — `mcp__msw-mcp__asset_create_resource_storage_item` two-step pattern.
 6. **Report the result** — RUID + a 1–2 sentence description. Entity placement / script application is outside the painter's scope.
 
@@ -114,13 +114,13 @@ This installs `puppeteer` (~200MB including headless Chromium). It is separate f
 ### Invocation
 
 ```bash
-node scripts/render.cjs --type <svg|canvas|html> --in <code-file> --out <out.png> --width <W> --height <H>
+node <SKILL_PATH>/scripts/render.cjs --type <svg|canvas|html> --in <code-file> --out <out.png> --width <W> --height <H>
 ```
 
 Or pass the code via stdin:
 
 ```bash
-echo "<svg ...>" | node scripts/render.cjs --type svg --out out.png --width 128 --height 128
+echo "<svg ...>" | node <SKILL_PATH>/scripts/render.cjs --type svg --out out.png --width 128 --height 128
 ```
 
 Options:

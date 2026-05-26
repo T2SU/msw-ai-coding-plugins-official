@@ -4,7 +4,7 @@ Full list of properties, methods, and events per UI component. Use as a lookup w
 
 Before reading or writing a UI component field in `.mlua`, verify the exact field name here. Do not infer field names from Unity, UGUI, HTML, or other UI frameworks.
 
-> **Authoring `.ui` files**: this reference describes **what fields exist**. To **set** them, call the builder (`scripts/msw_ui_builder.cjs`; protocol in [`builder-protocol.md`](builder-protocol.md)). Do not hand-edit `.ui` JSON.
+> **Authoring `.ui` files**: this reference describes **what fields exist**. To **set** them, call the builder (`<SKILL_PATH>/scripts/msw_ui_builder.cjs`; protocol in [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3 — unified call entry point). Do not hand-edit `.ui` JSON.
 
 ---
 
@@ -918,4 +918,4 @@ Used by `MaskComponent.Shape`.
 
 ### UIAreaParticleType / UIBasicParticleType
 
-UI particle preset enums. The builder handles preset names directly — pass numeric `particle_type=...` to `area_particle()` / `basic_particle()`. Full numeric tables live in [`builder-protocol.md`](builder-protocol.md). From runtime, use the enum identifiers (`UIAreaParticleType.FogCalm`, `UIBasicParticleType.Firework`).
+UI particle preset enums. The builder handles preset names directly — pass numeric `particle_type=...` to `area_particle()` / `basic_particle()`. Full numeric tables live in [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3.5. From runtime, use the enum identifiers (`UIAreaParticleType.FogCalm`, `UIBasicParticleType.Firework`).

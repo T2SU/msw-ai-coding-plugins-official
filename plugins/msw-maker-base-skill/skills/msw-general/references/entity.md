@@ -1,8 +1,10 @@
 # MSW Entity — `.map` Placement & Runtime
 
-Place and manage entity **instances** in `.map` files through `MapBuilder`; spawn, parent, and handle hierarchy at runtime. `.model` template authoring is split out into [model.md](model.md).
+**Domain rules** for entity instances inside `.map` files — which mode (`TileMapMode`) places things where, how coordinates / footholds / camera / RUID interact, the `modelId` vs inline decision, runtime lifecycle. `.model` template authoring is split out into [model.md](model.md).
 
-The legacy Maker RPC (curl) API has been removed. `.map` inspection and mutation are performed through `skills/msw-general/scripts/map/msw_map_builder.cjs`, followed by **msw-maker-mcp** verification tools.
+> **The actual call protocol for `.map` mutation (MapBuilder API, snapshot workflow, coverage gaps, `.map` / `.model` cross-flow) lives in [builder-protocol.md §1](builder-protocol.md). Re-read builder-protocol.md every turn that touches `.map`; this document supplies the domain context (why the calls look that way) and is read alongside it.**
+
+The legacy Maker RPC (curl) API has been removed. `.map` inspection and mutation go through `<SKILL_PATH>/scripts/map/msw_map_builder.cjs` (= `MapBuilder`), followed by **msw-maker-mcp** verification tools.
 
 ---
 
@@ -91,195 +93,16 @@ _SpawnService:SpawnByModelId("myenemy", "Enemy_1", position, map)
 
 ---
 
-## Snapshot Workflow (get → edit → set)
+## MapBuilder — call protocol lives in builder-protocol.md
 
-```
-1. GET  : `MapBuilder.read("./map/{map}.map")`.
-2. EDIT : call builder APIs only (`placeModel`, `sprite`, `patch`, `patchComponent`, etc.).
-3. SET  : `map.write("./map/{map}.map")`.
-4. SYNC : call MCP `refresh`.
-5. (optional) `play` → check runtime via `logs`.
-```
+`.map` snapshot workflow (get → edit → set), the API table, placement / patch / rename / remove / component CRUD / tile / foothold inspection, coverage gaps, Map Mode Rules, `false`-return handling — **every detail of MapBuilder invocation is consolidated in the single entry point [builder-protocol.md §1](builder-protocol.md).** Read it just before any `.map` work.
 
-**Caution**: `.map` files have very large entity arrays. Use the builder snapshot and patch APIs for covered work. Direct raw JSON edits are allowed only when `MapBuilder` explicitly does not cover the operation; keep the edit minimal and verify with refresh/logs.
+This document carries the **why** behind those calls — Scope, RUID, the meaning of the TileMapMode-to-Body mapping, the `modelId` vs inline decision rule, placement coordinates / footholds / camera visibility, runtime verification, and the constraint checklist.
 
----
+Domain-side summary rules:
 
-## Builder Values
-
-Map entity values are patched through `MapBuilder` component APIs. Use world-unit vectors like `pos: [x, y, z]`, color helpers, and component override objects; do not hand-write raw component JSON except as a builder argument for a single component payload.
-
----
-
-## MapBuilder Protocol
-
-`MapBuilder` covers the safe subset needed for common agent map work. It does not replace Maker. Use it first for covered operations; direct `.map` reads/writes are allowed only when the builder explicitly cannot cover the task.
-
-Use `../scripts/map/msw_map_builder.cjs` for inspection and mutation:
-
-```javascript
-const { MapBuilder } = require("../scripts/map/msw_map_builder.cjs");
-
-const map = MapBuilder.read("map/map01.map");
-console.log(map.getMapInfo());
-console.log(map.listEntities());
-
-map.placeModel("Monster01", "RootDesk/MyDesk/Models/Monsters/Slime.model", {
-  pos: [3, 1, 0],
-});
-
-map.write("map/map01.map");
-```
-
-### Required Workflow When Covered
-
-1. `MapBuilder.read("map/{name}.map")`.
-2. Inspect with `getMapInfo()`, `getTileMapMode()`, `listEntities()`, `find()`, `getTiles()`, or `getFootholds()`.
-3. Mutate through builder APIs when the operation is covered.
-4. `write()` the same map file.
-5. Run MCP `refresh`; then verify with logs/play if runtime behavior matters.
-
-### API
-
-| Method | Returns | Purpose |
-|---|---|---|
-| `MapBuilder.read(path)` | `MapBuilder` | Load a `.map` file |
-| `MapBuilder.snapshot(path)` | summary | Read-only summary without instantiating |
-| `getMapInfo()` | summary | TileMapMode, gravity, instance flag, counts |
-| `getTileMapMode()` | `0`/`1`/`2` | MapleTile / RectTile / SideViewRectTile |
-| `listEntities()` | array | Compact entity list |
-| `find(name)` | entity record | Lookup by map root name, relative child name, or `/maps/...` path |
-| `component(name, compType)` | component object | Read a component on an entity |
-| `placeModel(name, modelPath, opts)` | entity id string | Place a `.model` instance (`pos`, `componentOverrides`, ...) |
-| `sprite(name, opts)` | entity id string | Inline sprite entity (`ruid`, `pos`, `order`) |
-| `empty(name, opts)` | entity id string | Empty/script-only entity (`pos`, `scripts`) |
-| `entity(name, components, opts)` | entity id string | Low-level entity placement |
-| `patch(name, updates)` | boolean | Position/enable/rename in one call |
-| `patchComponent(name, compType, fields)` | boolean | Field-level component update |
-| `upsertComponent(name, compType, body)` | boolean | Add or replace a component |
-| `removeComponent(name, compType)` | boolean | Drop a component |
-| `rename(oldName, newName)` | boolean | Rename an entity |
-| `remove(name)` | boolean | Delete an entity and descendants |
-| `getTiles()` / `getTileAt(x,y)` / `getTileBounds()` | tile data | Tile inspection |
-| `getFootholds(layer)` / `getFootholdBounds(layer)` | foothold data | Foothold inspection |
-| `build()` | JSON | In-memory map JSON |
-| `snapshot()` | summary | Current builder state summary |
-| `write(path)` | `MapBuilder` | Save back to `.map` file |
-
-Read-only inspection is `find()` + `component()`. To read raw entity JSON when the builder cannot cover the case, fall back to parsing the `.map` file's `ContentProto.Entities[*].jsonString` directly.
-
-### Load / Inspect
-
-```javascript
-const map = MapBuilder.read("map/map01.map");
-MapBuilder.snapshot("map/map01.map");
-
-map.getMapInfo();       // TileMapMode, Gravity, IsInstanceMap, entity/tile/foothold counts
-map.getTileMapMode();   // 0 MapleTile, 1 RectTile, 2 SideViewRectTile
-map.listEntities();     // compact entity list
-map.find("map01");      // root map entity by map name
-map.find("Monster01");  // child entity by relative name or /maps/... path
-map.component("Monster01", "MOD.Core.TransformComponent");
-```
-
-### Entity Placement
-
-Prefer `.model` + `modelId` placement for repeated or runtime-spawned content.
-
-`pos` accepts `[x, y, z]` (preferred), `{ x, y, z }`, or the exported `vector3(x, y, z)` helper. All normalize to the same component value.
-
-```javascript
-map.placeModel("Monster01", "RootDesk/MyDesk/Models/Monsters/Slime.model", {
-  pos: [3, 1, 0],
-});
-
-map.sprite("Tree01", {
-  ruid: "1705e3c5b2c146ac9a699f96fb067408",
-  pos: [-2, 0, 0],
-  order: 5,
-});
-
-map.empty("WaveController", {
-  pos: [0, 0, 0],
-  scripts: ["script.WaveController"],
-});
-```
-
-`placeModel()` mirrors the model component list into the map instance and applies `Values`/property links where they target component fields. Per-instance overrides belong in `componentOverrides`.
-
-```javascript
-map.placeModel("FastMonster01", "RootDesk/MyDesk/Models/Monsters/FastMonster.model", {
-  pos: [5, 1, 0],
-  componentOverrides: {
-    "MOD.Core.MovementComponent": { InputSpeed: 1.4 },
-  },
-});
-```
-
-### Patch / Rename / Remove
-
-```javascript
-map.patch("Monster01", { pos: [4, 1, 0], enable: true });
-map.rename("Monster01", "Monster_A");
-map.remove("Monster_A");
-```
-
-### Component Updates
-
-```javascript
-map.upsertComponent("Npc01", "script.NpcDialog", { "@type": "script.NpcDialog", Enable: true });
-map.patchComponent("Npc01", "MOD.Core.SpriteRendererComponent", { OrderInLayer: 20 });
-map.removeComponent("Npc01", "script.OldComponent");
-```
-
-### Tiles And Footholds
-
-```javascript
-map.getTiles();
-map.getTileAt(0, 0);
-map.getTileBounds();
-
-map.getFootholds("1");
-map.getFootholdBounds("1");
-```
-
-Tile array writes are only for explicit programmatic terrain requests. Normal tile painting remains a Maker editor task; guide the user through Maker UI and refresh afterward.
-
-### Coverage Gaps
-
-`MapBuilder` is intentionally incomplete. Use Maker UI first where appropriate, or carefully scoped direct `.map` edits when a task requires one of these:
-
-- New map creation from a complete Maker-compatible template
-- `TileMapMode` switching
-- Most tile-painting workflows
-- Foothold add/delete/re-chain authoring
-- MapLayer creation, rename, sorting, visibility, and locking
-- Background editing
-- Portal, SpawnLocation, SectorConfig high-level workflows
-- RectTileMap-specific high-level editing
-- Collision, sorting layer, camera, map bounds, and map area high-level APIs
-- Maker internal migration or normalization behavior
-
-Before filling any gap in `MapBuilder`, verify the behavior against a Maker-saved file or engine/source metadata and add a focused smoke test.
-
-### Map Mode Rules
-
-Always inspect `TileMapMode` before any map work:
-
-| Value | Mode | Required Body |
-|:--:|---|---|
-| `0` | MapleTile | `RigidbodyComponent` |
-| `1` | RectTile | `KinematicbodyComponent` |
-| `2` | SideViewRectTile | `SideviewbodyComponent` |
-
-The builder may read the mode, but it must not be used to flip `TileMapMode` directly. Mode switching is a Maker Hierarchy right-click operation.
-
-### Constraints
-
-- Prefer `MapBuilder` for covered operations.
-- Direct `.map` reads/writes are allowed only for uncovered operations; keep edits minimal and verify with `refresh` plus logs/play when behavior matters.
-- Do not hand-write `Entities[]`, `componentNames`, `origin`, `pathConstraints`, or foothold chains when a builder API can do it.
-- Use `.model` first for any composition placed more than once or spawned at runtime.
+- `.map` `Entities` arrays are very large. **Direct raw JSON editing is reserved for builder coverage-gap areas only** — minimal scope plus `refresh` + logs verification.
+- Patch values through world-unit vectors (`pos: [x, y, z]`), color helpers, and component override objects. Do not hand-write raw component JSON except as a builder argument for a single-component payload.
 
 ---
 
@@ -334,10 +157,10 @@ Guide the user to switch the mode in the Maker editor as follows:
 
 1. **Create** — define the `.model` under `RootDesk/MyDesk/Models/{Category}/{Name}.model` (typed subfolder; details in [model.md §1, §2.2](model.md)).
 2. **Place**
-   - Use `MapBuilder.read("./map/{map}.map").placeModel(name, modelPath, { pos })`.
+   - `MapBuilder.read(...)` → `map.placeModel(...)` → `map.write(...)`. Concrete call sequence, API tables, and option details live in [builder-protocol.md §1 + §4](builder-protocol.md).
+   - `placeModel()` returns the placed root entity id string, not the builder. Do not chain `.write()` after it.
    - **`modelId` form (default — required for ≥2 instances)**: `placeModel()` mirrors model components and applies per-instance overrides.
-   - **Inline form**: use `sprite()` / `empty()` only for true one-off map-local entities.
-   - Follow the builder protocol in [MapBuilder Protocol](#mapbuilder-protocol).
+   - **Inline form**: use `sprite()` / `empty()` only for truly one-off map-local entities.
    - `refresh`.
 
 ### `modelId` vs Inline — Decision Rule
@@ -366,7 +189,7 @@ Guide the user to switch the mode in the Maker editor as follows:
 
 ### modelId entities
 
-Use `MapBuilder.placeModel()`. It creates the model instance metadata, keeps component names in sync, mirrors model components, and applies per-instance `TransformComponent.Position` / `componentOverrides`.
+Use `MapBuilder.placeModel()` — it creates the model-instance metadata, keeps component names in sync, mirrors model components, and applies per-instance `TransformComponent.Position` and `componentOverrides`. For the call signature and option details, see [builder-protocol.md §1.4 + §4](builder-protocol.md).
 
 ### Adding a new map to the world
 
@@ -502,15 +325,16 @@ After work, `**stop**` to return to edit mode.
 
 | Doc | Purpose |
 |-------------|------|
-| [MapBuilder Protocol](#mapbuilder-protocol) | `.map` builder protocol |
-| [model.md](model.md) | `.model` template authoring |
+| [builder-protocol.md §1](builder-protocol.md) | **`.map` call protocol — MapBuilder API, snapshot workflow, coverage gaps, `false`-return handling** (read every turn that touches `.map`) |
+| [builder-protocol.md §4](builder-protocol.md) | `.model` author → `.map` placement → `refresh` cross-flow |
+| [model.md](model.md) | `.model` template authoring domain (when / catalog / component combinations) |
 | [tile.md](tile.md) | Tile maps / tilesets |
 | [`msw-ui-system`](../../msw-ui-system/SKILL.md) | UI authoring |
-| [platform.md](platform.md) (core) | TileMapMode↔Body mapping, spawn, RUID, coordinates, `.directory`, ID, `.config` (common to all map types) |
-| [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md) | Per-map-type physics/events/patterns/checklists |
-| [troubleshooting.md](troubleshooting.md) | Symptom → cause → fix reference (`LEA-3004`, "won't move", "won't render" …) |
+| [platform.md](platform.md) (core) | TileMapMode ↔ Body mapping, spawn, RUID, coordinates, `.directory`, ID, `.config` (common to all map types) |
+| [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md) | Per-map-type physics / events / patterns / checklists |
+| [troubleshooting.md](troubleshooting.md) | Symptom → cause → fix (`LEA-3004`, "won't move", "won't render" …) |
 | `msw-defaultplayer` | Player model / Values / components |
-| `msw-scripting` | Component/Logic, properties, lifecycle |
+| `msw-scripting` | Component / Logic, properties, lifecycle |
 | `msw-search` | RUID / asset / doc search |
 
-The core principle of entity work is **"models are templates, maps are instances, MCP is for verification."**
+Core principle of entity work: **"models are templates, maps are instances, builder-protocol.md is the single call manual, MCP is for verification."**

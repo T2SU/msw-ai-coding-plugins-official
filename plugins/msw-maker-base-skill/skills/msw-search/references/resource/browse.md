@@ -4,7 +4,7 @@ Browse resources by type/category, get random recommendations, and find
 which resource packs include a given RUID.
 
 > **All examples in this file go through the Node.js wrapper
-> `skills/msw-search/msw_resource_api.cjs`.** Use it either as a CLI from a
+> `<SKILL_PATH>/msw_resource_api.cjs`.** Use it either as a CLI from a
 > shell or via `require(...)` inside Node.js — never assemble curl commands
 > by hand.
 
@@ -17,13 +17,13 @@ opaque-string cursor pagination.
 
 ```bash
 # CLI — list 3 monster sprites
-node ../../msw_resource_api.cjs \
+node <SKILL_PATH>/msw_resource_api.cjs \
     list --resource-type sprite --category mob --limit 3
 ```
 
 ```js
 // Node.js
-const { listResources } = require('../../msw_resource_api.cjs');
+const { listResources } = require('<SKILL_PATH>/msw_resource_api.cjs');
 
 const result = await listResources({
   resourceTypeFilter: ["sprite"],
@@ -90,21 +90,21 @@ need a sample.
 
 ```bash
 # CLI — 3 random monster sprites
-node ../../msw_resource_api.cjs \
+node <SKILL_PATH>/msw_resource_api.cjs \
     random --resource-type sprite --category mob --count 3
 
 # 3 random voice clips
-node ../../msw_resource_api.cjs \
+node <SKILL_PATH>/msw_resource_api.cjs \
     random --resource-type voice --count 3
 
 # Fully random with no filters (always specify count explicitly — default 3)
-node ../../msw_resource_api.cjs \
+node <SKILL_PATH>/msw_resource_api.cjs \
     random --count 3
 ```
 
 ```js
 // Node.js
-const { randomResources } = require('../../msw_resource_api.cjs');
+const { randomResources } = require('<SKILL_PATH>/msw_resource_api.cjs');
 
 const result = await randomResources({
   resourceTypeFilter: ["sprite"],
@@ -143,13 +143,13 @@ is a 32-char-hex RUID, **NOT a pack id**.
 
 ```bash
 # CLI — find packs that include this animationclip RUID
-node ../../msw_resource_api.cjs \
+node <SKILL_PATH>/msw_resource_api.cjs \
     packs e5fff311269b464984a9b7885a6401e7 --limit 3
 ```
 
 ```js
 // Node.js
-const { findPacksContaining } = require('../../msw_resource_api.cjs');
+const { findPacksContaining } = require('<SKILL_PATH>/msw_resource_api.cjs');
 
 const packs = await findPacksContaining("e5fff311269b464984a9b7885a6401e7", { limit: 3 });
 ```
@@ -196,7 +196,7 @@ To fetch a pack's full contents — same `elements` array but with each
 element's payload also filled in — call `getResource(packId)`:
 
 ```js
-const { getResource } = require('../../msw_resource_api.cjs');
+const { getResource } = require('<SKILL_PATH>/msw_resource_api.cjs');
 
 const pack = await getResource("npc/1013617.img");
 for (const element of pack.payload.elements) {

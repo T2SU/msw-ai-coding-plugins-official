@@ -96,7 +96,23 @@ MSW uses Lua + ECS + an MSW-specific execution-space model. **Applying Unity or 
 
 **Rule**: any time you catch yourself thinking "Unity does it this way, so MSW probably does too", stop and verify against `Environment/NativeScripts/*.d.mlua` before writing code.
 
-### 1.8 Method Documentation Comments — Required, and **Inside the Body**
+### 1.8 Builder Protocol Preflight — **MUST**
+
+If this turn **creates or modifies** any `.map` / `.model` / `.ui` file — even when it looks like you are only touching `.mlua`, but you are writing spawn / entity-placement / model-authoring / UI-authoring code — **you must `Read` [`../msw-general/references/builder-protocol.md`](../msw-general/references/builder-protocol.md) first** (no `offset` / `limit`).
+
+The call protocol for the three builders (`MapBuilder` / `ModelBuilder` / `UIBuilder`) is consolidated in one document. **Knowing only one builder and then invoking another bypasses that builder's write-side contract** (`componentNames` sync, value `typeKey` metadata, write-time auto-lint, child entity invariants, `placeModel`'s component mirroring) in full. The three builders are interlocked through cross-flow (model authoring → map placement → ui binding is one continuous flow).
+
+Triggers are intentionally broad — `Read` builder-protocol.md at the start of the turn whenever any of these match:
+
+- `_SpawnService` / `SpawnByModelId` / `SpawnByEntity` / any code that creates or places new entities (entails a MapBuilder or ModelBuilder call)
+- `.map` / `.model` / `.ui` file changes (new or existing)
+- `require` or invocation of `msw_map_builder.cjs` / `msw_model_builder.cjs` / `msw_ui_builder.cjs`
+- Any request shaped like "entity-shaped" work — new monster / NPC / projectile / map object / UI popup, etc.
+- Any task that triggers §11 (Map Context and Entity Spawning) or §16 (Attaching Scripts to Entities) of this SKILL.md
+
+Do not invoke a builder's `.cjs` without reading builder-protocol.md first. **Do not skip on the grounds that you saw it in a prior turn** — re-read every turn. Read it **alongside** the base-skill domain refs (`entity.md` / `model.md` / `msw-ui-system` design references) — they are not substitutes for each other.
+
+### 1.9 Method Documentation Comments — Required, and **Inside the Body**
 
 - **Every `method` declaration MUST have a description comment** explaining what the function does (purpose, parameters, return value, side effects — as applicable).
 - The comment **MUST be written inside the method body**, as the first line(s) after `method ...`. **Never** place the description comment on the line(s) **above** the `method` declaration.
@@ -758,6 +774,8 @@ The "same signature" rule **includes `@ExecSpace`**. If the parent method's exec
 
 ## 11. Map Context and Entity Spawning
 
+> **Builder Protocol Preflight (§1.8) trigger** — any invocation in this section entails a `.map` / `.model` mutation (`_SpawnService` itself is runtime, but authoring a spawnable model and placing it on the map must come first). **`Read` [`../msw-general/references/builder-protocol.md`](../msw-general/references/builder-protocol.md) before writing the call code** — `MapBuilder` / `ModelBuilder` snapshot workflow, `placeModel` signature, coverage gaps, model → map cross-flow (§4). Do not invoke one builder's `.cjs` while only knowing another builder's protocol.
+
 ### Prefer `Entity.CurrentMap`
 
 - For map-dependent logic, **`Entity.CurrentMap`** is safer and more readable.
@@ -1003,9 +1021,11 @@ Core debug order: **build logs first → play → logs → stop → fix → diag
 
 ## 16. Attaching Scripts (Components) to Entities
 
-- **Attach to a model template (`.model`) — recommended**: add the script-component entry to the `Components` array. Map instances inherit it automatically (must follow the `.model` JSON schema).
-- **Only for a specific map instance**: add the component to the matching entity definition inside the `.map` file.
-- **Global models** (e.g., `DefaultPlayer` under `./Global/`): **affect the entire project** — confirm the blast radius before changing.
+> **Builder Protocol Preflight (§1.8) trigger** — every operation in this section is a `.model` or `.map` mutation. `Read` [`../msw-general/references/builder-protocol.md`](../msw-general/references/builder-protocol.md) before the call. Adding a component to a `.model` is `ModelBuilder.component()` / `addComponent()` / `upsertComponent()` (§2.3); adding to a `.map` instance is `MapBuilder.upsertComponent()` (§1.3) — do not touch the `Components` array as raw JSON.
+
+- **Attach to a model template (`.model`) — recommended**: use `ModelBuilder` to add the script-component entry to the `Components` array. Map instances inherit it automatically.
+- **Only for a specific map instance**: `MapBuilder.upsertComponent(name, "script.XXX", body)` to attach the component to that `.map` entity only.
+- **Global models** (e.g., `DefaultPlayer` under `./Global/`): **affect the entire project** — confirm the blast radius before changing. `Global/*.model` is read-only by policy, so typically copy into `RootDesk/MyDesk/Models/` first and patch with ModelBuilder.
 
 ---
 

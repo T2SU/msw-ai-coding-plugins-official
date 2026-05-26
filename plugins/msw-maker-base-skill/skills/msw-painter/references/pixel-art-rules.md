@@ -36,7 +36,7 @@ ctx.fillRect(6 * scale, 2 * scale, scale, scale);  // One dot at (6,2)
 ctx.fillRect(7 * scale, 2 * scale, scale, scale);
 ```
 
-> render.cjs auto-exposes `c` (the canvas element) and `ctx` (the 2D context), so use them directly without redeclaring.
+> <SKILL_PATH>/scripts/render.cjs auto-exposes `c` (the canvas element) and `ctx` (the 2D context), so use them directly without redeclaring.
 
 ### HTML
 

@@ -360,7 +360,7 @@ b.patch_component("TopHeader", "MOD.Core.UITransformComponent", {
 });
 ```
 
-> Lint rule `L012` (in `scripts/ui_lint.cjs`) warns when an entity overlaps these reserved zones. See this subsection for remediation.
+> Lint rule `L012` (in `<SKILL_PATH>/scripts/ui_lint.cjs`) warns when an entity overlaps these reserved zones. See this subsection for remediation.
 
 ### 9.4 Minimum Touch Target Size
 
@@ -381,7 +381,7 @@ Mobile touch guidelines:
   - A child Sprite displays only a visual 60×60 icon
   - The Button's `RaycastTarget` applies to the entire RectSize area
 
-`scripts/preview_ui_layout.cjs` outputs warnings for buttons smaller than 88px. **Do not ignore them.**
+`<SKILL_PATH>/scripts/preview_ui_layout.cjs` outputs warnings for buttons smaller than 88px. **Do not ignore them.**
 
 ### 9.5 Font Size Guide
 

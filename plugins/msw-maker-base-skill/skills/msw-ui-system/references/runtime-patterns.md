@@ -1,6 +1,6 @@
 # UI Runtime Patterns
 
-`.mlua` patterns for controlling UI from scripts. These are **runtime code**, separate from `.ui` file authoring (which goes through the builder — see [`builder-protocol.md`](builder-protocol.md)).
+`.mlua` patterns for controlling UI from scripts. These are **runtime code**, separate from `.ui` file authoring (which goes through the builder — see [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3, the unified entry point).
 
 ---
 

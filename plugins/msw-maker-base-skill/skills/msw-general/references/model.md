@@ -1,25 +1,15 @@
-# MSW `.model` Files — Builder-Only Authoring
+# MSW `.model` Files — Authoring Domain
 
-A `.model` file is an entity template. AI agents do **not** inspect or edit its JSON directly. All read/create/update/write operations go through the skill-local CJS builder:
+A `.model` is an entity template. This document carries the **domain rules** of `.model` authoring — when to create one, which template to start from, which component combinations fit which entity types, and the lifecycle order when a script component is bound to a model.
 
-```javascript
-const { ModelBuilder, vector3 } = require("../scripts/model/msw_model_builder.cjs");
-```
+> **The actual call protocol for `.model` mutation — `ModelBuilder` API, fluent-chaining rules, `typeKey` values, validation (M030–M036), child entity invariants, event-link authoring, `.model` → `.map` cross-flow — lives in [builder-protocol.md §2](builder-protocol.md). Re-read builder-protocol.md every turn that touches `.model`.**
 
-## 0. Non-Negotiable Rule
+## 0. Non-Negotiable Rule (summary)
 
-Do not use `Read`, `cat`, `Get-Content`, grep, or manual JSON patches on `.model` files for normal authoring.
-
-Use:
-
-- `ModelBuilder.read(filepath)` / `ModelBuilder.snapshot(filepath)` to inspect existing models.
-- `ModelBuilder.fromTemplate(templatePath, name, { model_id })` to create from a shipped template.
-- `component()`, `value()`, `property()`, `child()`, `childFromTemplate()`, `childFromModel()`, `eventLink()`, `setBaseModelId()`, `renameModel()` to mutate.
-- `write(filepath)` to save, then Maker `refresh`.
-
-The builder owns `EntryKey`, `ContentProto.Json.Id/Name`, value type descriptors, inspector-property links, child model shape, and event link preservation.
-
-Prefer fluent chaining for normal create/update flows. The mutation methods above return the builder instance, and `write()` also returns the builder after saving. Keep inspection and conditional methods outside the chain: `snapshot()`, `validate()`, `build()`, `get*()`, `has*()`, `list*()`, and boolean-returning removals return data or booleans, not the builder.
+- Do not inspect or edit `.model` JSON directly. No `Read` / `cat` / `Get-Content` / `grep` / manual JSON patches.
+- All read / create / update / write goes through `<SKILL_PATH>/scripts/model/msw_model_builder.cjs` (`ModelBuilder`).
+- The builder **fully owns** `EntryKey`, `ContentProto.Json.Id/Name`, value type descriptors, inspector-property links, child model shape, and event-link preservation.
+- Concrete call patterns / API tables / chaining-safe vs non-builder returns / `typeKey` values / helper functions → [builder-protocol.md §2](builder-protocol.md).
 
 ## 1. When to Create a `.model`
 
@@ -141,308 +131,17 @@ Read [`monster.md`](monster.md) before authoring a monster.
 
 For full UI layout work, use the `msw-ui-system` skill instead of authoring UI models directly.
 
-## 3. Builder Workflow
+## 3. Builder Workflow / 4. API Quick Reference — see builder-protocol.md
 
-### Create from Template
+The call sequence (`fromTemplate` / `read` / fluent mutate / `write`), per-method API signatures, chaining-safe vs `false`-return distinction, `typeKey` values (`bool` / `int` / ... / `action_sheet`), helpers (`vector2` / `vector3` / `quaternion` / `dataRef` / `collisionGroup` / `actionSheet`), Inspector Property / Child Entity tree (child shell schema, ParentId invariants, validation rules M030–M036), Event Link, and `.model` → `.map` cross-flow (`ModelBuilder.write` → `MapBuilder.placeModel`) — **every invocation detail is consolidated in the single entry point [builder-protocol.md §2 + §4](builder-protocol.md).**
 
-```javascript
-const path = require("path");
-const { ModelBuilder, vector3 } = require("../scripts/model/msw_model_builder.cjs");
+This document covers only the **domain** side of `.model` authoring:
 
-const b = ModelBuilder.fromTemplate(
-  path.join(__dirname, "..", "models", "TransformOnly.model"),
-  "MyObject"
-);
-
-b.component("SpriteRendererComponent")
-  .value("SpriteRendererComponent", "SpriteRUID", "1705e3c5b2c146ac9a699f96fb067408", "string")
-  .value("TransformComponent", "Position", vector3(0, 1, 0), "vector3")
-  .write("RootDesk/MyDesk/Models/MapObjects/MyObject.model");
-
-console.log(b.snapshot());
-```
-
-### Patch Existing Model
-
-```javascript
-const b = ModelBuilder.read("RootDesk/MyDesk/Models/Monsters/Slime.model");
-
-b.value("MovementComponent", "InputSpeed", 2.5, "float")
-  .value("SpriteRendererComponent", "SpriteRUID", "1705e3c5b2c146ac9a699f96fb067408", "string")
-  .write("RootDesk/MyDesk/Models/Monsters/Slime.model");
-
-console.log(b.snapshot());
-```
-
-When a mutation can fail and returns `false`, keep it separate and stop on failure:
-
-```javascript
-const b = ModelBuilder.read("RootDesk/MyDesk/Models/Monsters/Slime.model");
-
-if (!b.removeValue("MovementComponent", "InputSpeed")) {
-  throw new Error("MovementComponent.InputSpeed not found");
-}
-
-b.value("MovementComponent", "InputSpeed", 2.5, "float")
-  .write("RootDesk/MyDesk/Models/Monsters/Slime.model");
-```
-
-### Place The Model In A Map
-
-After writing a `.model`, place it in a `.map` with `MapBuilder.placeModel()`. Do not hand-write `modelId`, `origin`, `componentNames`, entity `id`, or child entity paths.
-
-When the Node script is run from the workspace root, load both builders from the skill path:
-
-```javascript
-const path = require("path");
-const { ModelBuilder, vector3 } = require("./skills/msw-general/scripts/model/msw_model_builder.cjs");
-const { MapBuilder } = require("./skills/msw-general/scripts/map/msw_map_builder.cjs");
-
-const skillRoot = path.join(process.cwd(), "skills", "msw-general");
-const modelPath = "RootDesk/MyDesk/Models/Monsters/Slime.model";
-
-const model = ModelBuilder.fromTemplate(
-  path.join(skillRoot, "models", "MonsterCanonical.model"),
-  "Slime"
-);
-
-model
-  .value("TransformComponent", "Position", vector3(0, 0, 0), "vector3")
-  .write(modelPath);
-
-const map = MapBuilder.read("map/map01.map");
-const placedEntityId = map.placeModel("Slime01", modelPath, {
-  pos: [3, 1, 0],
-  componentOverrides: {
-    "MOD.Core.SpriteRendererComponent": {
-      OrderInLayer: 10,
-    },
-  },
-});
-
-console.log({ placedEntityId });
-map.write("map/map01.map");
-```
-
-`placeModel(name, modelPathOrJson, options)`:
-
-- Reads the `.model`, derives `modelId` from `ContentProto.Json.Id` or `EntryKey`, mirrors its component list into the placed map entity, and applies model `Values` to matching component fields.
-- Returns the placed root entity id string, not the builder. Do not chain `.write()` after `placeModel()`.
-- Replaces an existing entity with the same map path and removes its existing descendants before placing the new model instance.
-- Places model children recursively, preserving parent-child paths and `origin` metadata.
-- Accepts `options.pos` as `[x, y, z]`, `{ x, y, z }`, or `vector3(...)`; arrays are preferred.
-- Accepts `options.componentOverrides` as a map keyed by component type. The target component must exist in the model or the builder throws.
-- Accepts `options.modelId` only for an intentional override. Usually omit it and let the builder use the model's own id.
-
-Use `MapBuilder.read(...).getTileMapMode()` before choosing movement/body components for the model being placed:
-
-| TileMapMode | Map type | Body component |
-|:--:|---|---|
-| `0` | MapleTile | `RigidbodyComponent` |
-| `1` | RectTile | `KinematicbodyComponent` |
-| `2` | SideViewRectTile | `SideviewbodyComponent` |
-
-`MapBuilder` returns `false` for missing targets in `patch()`, `rename()`, `upsertComponent()`, `patchComponent()`, `removeComponent()`, and `remove()`. Treat `false` as a failed edit and stop instead of writing the map.
-
-```javascript
-const map = MapBuilder.read("map/map01.map");
-
-if (!map.patch("Slime01", { pos: [5, 1, 0], enable: true })) {
-  throw new Error("Slime01 not found in map/map01.map");
-}
-
-if (!map.patchComponent("Slime01", "MOD.Core.SpriteRendererComponent", { OrderInLayer: 20 })) {
-  throw new Error("Slime01 has no SpriteRendererComponent");
-}
-
-map.write("map/map01.map");
-```
-
-### Inspector Property
-
-```javascript
-b.property("speed", {
-  target: "MovementComponent",
-  property: "InputSpeed",
-  type_key: "float",
-  display_name: "Movement Speed",
-  show_in_inspector: true,
-});
-```
-
-### Child Entity
-
-A `.model` describes a tree of entities. The root carries top-level `Components`/`Properties`/`Values`/`EventLinks`; additional entities live in `Children`.
-
-#### Child shell schema
-
-Each entry in the root's `Children` array is a wrapper around a full inner model:
-
-| Field | Meaning |
-|---|---|
-| `Id` | UUID of this child entity. Equals `Model.Id` for builder-created children |
-| `ParentId` | UUID of the parent — either the root `model_id`, or another child's `Id` for nested trees |
-| `Name` | Display name |
-| `Model` | A complete model definition with the same schema as the root: `Version`, `Name`, `Id`, `BaseModelId`, `Components`, `Properties`, `Values`, `EventLinks`, `Children` |
-| `ModelReplaced?` | Optional boolean flag set by `childFromTemplate` / `childFromModel` / `{ modelReplaced: true }` |
-
-#### Tree representation
-
-The builder stores **all descendants in one flat array** (`this.children`); the tree shape is recovered from `ParentId`. The inner `Model.Children` array is preserved on round-trip but the builder does **not** read from or write to it — to add grandchildren, pass `{ parent: "..." }` to `child()` so the new entry goes into the flat list with the right `ParentId`.
-
-#### Invariants
-
-- `child.Id === child.Model.Id` for builder-created children. Templates may diverge unless `preserve_model_id: false` is used (which `childFromTemplate` defaults to).
-- `child.ParentId` must point to the root `model_id` **or** another existing child's `Id`. Orphan values are rejected by `validate()` rule M034.
-- Each child owns its `Components`/`Values`/`Properties`/`EventLinks` independently. **No implicit inheritance from the root** — to share a base, set `BaseModelId` on the child via `setChildBaseModelId`.
-- New children automatically receive `MOD.Core.MODEntity.Enable = true` and `MOD.Core.MODEntity.Visible = true` in their `Values`.
-- `renameModel(newName, newId)` rewrites only those `child.ParentId` entries that equal the old root `model_id`; nested (child-of-child) links are left intact, which is correct.
-- Child `TransformComponent.Position` is **parent-local**, not world. In MSW 2D only X/Y are meaningful — depth ordering is controlled by `SpriteRendererComponent.SortingLayer` + `OrderInLayer`, not `z`. A child `QuaternionRotation` with `w = -1` is the common horizontal-flip pattern (alternative to `FlipX`).
-
-#### Examples
-
-```javascript
-b.child("WeaponSlot", ["TransformComponent", "SpriteRendererComponent"])
-  .childValue("WeaponSlot", "TransformComponent", "Position", vector3(0.5, 0, 0), "vector3");
-```
-
-For Maker-style model hierarchy work, prefer the options form. It supports stable IDs, nested parents, template-backed children, model inheritance, and child-local properties / event links:
-
-```javascript
-b.child("Body", {
-  components: ["TransformComponent", "SpriteRendererComponent"],
-  id: "body",
-  enable: true,
-  visible: true,
-})
-  .child("NameTag", {
-    parent: "Body",
-    components: ["TransformComponent", "TextComponent"],
-    id: "name_tag",
-  })
-  .childValue("NameTag", "TransformComponent", "Position", vector3(0, 1.1, 0), "vector3")
-  .childProperty("NameTag", "text", {
-    target: "TextComponent",
-    property: "Text",
-    type_key: "string",
-  });
-```
-
-To clone an existing shipped template as a child:
-
-```javascript
-b.childFromTemplate("Aura", "./skills/msw-general/models/BasicParticle.model", {
-  parent: "Body",
-  id: "aura",
-  preserve_model_id: false,
-});
-```
-
-Use `model_id` / `base_model_id` only when the child is intentionally tied to a registered model identity. Otherwise let the builder create an owned child model ID from the child ID.
-
-#### Validation rules for children
-
-`b.validate()` (called by `b.write()`) reports these schema violations:
-
-| Rule | Trigger | Fix |
-|---|---|---|
-| M030 | Child has no `Id` | `child()` auto-fills with `randomUuid()`; only fires for hand-built shells |
-| M031 | Child has no `ParentId` | Use `child()` / `moveChild()`, never write the shell directly |
-| M032 | Two children share an `Id` | Pass distinct `id` options, or let the builder generate UUIDs |
-| M033 | A child `Values` entry has no `ValueType.type` | Always pass `typeKey` when calling `childValue()` |
-| M034 | `ParentId` does not match the root or any other child's `Id` | Pass an existing name/id to `parent`; `moveChild()` resolves names automatically |
-| M035 | `ParentId === Id` (self-parenting) | `moveChild()` rejects this; only triggered by manual edits |
-| M036 | Cycle in the `ParentId` chain | Avoid `moveChild()` calls that close a loop |
-
-### Event Link
-
-EventLinks are intentionally generic because project shapes can vary.
-
-```javascript
-b.eventLink({ Id: "openDialog", EventName: "TouchEvent", Target: "DialogLogic" }, { key: "Id" });
-b.removeEventLink("Id", "openDialog");
-```
-
-## 4. Builder API Quick Reference
-
-```javascript
-new ModelBuilder(name, { model_id, base_model_id });
-ModelBuilder.read(filepath);
-ModelBuilder.load(filepath);
-ModelBuilder.snapshot(filepath);
-ModelBuilder.fromTemplate(templatePath, name, { model_id });
-
-b.snapshot();
-b.renameModel(name, modelId);
-b.setBaseModelId(baseModelIdOrNull);
-b.validate();
-
-b.component(compName);
-b.addComponent(compName);
-b.hasComponent(compName);
-b.removeComponent(compName);
-b.listComponents();
-
-b.value(targetType, name, val, typeKey);
-b.getValue(targetType, name, fallback);
-b.getValueEntry(targetType, name);
-b.hasValue(targetType, name);
-b.removeValue(targetType, name);
-b.enable(targetType, enabled);
-b.entityEnable(enabled);
-b.entityVisible(visible);
-b.listValues();
-
-b.property(name, { target, property, type_key, display_name, show_in_inspector });
-b.removeProperty(name);
-
-b.child(name, components);
-b.child(name, { components, parent, id, model_id, base_model_id, enable, visible });
-b.childFromTemplate(name, templatePath, options);
-b.childFromModel(name, modelJsonOrContent, options);
-b.getChild(name);
-b.hasChild(name);
-b.childComponent(childName, compName);
-b.removeChildComponent(childName, compName);
-b.childValue(childName, targetType, name, val, typeKey);
-b.getChildValue(childName, targetType, name, fallback);
-b.removeChildValue(childName, targetType, name);
-b.childEnable(childName, enabled);
-b.childVisible(childName, visible);
-b.childProperty(childName, name, { target, property, type_key, display_name, show_in_inspector });
-b.removeChildProperty(childName, name);
-b.setChildBaseModelId(childName, baseModelId);
-b.moveChild(childName, parentNameOrId);
-b.renameChild(childName, newName);
-b.childEventLink(childName, linkObject, { key });
-b.removeChildEventLink(childName, key, value);
-b.removeChild(name);
-b.listChildren();
-
-b.eventLink(linkObject, { key });
-b.upsertEventLink(linkObject, { key });
-b.removeEventLink(key, value);
-b.listEventLinks();
-
-b.build();
-b.write(filepath, { ensure_sprite_ruid: true });
-```
-
-Chaining-safe mutators: `renameModel()`, `setBaseModelId()`, `component()`, `addComponent()`, `removeComponent()`, `value()`, `enable()`, `entityEnable()`, `entityVisible()`, `property()`, `child()`, `childFromTemplate()`, `childFromModel()`, `childComponent()`, `removeChildComponent()`, `childValue()`, `childEnable()`, `childVisible()`, `childProperty()`, `setChildBaseModelId()`, `moveChild()`, `renameChild()`, `childEventLink()`, `eventLink()`, `upsertEventLink()`, and `write()`.
-
-Do not chain through non-builder returns:
-
-- `removeComponent()` and `removeChildComponent()` return the builder, but removal is unconditional; use them only when missing targets are acceptable.
-- `removeValue()`, `removeProperty()`, `removeChildValue()`, `removeChildProperty()`, `removeChildEventLink()`, `removeChild()`, and `removeEventLink()` return `boolean`; check `false` before writing.
-- `snapshot()`, `validate()`, `build()`, `get*()`, `has*()`, and `list*()` return data for inspection; call them on their own line.
-
-`typeKey` values: `bool`, `int`, `long`, `float`, `double`, `string`, `vector2`, `vector3`, `quaternion`, `collision_group`, `data_ref`, `sync_string_dict`, `action_sheet`.
-
-Helpers: `vector2`, `vector3`, `quaternion`, `collisionGroup` / `collision_group`, `dataRef` / `data_ref`, `actionSheet`.
-
-`SpriteRUID` is a plain string. Do not wrap it in `dataRef()`.
-
-The default generated MOD.Core assembly version is `26.5.0.0`. If a different project CoreVersion requires a different version for newly generated value type blocks, set `MSW_MODEL_BUILDER_MOD_CORE_VERSION` before running Node.
+- When to create a `.model` (§1)
+- Which template to start from (§2)
+- Which component combinations fit which entity types (§5)
+- Lifecycle order when a script component lives inside a `.model` (§6)
+- Pre-completion checklist (§7)
 
 ## 5. Component Combinations
 
@@ -486,9 +185,11 @@ If this order is inconvenient, keep the `.model` native-only and attach the scri
 
 | Doc | Purpose |
 |---|---|
-| [`entity.md`](entity.md) | Place created models in maps, spawn, runtime validation |
+| [builder-protocol.md §2](builder-protocol.md) | **`.model` call protocol — ModelBuilder API, chaining rules, `typeKey`, Child Entity, Event Link, validation** (read every turn that touches `.model`) |
+| [builder-protocol.md §4](builder-protocol.md) | `.model` → `.map` cross-flow (`ModelBuilder.write` → `MapBuilder.placeModel` → `refresh`) |
+| [`entity.md`](entity.md) | Placing the authored model in a map, spawn, runtime verification domain |
 | [`monster.md`](monster.md) | Monster-specific canonical defaults and pitfalls |
-| [platform.md](platform.md) (core) | File location rules, folder metadata, TileMapMode↔Body, ID generation |
-| [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md) | Map-type-specific Body and movement patterns |
-| `msw-scripting` | Authoring `.mlua` scripts to attach to models |
+| [platform.md](platform.md) (core) | File location rules, folder metadata, TileMapMode ↔ Body, ID generation |
+| [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md) | Per-map-type Body / movement patterns |
+| `msw-scripting` | Authoring the `.mlua` scripts attached to models |
 | `msw-search` | Resource lookup such as `SpriteRUID` |
