@@ -17,16 +17,16 @@ const POLICIES = [
   {
     ext: '.model',
     directReason:
-      '.model files are builder-only. First read skills/msw-general/references/model.md in full, then use skills/msw-general/scripts/model/msw_model_builder.cjs (ModelBuilder.read/snapshot/fromTemplate/write), not direct Read/Edit/Write/MultiEdit.',
+      '.model files are builder-only. First read skills/msw-general/references/model.md (domain rules) and skills/msw-general/references/builder-protocol.md §2 (call protocol) in full, then use skills/msw-general/scripts/model/msw_model_builder.cjs (ModelBuilder.read/snapshot/fromTemplate/write), not direct Read/Edit/Write/MultiEdit.',
     bashReason:
-      '.model files are builder-only. Do not read/edit/copy/delete them through shell commands. First read skills/msw-general/references/model.md in full, then use msw-general ModelBuilder; node commands that call the builder are allowed.',
+      '.model files are builder-only. Do not read/edit/copy/delete them through shell commands. First read skills/msw-general/references/model.md (domain rules) and skills/msw-general/references/builder-protocol.md §2 (call protocol) in full, then use msw-general ModelBuilder; node commands that call the builder are allowed.',
   },
   {
     ext: '.ui',
     directReason:
-      '.ui files are builder-only. First use the msw-ui-system skill and read its relevant guides, then use skills/msw-ui-system/scripts/msw_ui_builder.cjs (UIBuilder.read/load/find/list_entities/write), not direct Read/Edit/Write/MultiEdit.',
+      '.ui files are builder-only. First load the msw-ui-system skill and read skills/msw-general/references/builder-protocol.md §3 (call protocol) in full, then use skills/msw-ui-system/scripts/msw_ui_builder.cjs (UIBuilder.read/load/find/list_entities/write), not direct Read/Edit/Write/MultiEdit.',
     bashReason:
-      '.ui files are builder-only. Do not read/edit/copy/delete them through shell commands. First use the msw-ui-system skill and read its relevant guides, then use msw-ui-system UIBuilder; node commands that call the builder are allowed.',
+      '.ui files are builder-only. Do not read/edit/copy/delete them through shell commands. First load the msw-ui-system skill and read skills/msw-general/references/builder-protocol.md §3 (call protocol) in full, then use msw-ui-system UIBuilder; node commands that call the builder are allowed.',
   },
 ];
 

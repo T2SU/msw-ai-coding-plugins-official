@@ -24,16 +24,44 @@ Most entities in a Maker workspace are based on small sprites. **Always specify 
 - Vertically elongated objects (trees, flags) use `1:2` (e.g. 96×192).
 - Avoid irregular ratios when possible — they can affect collider / hit-box alignment of the entity.
 
-## Pixel art working grid
+## Working grid per style
 
-The standard pixel art workflow is to scale up from a **small logical grid → a large output canvas**.
+The standard pixel art workflow is to draw on a **small logical grid → scaled up to a larger output canvas**. The logical grid size depends on which style you picked in `SKILL.md` step 2.
+
+### Chunky pixel working grid (see [style-chunky-pixel.md](style-chunky-pixel.md))
+
+Larger pixels-per-dot → chunky retro feel.
 
 | Output size | Recommended logical grid | Pixels per dot |
 |-------------|--------------------------|----------------|
-| 48×48 | 16×16 | 3 |
-| 64×64 | 16×16 | 4 |
-| 96×96 | 24×24 or 16×16 | 4 or 6 |
-| 128×128 | 16×16 or 32×32 | 8 or 4 |
-| 256×256 | 32×32 or 64×64 | 8 or 4 |
+| 48×48   | 16×16            | 3 |
+| 64×64   | 16×16            | 4 |
+| 96×96   | 24×24 or 16×16   | 4 or 6 |
+| 128×128 | 16×16 or 32×32   | 8 or 4 |
+| 256×256 | 32×32 or 64×64   | 8 or 4 |
 
-A smaller logical grid means chunkier, more classic-looking dots; a larger one allows more detail but increases the workload.
+### Maple cartoon working grid (see [style-maple-cartoon.md](style-maple-cartoon.md))
+
+Smaller pixels-per-dot → room for facial features, selout, and selective AA.
+
+| Output size | Recommended logical grid | Pixels per dot |
+|-------------|--------------------------|----------------|
+| 48×48   | 24×24            | 2 |
+| 64×64   | 32×32            | 2 |
+| 96×96   | 48×48            | 2 |
+| 128×128 | 64×64            | 2 |
+| 256×256 | 128×128          | 2 |
+
+> A logical grid that is too small (≤ 24×24) does not leave room for selout + AA + facial features, so it forces the result back into chunky territory. If the requested output is below 64×64 and you want maple cartoon feel, raise the output size first.
+
+## Character proportions (Maple cartoon style only)
+
+Maple-style characters are **2.5 to 3 heads tall** (super-deformed / chibi).
+
+| Total height | Head | Torso | Legs |
+|--------------|------|-------|------|
+| 64 px  | 26 px | 18 px | 20 px |
+| 96 px  | 32 px | 28 px | 36 px |
+| 128 px | 42 px | 38 px | 48 px |
+
+Full character drawing details (face features, hair, accents) are in [style-maple-cartoon.md](style-maple-cartoon.md).
