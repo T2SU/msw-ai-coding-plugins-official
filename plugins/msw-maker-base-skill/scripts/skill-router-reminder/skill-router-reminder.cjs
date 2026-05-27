@@ -272,13 +272,13 @@ process.stdout.write(
   `  for each sub-topic lives in the matching reference below; loading SKILL.md alone is NOT enough\n` +
   `  when a sub-trigger fires):\n` +
   `  - Monster .model assembly / ActionSheet / attaching MonsterAI / combat-capable monster setup\n` +
-  `      → Read: references/monster-setup.md\n` +
+  `      → Read: ../msw-general/references/monster.md  (consolidated — Pattern A Soldier canonical + Pattern B MonsterCanonical)\n` +
   `  - HP gauge / health bar / overhead HP / PixelRendererComponent\n` +
   `      → Read: references/hp-gauge.md\n` +
   `  - Projectile / arrow / bullet / magic missile / homing / piercing / splash / OnUpdate Translate\n` +
   `      → Read: references/projectile.md\n` +
   `  - FSM / StateComponent / @State / state machine / IDLE/HIT/DEAD / boss phases\n` +
-  `      → Read: references/fsm-state.md\n` +
+  `      → Read: ../msw-general/references/animation-state.md (state-machine + animation pipeline unified)\n` +
   `  - BT / BehaviourTree / Behavior Tree / AIComponent / @BTNode / Composite / Decorator / Threat\n` +
   `      → Read: references/ai-bt.md\n` +
   `\n` +

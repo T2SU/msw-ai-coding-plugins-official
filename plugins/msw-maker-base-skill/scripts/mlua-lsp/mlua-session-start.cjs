@@ -38,7 +38,7 @@ const projectRoot = process.env.MLUA_LSP_PROJECT_ROOT || findProjectRoot(input.c
 
 if (!projectRoot) process.exit(0);
 
-const resolved = resolveLspCommand();
+const resolved = resolveLspCommand({ projectRoot });
 const subArgs = ['start', projectRoot];
 const args = resolved.baseArgs.concat(subArgs);
 

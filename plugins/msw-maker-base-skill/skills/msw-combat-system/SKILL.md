@@ -32,7 +32,7 @@ This SKILL.md covers only the **system flow and native API surface**. Actual mod
 
 | File | Scope | When to read |
 |------|-------|--------------|
-| [`references/monster-setup.md`](references/monster-setup.md) | Monster `.model` component assembly + ActionSheet + AI choice + MonsterAI attachment | When building a combat-capable monster |
+| [`../msw-general/references/monster.md`](../msw-general/references/monster.md) | Monster `.model` component assembly + ActionSheet + AI choice + canonical Pattern A scripts (Soldier-style) + HP/Respawn + spawn + verification | When building a combat-capable monster |
 | [`references/hp-gauge.md`](references/hp-gauge.md) | Full implementation of an overhead HP bar based on `PixelRendererComponent` | When attaching an overhead HP bar |
 | [`references/projectile.md`](references/projectile.md) | Projectile (Body-less entity + `OnUpdate Translate`) + homing/pierce/splash variants | When building ranged attacks like arrows, bullets, magic bolts |
 | [`references/ai-bt.md`](references/ai-bt.md) | BehaviourTree — `AIComponent` + 4 Composite types + `@BTNode` + custom Decorator/Memory/Threat | When you need BT-based monster/boss AI and multi-layer decision making |
@@ -383,12 +383,13 @@ For player-specific death/revive, prefer §9-1 `PlayerComponent.Respawn/ProcessD
 
 ---
 
-## 7. AI — FSM(StateComponent) + BT(AIComponent), both native
+## 7. AI — FSM(StateComponent) + BT(AIComponent) + custom-script (Pattern A), all native-compatible
 
 | Pattern | Fit | Reference |
 |---------|-----|-----------|
-| **FSM** (`StateComponent` + `@State`) | Simple enemies (3~5 states), player IDLE/HIT/DEAD, boss phases, animation sync (`AvatarStateAnimationComponent` auto mapping §10) | **[`references/fsm-state.md`](references/fsm-state.md)** |
-| **BT** (`AIComponent` + 4 Composite types + `@BTNode`) | Patrol + chase + attack combos, varied boss patterns, Composite/Decorator reuse, probability-weighted actions | **[`references/ai-bt.md`](references/ai-bt.md)** |
+| **FSM** (`StateComponent` + `@State`) | Simple enemies (3~5 states), player IDLE/HIT/DEAD, boss phases, animation sync (`AvatarStateAnimationComponent` auto mapping §10). Requires `StateComponent.IsLegacy=false` if you want `StateAnimationComponent` to auto-swap clips. | **[`../msw-general/references/animation-state.md`](../msw-general/references/animation-state.md)** (state-machine + animation pipeline unified) |
+| **BT** (`AIComponent` + 4 Composite types + `@BTNode`) | Patrol + chase + attack combos, varied boss patterns, Composite/Decorator reuse, probability-weighted actions. Requires `StateComponent.IsLegacy=false`. | **[`references/ai-bt.md`](references/ai-bt.md)** |
+| **Custom script with self-state** (`@Component` holding `CurrentAIState` plus direct `SpriteRUID` assignment — proven by `Soldier.model` / `script.SoldierAI` in `D:\msw-world-projects\20260526-4\RootDesk\MyDesk\Soldier\`) | Behaviors that don't fit `AIChase`/`AIWander` (roam ↔ stand ↔ say ↔ attack, range-gated attacks, talking idle). **No `AIChaseComponent`/`AIWanderComponent`, no `IsLegacy=false` needed** — the script bypasses the ActionSheet pipeline. Reserve `StateComponent` for `IDLE` ↔ `DEAD` only. | [`../msw-general/references/monster.md` §7 "Canonical Pattern A Scripts (Soldier)"](../msw-general/references/monster.md) |
 
 ### 7-1. FSM — `StateComponent` (summary)
 
@@ -396,7 +397,7 @@ For player-specific death/revive, prefer §9-1 `PlayerComponent.Respawn/ProcessD
 
 > ⚠ **State names must be UPPERCASE**; unregistered names immediately produce `[LEA-3005] InvalidArgument : 'stateName'`. Registering a key in `AvatarStateAnimationComponent.StateToAvatarBodyActionSheet` does **not** auto-register it in `StateComponent` — the two are separate.
 
-**Full implementation → [`references/fsm-state.md`](references/fsm-state.md)**
+**Full implementation → [`../msw-general/references/animation-state.md`](../msw-general/references/animation-state.md)** (FSM authoring, `ChangeState` failure matrix, standard `PATROL/CHASE/ATTACK/HIT/DEAD` monster pattern, and the state→animation pipeline live together — the two are the same underlying system viewed from two angles)
 
 ### 7-2. BT — `AIComponent` (summary)
 
@@ -406,7 +407,7 @@ For player-specific death/revive, prefer §9-1 `PlayerComponent.Respawn/ProcessD
 
 **Full implementation → [`references/ai-bt.md`](references/ai-bt.md)**
 
-> Full monster entity composition → [`references/monster-setup.md`](references/monster-setup.md)
+> Full monster entity composition → [`../msw-general/references/monster.md`](../msw-general/references/monster.md)
 >
 > This SKILL.md only covers combat-specific aspects (ATTACK/HIT/DEAD + DeadEvent/ReviveEvent + BT entry point). For general mlua state machine / scripting patterns see [`msw-scripting`](../msw-scripting/SKILL.md).
 

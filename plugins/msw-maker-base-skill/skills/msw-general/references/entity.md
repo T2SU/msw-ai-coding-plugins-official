@@ -17,7 +17,7 @@ The legacy Maker RPC (curl) API has been removed. `.map` inspection and mutation
 | System models | `./Global/*.model` | Engine default templates (monster presets, Player, etc.) — read-only; copy into `MyDesk/Models/{Category}/` to customize |
 | UI | `./ui/*.ui` | UI-only entities and widgets ([`msw-ui-system`](../../msw-ui-system/SKILL.md)) |
 
-> **Placing a monster** — read [monster.md](monster.md) first. Monsters have 11 required components, lowercase `ActionSheet` keys, and several `IsLegacy: false` flags. Mixing inline `@components` with `modelId` overrides on a system monster model produces `LEA-3046 InternalError` at runtime; bake the values into a dedicated `.model` instead.
+> **Placing a monster** — read [monster.md](monster.md) first. The two verified working canonicals each have 11 components (`Soldier.model` for Pattern A — script-driven SpriteRUID; `MonsterCanonical.model` for Pattern B — `AIChaseComponent` + ActionSheet pipeline). `ActionSheet` keys are lowercase. `IsLegacy: false` is mandatory on `HitComponent` for both patterns; on `StateComponent` (and on `AIChaseComponent` if present) only for Pattern B — Pattern A leaves `StateComponent.IsLegacy` at the default. Mixing inline `@components` with `modelId` overrides on a system monster model produces `LEA-3046 InternalError` at runtime; bake the values into a dedicated `.model` instead.
 
 > MCP tools are self-documenting when connected. If the user asks about MCP setup, share this link: https://maplestoryworlds-creators.nexon.com/ko/docs?postId=1368
 

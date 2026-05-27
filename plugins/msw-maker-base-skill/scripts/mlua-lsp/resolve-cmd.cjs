@@ -7,10 +7,11 @@
 // order of priority:
 //
 //   1) `MLUA_LSP_CMD` (+ `MLUA_LSP_ARGS`) env vars (explicit user / hooks.json override).
-//   2) Use the @maplestoryworlds/mlua-lsp dependency bundled with ai-cli.
-//   3) Use `mlua-lsp` from PATH if it is installed there.
-//   4) Fall back to `npx -y @maplestoryworlds/mlua-lsp@<ver>` if `npx` is on PATH.
-//   5) Last resort: the literal `mlua-lsp` (spawn will fail if it does not exist).
+//   2) Use the workspace-local mlua-lsp runtime materialized by `mswai init/update`.
+//   3) Use the @maplestoryworlds/mlua-lsp runtime vendored with ai-cli.
+//   4) Use `mlua-lsp` from PATH if it is installed there.
+//   5) Fall back to `npx -y @maplestoryworlds/mlua-lsp@<ver>` if `npx` is on PATH.
+//   6) Last resort: the literal `mlua-lsp` (spawn will fail if it does not exist).
 //
 // Windows caveats:
 //   - Node 18+ security policy prevents `spawn` from launching `.cmd` / `.bat`
@@ -26,8 +27,9 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync, spawn } = require('child_process');
 
-const DEFAULT_NPX_SPEC = '@maplestoryworlds/mlua-lsp@1.1.1';
+const DEFAULT_NPX_SPEC = '@maplestoryworlds/mlua-lsp@1.1.2';
 const MLUA_LSP_PACKAGE_NAME = '@maplestoryworlds/mlua-lsp';
+const MLUA_LSP_VERSION = '1.1.2';
 
 function splitArgs(raw) {
   return String(raw || '').trim().split(/\s+/).filter(Boolean);
@@ -92,6 +94,11 @@ function packageRootToBin(packageRoot) {
   return null;
 }
 
+function packageVersionFromSpec(spec) {
+  const idx = String(spec || '').lastIndexOf('@');
+  return idx > 0 ? String(spec).slice(idx + 1) : 'unknown';
+}
+
 function resolvePackageRootWithNode(paths) {
   try {
     const opts = paths && paths.length > 0 ? { paths } : undefined;
@@ -101,7 +108,15 @@ function resolvePackageRootWithNode(paths) {
   }
 }
 
-function candidateBundledPackageRoots() {
+function candidateWorkspacePackageRoots(projectRoot) {
+  if (!projectRoot) return [];
+  const version = packageVersionFromSpec(process.env.MLUA_LSP_NPX_SPEC || DEFAULT_NPX_SPEC);
+  return [
+    path.join(projectRoot, '.mswai', 'runtime', 'mlua-lsp', version),
+  ];
+}
+
+function candidateVendoredPackageRoots() {
   const roots = [];
 
   if (process.env.MSWAI_MLUA_LSP_PACKAGE_ROOT) {
@@ -116,10 +131,10 @@ function candidateBundledPackageRoots() {
     const realMswai = safeRealpath(mswai);
     // POSIX global npm commonly symlinks <prefix>/bin/mswai to
     // <prefix>/lib/node_modules/@maplestoryworlds/ai-cli/bin/cli.js.
-    roots.push(path.join(path.dirname(path.dirname(realMswai)), 'node_modules', MLUA_LSP_PACKAGE_NAME));
+    roots.push(path.join(path.dirname(path.dirname(realMswai)), 'vendor', 'mlua-lsp', MLUA_LSP_VERSION));
 
     // Windows global npm creates mswai.cmd next to node_modules.
-    roots.push(path.join(path.dirname(mswai), 'node_modules', '@maplestoryworlds', 'ai-cli', 'node_modules', '@maplestoryworlds', 'mlua-lsp'));
+    roots.push(path.join(path.dirname(mswai), 'node_modules', '@maplestoryworlds', 'ai-cli', 'vendor', 'mlua-lsp', MLUA_LSP_VERSION));
   }
 
   const deduped = [];
@@ -135,8 +150,16 @@ function candidateBundledPackageRoots() {
   return deduped;
 }
 
+function resolveWorkspaceLspBin(projectRoot) {
+  for (const root of candidateWorkspacePackageRoots(projectRoot)) {
+    const bin = packageRootToBin(root);
+    if (bin) return bin;
+  }
+  return null;
+}
+
 function resolveBundledLspBin() {
-  for (const root of candidateBundledPackageRoots()) {
+  for (const root of candidateVendoredPackageRoots()) {
     const bin = packageRootToBin(root);
     if (bin) return bin;
   }
@@ -187,13 +210,14 @@ function quoteForCmd(arg) {
  * @returns {{
  *   cmd: string,            // Executable name or absolute path.
  *   baseArgs: string[],     // Base arguments prefixed before the subcommand
- *                           // (e.g. ['-y', '@maplestoryworlds/mlua-lsp@1.1.1']).
+ *                           // (e.g. ['-y', '@maplestoryworlds/mlua-lsp@1.1.2']).
  *   useShell: boolean,      // Whether cmd.exe must be used on Windows
  *                           // (true for .cmd/.bat targets or env-var overrides).
- *   source: 'env'|'bundled'|'path'|'npx'|'fallback',
+ *   source: 'env'|'workspace'|'vendored'|'path'|'npx'|'fallback',
  * }}
  */
-function resolveLspCommand() {
+function resolveLspCommand(opts) {
+  const projectRoot = opts && opts.projectRoot;
   const envCmd = process.env.MLUA_LSP_CMD;
   if (envCmd) {
     const cleanCmd = stripOuterQuotes(envCmd);
@@ -207,9 +231,14 @@ function resolveLspCommand() {
     };
   }
 
+  const workspaceBin = resolveWorkspaceLspBin(projectRoot);
+  if (workspaceBin) {
+    return { cmd: process.execPath, baseArgs: [workspaceBin], useShell: false, source: 'workspace' };
+  }
+
   const bundledBin = resolveBundledLspBin();
   if (bundledBin) {
-    return { cmd: process.execPath, baseArgs: [bundledBin], useShell: false, source: 'bundled' };
+    return { cmd: process.execPath, baseArgs: [bundledBin], useShell: false, source: 'vendored' };
   }
 
   if (process.platform === 'win32') {
@@ -324,6 +353,7 @@ module.exports = {
   spawnLspDetached,
   splitArgs,
   findOnPath,
+  resolveWorkspaceLspBin,
   resolveBundledLspBin,
   quoteForCmd,
   DEFAULT_NPX_SPEC,

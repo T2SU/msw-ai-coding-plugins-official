@@ -70,7 +70,7 @@ if (!fs.existsSync(filePath)) process.exit(0);
 const projectRoot = process.env.MLUA_LSP_PROJECT_ROOT || findProjectRoot(filePath) || findProjectRoot(input.cwd);
 if (!projectRoot) process.exit(0);
 
-const resolved = resolveLspCommand();
+const resolved = resolveLspCommand({ projectRoot });
 const subArgs = ['diagnose', projectRoot, filePath];
 const args = resolved.baseArgs.concat(subArgs);
 const timeout = Number.parseInt(process.env.MLUA_LSP_HOOK_DIAGNOSE_TIMEOUT_MS || '120000', 10);

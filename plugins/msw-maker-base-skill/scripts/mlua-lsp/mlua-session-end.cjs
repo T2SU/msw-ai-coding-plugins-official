@@ -38,13 +38,13 @@ const projectRoot = process.env.MLUA_LSP_PROJECT_ROOT || findProjectRoot(input.c
 
 if (!projectRoot) process.exit(0);
 
-const resolved = resolveLspCommand();
+const resolved = resolveLspCommand({ projectRoot });
 const subArgs = ['stop', projectRoot];
 const args = resolved.baseArgs.concat(subArgs);
 
 const startedAt = Date.now();
 const result = spawnLspSync(resolved, subArgs, {
-  timeout: 5000,
+  timeout: 15000,
 });
 const durationMs = Date.now() - startedAt;
 

@@ -118,7 +118,7 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/mlua-lsp/mlua-session-end.cjs\"",
-            "timeout": 5
+            "timeout": 20
           }
         ]
       }
