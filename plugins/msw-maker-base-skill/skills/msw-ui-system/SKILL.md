@@ -1,6 +1,6 @@
 ---
 name: msw-ui-system
-description: "MSW `.ui` single entry point — design + component API + builder + runtime. Anchor/pivot/RectTransform, UIGroup/CanvasGroup hierarchy, layout recipes (HUD/popup/toast/menu/inventory/scroll-list), full API tables for ButtonComponent/TextComponent/SpriteGUIRendererComponent/ScrollLayoutGroup/GridView/TextInput/Slider/Mask/AvatarGUIRenderer + UI enums (AlignmentType/OverflowType/ImageType/FillAmount), `.mlua` runtime patterns (popup open-close, toast, HP bar, GridView, drag, tab, cooldown, world nametag), UI-client-only caveats (nil on server, no RPC), `.ui`↔`.mlua` UUID auto-binding (write+inject_bindings), resolution/safe-area/touch. UIBuilder (msw_ui_builder.cjs): all node types (panel/text/sprite/button/slider/scroll_layout/text_input/group/mask/grid_view/avatar/skeleton etc.), component add/replace/patch/remove, 13 anchor presets+stretch, auto-inject .mlua UUID bindings after write."
+description: "MSW `.ui` single entry point — design + component API + builder + runtime. Anchor/pivot/RectTransform, UIGroup/CanvasGroup hierarchy, layout recipes (HUD/popup/toast/menu/inventory/scroll-list), full API tables for ButtonComponent/TextComponent/SpriteGUIRendererComponent/ScrollLayoutGroup/GridView/TextInput/Slider/Mask/AvatarGUIRenderer + UI enums (AlignmentType/OverflowType/ImageType/FillAmount), `.mlua` runtime patterns (popup open-close, toast, HP bar, GridView, drag, tab, cooldown, world nametag), UI-client-only caveats (nil on server, no RPC), `.ui`↔`.mlua` UUID auto-binding (write+injectBindings), resolution/safe-area/touch. UIBuilder (msw_ui_builder.cjs): all node types (panel/text/sprite/button/slider/scrollLayout/textInput/group/mask/gridView/avatar/skeleton etc.), component add/replace/patch/remove, 13 anchor presets+stretch, auto-inject .mlua UUID bindings after write."
 ---
 
 # msw-ui-system
@@ -44,7 +44,7 @@ Branch to sub-references based on request keywords.
 (3) Builder Preflight    Read ../../msw-general/references/builder-protocol.md §3 (unified call-protocol entry point)
 (4) Match recipe          Select the closest template from layout-recipes.md
 (5) Invoke builder        Create/patch via scripts/msw_ui_builder.cjs (protocol: builder-protocol.md §3)
-(6) Inject bindings       Auto-inject .mlua property default UUIDs via b.write(path, { bind: {...} }) or b.inject_bindings(...) (builder-protocol.md §3.6 Binding Injection)
+(6) Inject bindings       Auto-inject .mlua property default UUIDs via b.write(path, { bind: {...} }) or b.injectBindings(...) (builder-protocol.md §3.6 Binding Injection)
 (7) Self-verify           write() auto-runs scripts/ui_lint.cjs (strict ON by default)
 (8) Preview               Visual check via scripts/preview_ui_layout.cjs
 (9) Sound pass            For any interactive button, offer click/hover SFX wiring (references/ui-sound.md)
@@ -55,7 +55,7 @@ Branch to sub-references based on request keywords.
 
 ### NEVER
 1. **Do not directly edit `.ui` JSON** — `.ui` creation/modification **must** go through `<SKILL_PATH>/scripts/msw_ui_builder.cjs`. Manual editing breaks UUID·ValueType·`@components` consistency and causes silent drops.
-2. **Read existing `.ui` files through the builder too** — Query via `UIBuilder.read(filepath)` / `.find()` / `.list_entities()`. Do not directly grep/parse raw JSON.
+2. **Read existing `.ui` files through the builder too** — Query via `UIBuilder.read(filepath)` / `.find()` / `.listEntities()`. Do not directly grep/parse raw JSON.
    - `.ui` direct `Read` and shell commands such as `cat` / `type` / `Get-Content` / `rg` / `grep` / `sed` / `awk` / `cp` / `mv` are blocked by the registered guard. Use `UIBuilder.read/load/snapshot` for reads and `b.write()` for writes. Deleting an entire `.ui` file is a separate explicit deletion action, not a builder mutation.
 3. Set `Position` directly — Use only `anchoredPosition` (Position is engine-managed)
 4. Express size via OffsetMin/Max on fixed anchors (AnchorsMin == AnchorsMax) while also using `anchoredPosition` — Do not mix the two modes
@@ -81,7 +81,7 @@ Branch to sub-references based on request keywords.
 - [`references/layout-recipes.md`](references/layout-recipes.md) — Layout template collection
 - [`references/runtime-patterns.md`](references/runtime-patterns.md) — `.mlua` runtime patterns (popup/toast/HP/grid/drag…) + Runtime UI Caveats
 - [`references/ui-sound.md`](references/ui-sound.md) — UI sound integration (`_SoundService:PlaySound`, click/hover hook, default UI SFX RUIDs)
-- [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3 — **`.ui` CJS builder call protocol (unified entry point)** — same document as `.map` MapBuilder / `.model` ModelBuilder. panel / text / sprite / button / slider / scroll / script / group / mask / grid / avatar / touch_receive / skeleton / area_particle / basic_particle, component CRUD, anchor presets, write auto-lint, and `.mlua` property UUID auto-binding all live in §3 + §3.6.
+- [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3 — **`.ui` CJS builder call protocol (unified entry point)** — same document as `.map` MapBuilder / `.model` ModelBuilder. panel / text / sprite / button / slider / scroll / script / group / mask / grid / avatar / touchReceive / skeleton / areaParticle / basicParticle, component CRUD, anchor presets, write auto-lint, and `.mlua` property UUID auto-binding all live in §3 + §3.6.
 - [`references/templates/templates.md`](references/templates/templates.md) — Pre-built style bundle index (`style-N-*` `.ui`, [`ruid-map.md`](references/templates/style-1-black/ruid-map.md), `Popupbutton.mlua`)
 
 ## 4. Scripts

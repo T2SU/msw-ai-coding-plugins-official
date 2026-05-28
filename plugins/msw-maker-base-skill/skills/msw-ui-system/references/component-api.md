@@ -1,6 +1,6 @@
 # UI Component API Reference
 
-Full list of properties, methods, and events per UI component. Use as a lookup when calling builder `patch_component(...)` / `add_component(...)`, or when accessing a component from `.mlua` runtime code (`property ButtonComponent btn = "uuid"` → `self.btn.Enable = false`).
+Full list of properties, methods, and events per UI component. Use as a lookup when calling builder `patchComponent(...)` / `addComponent(...)`, or when accessing a component from `.mlua` runtime code (`property ButtonComponent btn = "uuid"` → `self.btn.Enable = false`).
 
 Before reading or writing a UI component field in `.mlua`, verify the exact field name here. Do not infer field names from Unity, UGUI, HTML, or other UI frameworks.
 
@@ -573,7 +573,7 @@ In-game chat UI. Builder: `chat(name, options)`.
 
 ## SoftMaskComponent
 
-Soft-edged clipping mask (UGUI SoftMask style). Builder: `soft_mask(name, options)`. Attach to a sprite entity; child sprites/raw images are clipped with anti-aliased edges. **Note**: gated by the `EnableUnpublishFeature` maker authority.
+Soft-edged clipping mask (UGUI SoftMask style). Builder: `softMask(name, options)`. Attach to a sprite entity; child sprites/raw images are clipped with anti-aliased edges. **Note**: gated by the `EnableUnpublishFeature` maker authority.
 
 ### Properties
 
@@ -625,7 +625,7 @@ Draws an arbitrary polygon (speech-balloon tails, custom shapes). Builder: `poly
 
 ## UISpriteParticleComponent
 
-Sprite-textured particle effect (extends UI particle base). Builder: `sprite_particle(name, options)`.
+Sprite-textured particle effect (extends UI particle base). Builder: `spriteParticle(name, options)`.
 
 ### Properties
 
@@ -714,14 +714,14 @@ UI coordinate-conversion utility (singleton).
 | `OrderInLayer` | int32 | 0 | Order within the sorting layer (higher draws on top) |
 | `IgnoreMapLayerCheck` | boolean | false | Bypass automatic map-layer to sorting-layer remap |
 
-Builder shortcut: pass `world_ui: true` to `sprite()` / `text()` / `button()` / `slider()` / `scroll_layout()` / `text_input()` to set `override_sorting=true` with `sorting_layer="UI"`. Override individual values with `sorting_layer="World"`, `order_in_layer=10`, `ignore_map_layer_check=true`.
+Builder shortcut: pass `world_ui: true` to `sprite()` / `text()` / `button()` / `slider()` / `scrollLayout()` / `textInput()` to set `override_sorting=true` with `sorting_layer="UI"`. Override individual values with `sorting_layer="World"`, `order_in_layer=10`, `ignore_map_layer_check=true`.
 
 ---
 
 ## Common Types
 
 ### Color
-`Color(r, g, b, a)` -- 0-1 floats. Static values: `Color.red`, `Color.white`, `Color.black`, etc.
+`Color(r, g, b, a)` — 0-1 floats. Static factories: `Color.FromHexCode("#RRGGBB[AA]")`, `Color.FromRGBAInt(0xRRGGBBAA)`. Static values: `Color.red`, `Color.white`, `Color.black`, etc.
 
 ### TransitionColorSet
 `NormalColor`, `HighlightedColor`, `PressedColor`, `SelectedColor`, `DisabledColor`, `ColorMultiplier`, `FadeDuration`
@@ -739,7 +739,7 @@ Builder shortcut: pass `world_ui: true` to `sprite()` / `text()` / `button()` / 
 
 ## Enums
 
-All values are `int32`. Pass numeric values to builder `patch_component(...)` or use the enum identifier in `.mlua` runtime code (e.g. `TextAlignmentType.MiddleCenter`).
+All values are `int32`. Pass numeric values to builder `patchComponent(...)` or use the enum identifier in `.mlua` runtime code (e.g. `TextAlignmentType.MiddleCenter`).
 
 > **Two "alignment" enums exist — do not confuse them:**
 > - **`AlignmentType` (0~15)** — anchor presets for `UITransformComponent.AlignmentOption`. Builder string mapping (`"top-left"` ↔ 4, etc.) is in [`ui-fundamentals.md`](ui-fundamentals.md) §6. Not duplicated here.
@@ -918,4 +918,4 @@ Used by `MaskComponent.Shape`.
 
 ### UIAreaParticleType / UIBasicParticleType
 
-UI particle preset enums. The builder handles preset names directly — pass numeric `particle_type=...` to `area_particle()` / `basic_particle()`. Full numeric tables live in [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3.5. From runtime, use the enum identifiers (`UIAreaParticleType.FogCalm`, `UIBasicParticleType.Firework`).
+UI particle preset enums. The builder handles preset names directly — pass numeric `particle_type=...` to `areaParticle()` / `basicParticle()`. Full numeric tables live in [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3.5. From runtime, use the enum identifiers (`UIAreaParticleType.FogCalm`, `UIBasicParticleType.Firework`).

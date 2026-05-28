@@ -9,6 +9,8 @@
 
 MSW supports **both paradigms natively**. Use BT for multi-layer decision making and reusable action modules.
 
+> **Code-based BT vs data-based BT — pick one per `AIComponent`.** This reference covers the **code-based** path: `@BTNode` mlua scripts assembled at runtime via `AIComponent:CreateNode` / `SetRootNode`. The data-based path is a separate `.behaviourtree` JSON file edited in the Maker editor with `definitionId` wiring — that pipeline has its own authoring rules and lives in the **`msw-behaviourtree`** sibling skill. The two pipelines do **not** mix on the same `AIComponent`; if a project already has `.behaviourtree` assets, use `msw-behaviourtree` instead of this reference.
+
 ---
 
 ## 1. `AIComponent` API

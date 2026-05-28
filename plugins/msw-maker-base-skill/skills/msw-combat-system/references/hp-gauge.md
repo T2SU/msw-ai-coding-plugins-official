@@ -133,6 +133,7 @@ script MonsterAI extends Component
         -- Server-only logic (AI, death handling, etc.)
     end
 
+    @EventSender("Self")
     @ExecSpace("ServerOnly")
     handler HandleHitEvent(HitEvent event)
         self.HP -= event.TotalDamage
@@ -178,6 +179,8 @@ property int32  Height = 16
 
 Recommended size: **16×N (N=2~4)**. Performance degrades above 16×16.
 
+`Width` / `Height` are **logical pixels** of the texture grid, not screen pixels — the on-screen size scales with the entity's `TransformComponent.Scale`. Keep the logical grid small (`16×3`) and grow it visually through scale (e.g. `Scale = (4, 4, 1)`) instead of enlarging the grid.
+
 ---
 
 ## Setting MaxHP on spawn
@@ -189,7 +192,7 @@ Include `MonsterAI` in the `.model` in advance (after Maker Refresh) → after s
 method void SpawnMonster(Vector3 pos)
     local parent = self.Entity.CurrentMap
     local entity = _SpawnService:SpawnByModelId(
-        "model:///UUID", "monster_1", pos, parent
+        "monster_1_model", "monster_1", pos, parent  -- 1st arg: the .model's EntryKey, case-insensitive
     )
     local ai = entity.MonsterAI
     if ai ~= nil then

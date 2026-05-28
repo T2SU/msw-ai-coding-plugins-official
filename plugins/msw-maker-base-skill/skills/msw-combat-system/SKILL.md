@@ -56,7 +56,7 @@ AttackComponent:
   emitter EmitAttackEvent(AttackEvent)
 ```
 
-- Shapes: `RectangleShape(center, size)` / `CircleShape(center, radius)` / `BoxShape(pos, size, angle)`
+- Shapes: `CircleShape(position, radius)` / `BoxShape(position, size, angle)` / `PolygonShape(position, points, angle)`. For an axis-aligned rectangle, use `BoxShape(center, size, 0)` — there is no `RectangleShape` type. Pass `angle = 0` to `BoxShape` / `PolygonShape` when no rotation is needed.
 - Polygon hit surface: `HitComponent.PolygonPoints: SyncList<Vector2>`
 - `AttackFast` does not build a hit table → better performance for bullet hell / mass resolution
 

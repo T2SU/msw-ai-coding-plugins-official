@@ -59,6 +59,16 @@ Retain the raw logs for Step 3.
 
 ---
 
+## Step 2b — Short-lived visual elements
+
+`keyboard_input → screenshot` runs 1–4 s end-to-end; any element with lifetime ≤ 2 s (damage popups, toasts, hit flashes, brief particles) often expires before capture. An empty screenshot looks identical to a real bug.
+
+- [ ] `log()` at create AND destroy sites — paired logs prove it ran even when the screenshot misses it.
+- [ ] Temporarily extend lifetime to ≥ 5 s for the verify round only, then revert before reporting PASS.
+- [ ] Verify on the production show/hide path — don't swap to `Enable` / `Visible` toggles to "make capture easier".
+
+---
+
 ## Step 3 — Log Evidence Verification
 
 For the logs collected in Step 1:

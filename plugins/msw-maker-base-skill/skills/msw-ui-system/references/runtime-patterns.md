@@ -489,7 +489,7 @@ end
 ### Touch / drag
 
 ```lua
--- attach UITouchReceiveComponent on the entity first (use the builder's touch_receive())
+-- attach UITouchReceiveComponent on the entity first (use the builder's touchReceive())
 entity:ConnectEvent(UITouchDownEvent, handler)
 entity:ConnectEvent(UITouchDragEvent, handler)
 entity:ConnectEvent(UITouchUpEvent, handler)

@@ -46,7 +46,7 @@ b.sprite("MiniMap/Frame", { anchor: "stretch", image_ruid: "<minimap-frame-ruid>
 b.panel("HPBar", { anchor: "bottom-left", pos: [20, 20], rect_size: [220, 30] });
 b.sprite("HPBar/Bg", { anchor: "stretch", color: "#1A1A1A", alpha: 0.8 });
 b.sprite("HPBar/Fill", { anchor: "stretch", color: "#E53935" });
-b.patch_component("HPBar/Fill", "MOD.Core.SpriteGUIRendererComponent", {
+b.patchComponent("HPBar/Fill", "MOD.Core.SpriteGUIRendererComponent", {
   Type: 3,
   FillMethod: 0,
   FillOrigin: 0,
@@ -191,11 +191,11 @@ b.text("Window/ItemTemplate/Count", "", {
 b.patch("Window/ItemTemplate", { enable: false });
 
 b.panel("Window/Grid", { anchor: "stretch", rect_size: [800, 560] });
-b.patch_component("Window/Grid", "MOD.Core.UITransformComponent", {
+b.patchComponent("Window/Grid", "MOD.Core.UITransformComponent", {
   OffsetMin: { x: 50, y: 50 },
   OffsetMax: { x: -50, y: -100 },
 });
-b.add_component("Window/Grid", "MOD.Core.GridViewComponent", {
+b.addComponent("Window/Grid", "MOD.Core.GridViewComponent", {
   CellSize: { x: 90, y: 90 },
   FixedCount: 8,
   FixedType: 0,
@@ -222,21 +222,21 @@ const b = new UIBuilder("ChatGroup", 4, true);
 b.panel("ChatBox", { anchor: "bottom-left", pos: [220, 220], rect_size: [400, 300] });
 b.sprite("ChatBox/Bg", { anchor: "stretch", color: "#000000", alpha: 0.5 });
 b.panel("ChatBox/List", { anchor: "stretch" });
-b.patch_component("ChatBox/List", "MOD.Core.UITransformComponent", {
+b.patchComponent("ChatBox/List", "MOD.Core.UITransformComponent", {
   OffsetMin: { x: 10, y: 50 },
   OffsetMax: { x: -10, y: -10 },
 });
-b.add_component("ChatBox/List", "MOD.Core.ScrollLayoutGroupComponent", {
+b.addComponent("ChatBox/List", "MOD.Core.ScrollLayoutGroupComponent", {
   Type: 1,
   Spacing: 6,
   ScrollBarVisible: 1,
 });
-b.add_component("ChatBox/List", "MOD.Core.MaskComponent", { Shape: 0 });
+b.addComponent("ChatBox/List", "MOD.Core.MaskComponent", { Shape: 0 });
 
 b.panel("ChatBox/InputArea", { anchor: "bottom-center", pos: [0, 20], rect_size: [380, 40] });
 b.sprite("ChatBox/InputArea/Bg", { anchor: "stretch", color: "#222222" });
 b.text("ChatBox/InputArea/Text", "", { size: 20, color: "#FFFFFF", anchor: "stretch", alignment: 3 });
-b.add_component("ChatBox/InputArea/Text", "MOD.Core.TextInputComponent", {
+b.addComponent("ChatBox/InputArea/Text", "MOD.Core.TextInputComponent", {
   PlaceHolder: "Type here...",
   LineType: 0,
   AutoClear: true,
@@ -326,7 +326,7 @@ for (let i = 0; i < 12; i += 1) {
     font_size: 30,
     color: "#FFFFFF",
   });
-  b.patch_component(`Tile_${i}`, "MOD.Core.SpriteGUIRendererComponent", {
+  b.patchComponent(`Tile_${i}`, "MOD.Core.SpriteGUIRendererComponent", {
     Color: { r: 0.05, g: 0.12, b: 0.28, a: 1.0 },
   });
 }
@@ -371,7 +371,7 @@ Use this for card games, board cells, inventory slots, quick slots, tabs, and sa
 
 After running any recipe:
 
-1. **Binding Injection** — Auto-inject entity UUIDs into the corresponding `.mlua` property defaults via `b.write(filepath, { bind: { mlua, props } })` or `b.inject_bindings(mlua_path, props)`. See [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3.6 Binding Injection for details.
+1. **Binding Injection** — Auto-inject entity UUIDs into the corresponding `.mlua` property defaults via `b.write(filepath, { bind: { mlua, props } })` or `b.injectBindings(mlua_path, props)`. See [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3.6 Binding Injection for details.
 2. **Preview Check** — Visualize the layout with `<SKILL_PATH>/scripts/preview_ui_layout.cjs`
 3. **Maker Refresh** — Reflect changes in the engine via MCP refresh
 4. **Play Mode Verification** — Verify on actual resolution and mobile scale

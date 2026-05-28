@@ -187,6 +187,64 @@ Values that directly override a component property rather than going through a m
 - `_UserService.LocalPlayer` → my player entity (client-only)
 - `_UserService:GetUserEntityByUserId(userId)` → player entity for a specific user
 
+---
+
+## Player entity runtime structure (root vs children)
+
+A spawned player is **not** a single flat entity. At runtime the engine builds a small hierarchy under the player root, and **avatar action selectors live on grandchild entities** — not on the root. This affects how you look up components and how you trigger avatar poses.
+
+### Component → entity mapping
+
+| Component | Where it lives | Lookup |
+|---|---|---|
+| `PlayerComponent` | Root | `player:GetComponent("PlayerComponent")` (or `player.PlayerComponent`) |
+| `StateComponent` | Root | `player:GetComponent("StateComponent")` |
+| `MovementComponent` | Root | `player:GetComponent("MovementComponent")` |
+| `AvatarRendererComponent` | Root | `player.AvatarRendererComponent` |
+| `AvatarStateAnimationComponent` | Root | `player:GetComponent("AvatarStateAnimationComponent")` |
+| `PlayerControllerComponent` | Root | `player.PlayerControllerComponent` |
+| **`AvatarBodyActionSelectorComponent`** | **Body grandchild** of root (under the avatar root) | not reachable via `player:GetComponent(...)` — see below |
+| **`AvatarFaceActionSelectorComponent`** | **Face grandchild** of root | not reachable via `player:GetComponent(...)` — see below |
+
+`player:GetComponent("AvatarBodyActionSelectorComponent")` returns `nil` and the LSP does not warn (the signature is `Component`, not nilable). The failure is only visible at runtime.
+
+### How to reach the selectors
+
+```lua
+-- ClientOnly context (recommended — the direct API)
+local body  = self.Entity.AvatarRendererComponent:GetBodyEntity()
+local face  = self.Entity.AvatarRendererComponent:GetFaceEntity()
+local bodySelector = body and body:GetComponent("AvatarBodyActionSelectorComponent")
+local faceSelector = face and face:GetComponent("AvatarFaceActionSelectorComponent")
+
+-- Server or "either side" context (GetBodyEntity / GetFaceEntity are ClientOnly)
+local bodySelector = self.Entity:GetFirstChildComponentByTypeName(
+    "AvatarBodyActionSelectorComponent", true)
+```
+
+> `AvatarRendererComponent:GetBodyEntity()` and `GetFaceEntity()` are declared `@ExecSpace("ClientOnly")` — calling them from a server-side method returns `nil`. Use `GetFirstChildComponentByTypeName(name, recursive=true)` as the cross-side fallback.
+
+---
+
+## Triggering avatar poses — use `StateComponent`, never write the selector directly
+
+A live player has a state machine running every tick: `PlayerControllerComponent` evaluates input/movement → `StateComponent` transitions (IDLE / MOVE / etc.) → `AvatarStateAnimationComponent.ReceiveStateChangeEvent` translates that into `BodyActionStateChangeEvent` → the selector's `ActionState` is rewritten.
+
+This means **writing `AvatarBodyActionSelectorComponent.ActionState` directly is a silent overwrite**: the value applies for one frame, then the next state-machine tick maps the current `StateComponent` state back onto the selector and your write is gone. Logs print `ActionState=Attack` immediately after the assignment, but in play mode the pose flickers for one frame and disappears.
+
+### Correct entry point
+
+```lua
+local state = self.Entity:GetComponent("StateComponent")
+state:ChangeState("ATTACK")   -- ActionSheet keys are UPPERCASE
+```
+
+State keys come from the player's ActionSheet. The DefaultPlayer ships with: `IDLE`, `MOVE`, `ATTACK`, `HIT`, `CROUCH`, `FALL`, `JUMP`, `CLIMB`, `LADDER`, `DEAD`, `SIT`. The state machine auto-returns to `IDLE` once the action finishes — no manual restore timer needed.
+
+### When *can* you write the selector directly?
+
+Only on entities **without** a running `PlayerControllerComponent` + `StateComponent` + `AvatarStateAnimationComponent` stack — e.g. NPCs / monsters that use the avatar renderer for visuals but have no input controller driving a state machine. On those, `selector.ActionState = MapleAvatarBodyActionState.<Pose>` sticks. On DefaultPlayer-shaped entities, route through `StateComponent:ChangeState(...)` instead.
+
 ### Key services at a glance (for script reference)
 | Service | Role | Key API |
 |---------|------|---------|
@@ -276,6 +334,7 @@ Common pitfalls when **adding to Components** and **changing Values** in Default
 | C2 | Duplicate-adding a native component already on Player.model (e.g. `MOD.Core.MovementComponent`) | Only a duplicate-component warning is emitted, not blocked → workspace warnings accumulate, behavior becomes non-deterministic | Check the base component list (§65-89) before adding. If it's already there, just change settings via Values |
 | C3 | Removing `script.PlayerHit` / `script.PlayerAttack` | These are the only extra scripts DefaultPlayer ships with. Removing them eliminates hit immunity / attack logic | If the goal is to disable, toggle the logic inside the script, or use Enable=false in Values |
 | C4 | Disabling `AvatarRendererComponent` and adding `SpriteRendererComponent` (or other renderer swap) | If Avatar and Sprite renderers are active at the same time, you get z-fighting / costumes not applied | Only add Sprite after disabling Avatar (see the pattern at §395) |
+| C5 | Custom damage path bypasses `HitComponent` (e.g. decrementing HP directly or calling `StateComponent:ChangeState("HIT")` from outside) | `script.PlayerHit` (C3) is what drives i-frame, hit animation, death and respawn off `HitEvent`. Bypassing it leaves the player un-hittable on the next frame, stuck in pose, or alive past 0 HP | Route damage through `entity.HitComponent:OnHit(HitEvent)` so the existing pipeline fires. Replace behavior by editing `PlayerHit.mlua`, not by reimplementing it alongside |
 
 ### Values change pitfall — only `jumpForce` / `speed` need extra care
 

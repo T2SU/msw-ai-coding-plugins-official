@@ -8,28 +8,28 @@ function recipeHud(groupName) {
   const b = new UIBuilder(groupName, 1, true);
   b.panel("ScoreBox", { anchor: "top-left", pos: [110, -40], rect_size: [200, 60] });
   b.text("ScoreBox/Label", "Score", { size: 24, color: "#FFFFFF", anchor: "middle-left", pos: [-80, 0], rect_size: [140, 40] });
-  b.patch_component("ScoreBox/Label", "MOD.Core.TextComponent", { Alignment: 3 });
+  b.patchComponent("ScoreBox/Label", "MOD.Core.TextComponent", { Alignment: 3 });
   b.text("ScoreBox/Value", "0", { size: 40, color: "#FFD700", bold: true, anchor: "middle-right", pos: [80, 0], rect_size: [140, 50] });
-  b.patch_component("ScoreBox/Value", "MOD.Core.TextComponent", { Alignment: 5 });
+  b.patchComponent("ScoreBox/Value", "MOD.Core.TextComponent", { Alignment: 5 });
   b.panel("MiniMap", { anchor: "top-right", pos: [-110, -110], rect_size: [180, 180] });
   b.sprite("MiniMap/Frame", { anchor: "stretch", color: "#FFFFFF", alpha: 0.3 });
   b.panel("HPBar", { anchor: "bottom-left", pos: [120, 50], rect_size: [220, 30] });
   b.sprite("HPBar/Bg", { anchor: "stretch", color: "#1A1A1A", alpha: 0.8 });
   b.sprite("HPBar/Fill", { anchor: "stretch", color: "#E53935" });
-  b.patch_component("HPBar/Fill", "MOD.Core.SpriteGUIRendererComponent", { Type: 3, FillMethod: 0, FillOrigin: 0, FillAmount: 1.0 });
+  b.patchComponent("HPBar/Fill", "MOD.Core.SpriteGUIRendererComponent", { Type: 3, FillMethod: 0, FillOrigin: 0, FillAmount: 1.0 });
   return b;
 }
 
 function recipePopup(groupName) {
   const b = new UIBuilder(groupName, 10, false);
   b.sprite("Dimmer", { anchor: "stretch", color: "#000000", alpha: 0.6 });
-  b.patch_component("Dimmer", "MOD.Core.SpriteGUIRendererComponent", { RaycastTarget: true });
+  b.patchComponent("Dimmer", "MOD.Core.SpriteGUIRendererComponent", { RaycastTarget: true });
   b.panel("Panel", { anchor: "middle-center", rect_size: [600, 400] });
   b.sprite("Panel/Bg", { anchor: "stretch", color: "#2C2C2C" });
   b.text("Panel/Title", "Confirm", { size: 48, color: "#FFFFFF", bold: true, anchor: "top-center", pos: [0, -50], rect_size: [560, 60] });
-  b.patch_component("Panel/Title", "MOD.Core.TextComponent", { Alignment: 4 });
+  b.patchComponent("Panel/Title", "MOD.Core.TextComponent", { Alignment: 4 });
   b.text("Panel/Message", "Are you sure?", { size: 28, color: "#DDDDDD", anchor: "middle-center", pos: [0, 20], rect_size: [520, 160] });
-  b.patch_component("Panel/Message", "MOD.Core.TextComponent", { Alignment: 4 });
+  b.patchComponent("Panel/Message", "MOD.Core.TextComponent", { Alignment: 4 });
   b.button("Panel/BtnOk", "OK", { rect_size: [200, 88], pos: [-110, -140], anchor: "bottom-center", font_size: 28 });
   b.button("Panel/BtnCancel", "Cancel", { rect_size: [200, 88], pos: [110, -140], anchor: "bottom-center", font_size: 28 });
   return b;
@@ -40,14 +40,14 @@ function recipeToast(groupName) {
   b.panel("Toast", { anchor: "bottom-center", pos: [0, 140], rect_size: [600, 80] });
   b.sprite("Toast/Bg", { anchor: "stretch", color: "#1E1E1E", alpha: 0.9 });
   b.text("Toast/Message", "", { size: 28, color: "#FFFFFF", anchor: "stretch" });
-  b.patch_component("Toast/Message", "MOD.Core.TextComponent", { Alignment: 4 });
+  b.patchComponent("Toast/Message", "MOD.Core.TextComponent", { Alignment: 4 });
   return b;
 }
 
 function recipeMenu(groupName) {
   const b = new UIBuilder(groupName, 5, false);
   b.sprite("Dimmer", { anchor: "stretch", color: "#000000", alpha: 0.7 });
-  b.patch_component("Dimmer", "MOD.Core.SpriteGUIRendererComponent", { RaycastTarget: true });
+  b.patchComponent("Dimmer", "MOD.Core.SpriteGUIRendererComponent", { RaycastTarget: true });
   b.panel("TopTabs", { anchor: "top-center", pos: [0, -60], rect_size: [1200, 80] });
   b.sprite("TopTabs/Bg", { anchor: "stretch", color: "#1A1A1A" });
   ["Character", "Inventory", "Settings"].forEach((name, i) => {
@@ -60,20 +60,20 @@ function recipeMenu(groupName) {
 function recipeInventory(groupName) {
   const b = new UIBuilder(groupName, 7, false);
   b.sprite("Dimmer", { anchor: "stretch", color: "#000000", alpha: 0.7 });
-  b.patch_component("Dimmer", "MOD.Core.SpriteGUIRendererComponent", { RaycastTarget: true });
+  b.patchComponent("Dimmer", "MOD.Core.SpriteGUIRendererComponent", { RaycastTarget: true });
   b.panel("Window", { anchor: "middle-center", rect_size: [900, 700] });
   b.sprite("Window/Bg", { anchor: "stretch", color: "#2C2C2C" });
   b.text("Window/Title", "Inventory", { size: 36, color: "#FFFFFF", bold: true, anchor: "top-center", pos: [0, -40], rect_size: [800, 50] });
-  b.patch_component("Window/Title", "MOD.Core.TextComponent", { Alignment: 4 });
+  b.patchComponent("Window/Title", "MOD.Core.TextComponent", { Alignment: 4 });
   b.button("Window/BtnClose", "X", { rect_size: [100, 100], pos: [-70, -70], anchor: "top-right", font_size: 24 });
   b.panel("Window/ItemTemplate", { anchor: "top-left", pos: [50, -50], rect_size: [80, 80], enable: false });
   b.sprite("Window/ItemTemplate/Frame", { anchor: "stretch", color: "#FFFFFF", alpha: 0.2 });
   b.sprite("Window/ItemTemplate/Icon", { anchor: "middle-center", rect_size: [64, 64] });
   b.text("Window/ItemTemplate/Count", "", { size: 20, color: "#FFFFFF", anchor: "bottom-right", pos: [-28, 20], rect_size: [40, 24] });
-  b.patch_component("Window/ItemTemplate/Count", "MOD.Core.TextComponent", { Alignment: 5 });
+  b.patchComponent("Window/ItemTemplate/Count", "MOD.Core.TextComponent", { Alignment: 5 });
   b.panel("Window/Grid", { anchor: "stretch" });
-  b.patch_component("Window/Grid", "MOD.Core.UITransformComponent", { OffsetMin: { x: 50, y: 50 }, OffsetMax: { x: -50, y: -100 } });
-  b.add_component("Window/Grid", "MOD.Core.GridViewComponent", { CellSize: { x: 90, y: 90 }, FixedCount: 8, FixedType: 0, Spacing: { x: 6, y: 6 }, UseScroll: true, TotalCount: 0 });
+  b.patchComponent("Window/Grid", "MOD.Core.UITransformComponent", { OffsetMin: { x: 50, y: 50 }, OffsetMax: { x: -50, y: -100 } });
+  b.addComponent("Window/Grid", "MOD.Core.GridViewComponent", { CellSize: { x: 90, y: 90 }, FixedCount: 8, FixedType: 0, Spacing: { x: 6, y: 6 }, UseScroll: true, TotalCount: 0 });
   return b;
 }
 
@@ -82,33 +82,33 @@ function recipeChat(groupName) {
   b.panel("ChatBox", { anchor: "bottom-left", pos: [220, 220], rect_size: [400, 300] });
   b.sprite("ChatBox/Bg", { anchor: "stretch", color: "#000000", alpha: 0.5 });
   b.panel("ChatBox/List", { anchor: "stretch" });
-  b.patch_component("ChatBox/List", "MOD.Core.UITransformComponent", { OffsetMin: { x: 10, y: 50 }, OffsetMax: { x: -10, y: -10 } });
-  b.add_component("ChatBox/List", "MOD.Core.ScrollLayoutGroupComponent", { Type: 1, Spacing: 6 });
-  b.add_component("ChatBox/List", "MOD.Core.MaskComponent", { Shape: 0 });
+  b.patchComponent("ChatBox/List", "MOD.Core.UITransformComponent", { OffsetMin: { x: 10, y: 50 }, OffsetMax: { x: -10, y: -10 } });
+  b.addComponent("ChatBox/List", "MOD.Core.ScrollLayoutGroupComponent", { Type: 1, Spacing: 6 });
+  b.addComponent("ChatBox/List", "MOD.Core.MaskComponent", { Shape: 0 });
   b.panel("ChatBox/InputArea", { anchor: "bottom-center", pos: [0, 20], rect_size: [380, 40] });
   b.sprite("ChatBox/InputArea/Bg", { anchor: "stretch", color: "#222222" });
   b.text("ChatBox/InputArea/Text", "", { size: 20, color: "#FFFFFF", anchor: "stretch" });
-  b.patch_component("ChatBox/InputArea/Text", "MOD.Core.TextComponent", { Alignment: 3 });
-  b.add_component("ChatBox/InputArea/Text", "MOD.Core.TextInputComponent", { Placeholder: "Type here...", LineType: 0, AutoClear: true });
+  b.patchComponent("ChatBox/InputArea/Text", "MOD.Core.TextComponent", { Alignment: 3 });
+  b.addComponent("ChatBox/InputArea/Text", "MOD.Core.TextInputComponent", { Placeholder: "Type here...", LineType: 0, AutoClear: true });
   return b;
 }
 
 function recipeSettings(groupName) {
   const b = new UIBuilder(groupName, 7, false);
   b.sprite("Dimmer", { anchor: "stretch", color: "#000000", alpha: 0.7 });
-  b.patch_component("Dimmer", "MOD.Core.SpriteGUIRendererComponent", { RaycastTarget: true });
+  b.patchComponent("Dimmer", "MOD.Core.SpriteGUIRendererComponent", { RaycastTarget: true });
   b.panel("Window", { anchor: "middle-center", rect_size: [700, 600] });
   b.sprite("Window/Bg", { anchor: "stretch", color: "#2C2C2C" });
   b.text("Window/Title", "Settings", { size: 36, bold: true, anchor: "top-center", pos: [0, -40], rect_size: [600, 50] });
-  b.patch_component("Window/Title", "MOD.Core.TextComponent", { Alignment: 4 });
+  b.patchComponent("Window/Title", "MOD.Core.TextComponent", { Alignment: 4 });
   [["BGMVol", "BGM Volume", 0, 1, 0.8], ["SFXVol", "SFX Volume", 0, 1, 1.0], ["UIScale", "UI Scale", 0.8, 1.5, 1.0]].forEach(([, label, minVal, maxVal, val], i) => {
     const y = -140 - i * 100;
     b.panel(`Window/Row${i}`, { anchor: "top-center", pos: [0, y], rect_size: [600, 80] });
     b.text(`Window/Row${i}/Label`, label, { size: 24, anchor: "middle-left", pos: [120, 0], rect_size: [180, 40] });
-    b.patch_component(`Window/Row${i}/Label`, "MOD.Core.TextComponent", { Alignment: 3 });
+    b.patchComponent(`Window/Row${i}/Label`, "MOD.Core.TextComponent", { Alignment: 3 });
     b.slider(`Window/Row${i}/Slider`, { min_val: minVal, max_val: maxVal, value: val, anchor: "middle-right", pos: [-160, 0], rect_size: [320, 30] });
     b.text(`Window/Row${i}/Value`, val.toFixed(2), { size: 22, anchor: "middle-right", pos: [-60, 0], rect_size: [80, 40] });
-    b.patch_component(`Window/Row${i}/Value`, "MOD.Core.TextComponent", { Alignment: 5 });
+    b.patchComponent(`Window/Row${i}/Value`, "MOD.Core.TextComponent", { Alignment: 5 });
   });
   b.button("Window/BtnClose", "Close", { rect_size: [220, 88], anchor: "bottom-center", pos: [0, 60], font_size: 26 });
   return b;
@@ -218,7 +218,7 @@ function main(argv = process.argv.slice(2)) {
   }
   console.log("\nNext steps:");
   console.log("  1. Create/update paired .mlua with the properties above");
-  console.log("  2. Inject UUIDs via b.write(bind=...) or b.inject_bindings(...)");
+  console.log("  2. Inject UUIDs via b.write(bind=...) or b.injectBindings(...)");
   console.log("  3. Run ui_lint.cjs on the output");
   console.log("  4. Maker Refresh (MCP) to apply");
   return 0;

@@ -257,7 +257,7 @@ property PlatformType ActivePlatform = PlatformType.All
 **How to set** — patch after creating an entity in the builder:
 
 ```javascript
-b.patch_component("Joystick", "MOD.Core.UITransformComponent", {
+b.patchComponent("Joystick", "MOD.Core.UITransformComponent", {
   ActivePlatform: 2,   // Mobile only
 });
 ```
@@ -354,7 +354,7 @@ b.button("SettingsBtn", "Settings", {
 
 // stretch-top header bar (reserved left/right padding)
 b.panel("TopHeader", { anchor: "stretch-top", rect_size: [1920, 80] });
-b.patch_component("TopHeader", "MOD.Core.UITransformComponent", {
+b.patchComponent("TopHeader", "MOD.Core.UITransformComponent", {
   OffsetMin: { x: 260, y: -80 },
   OffsetMax: { x: -220, y: 0 },
 });

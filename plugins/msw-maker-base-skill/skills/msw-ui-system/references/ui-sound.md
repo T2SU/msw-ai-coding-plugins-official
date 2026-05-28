@@ -84,7 +84,7 @@ end
 ## Gotchas
 
 - **ClientOnly script context** — UI itself is client-only, so sound-calling scripts should use `@ExecSpace("ClientOnly")`. `PlaySound` is `ExecSpace("Client")` but there is no reason to trigger UI SFX directly from the server.
-- **Missing hover events** — When building a button via the `.ui` builder, `UITouchReceiveComponent` is not always added automatically. Add it explicitly with `b.add_component(identifier, "MOD.Core.UITouchReceiveComponent")`.
+- **Missing hover events** — When building a button via the `.ui` builder, `UITouchReceiveComponent` is not always added automatically. Add it explicitly with `b.addComponent(identifier, "MOD.Core.UITouchReceiveComponent")`.
 - **Overlapping SFX on rapid input** — `PlaySound` spawns a new instance on every call. Short SFX is fine; guard long sounds with a cooldown variable.
 
 ## Reference

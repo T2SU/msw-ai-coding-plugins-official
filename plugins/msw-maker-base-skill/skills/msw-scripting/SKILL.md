@@ -288,9 +288,20 @@ method void RequestBuyItem(integer itemId)
 end
 ```
 
+### Manual branching — `IsServer()` / `IsClient()` are **methods**, not properties
+
+When a method has no `@ExecSpace` (runs on whichever side called it) and needs different paths per side, branch with `self:IsServer()` / `self:IsClient()`. Both are declared as `method boolean IsServer()` / `method boolean IsClient()` on `Component` and `Logic` — they must be **called**, not read.
+
+```lua
+if self:IsServer() then ... end   -- ✅ method call → boolean
+if self.IsServer    then ... end  -- ❌ method object itself → always truthy
+```
+
+The dot-without-parens form is a silent bug: the LSP doesn't flag it, the script compiles, and the "if" always enters because a method object is truthy — so client-only code runs on the server too (or vice versa). The symptom is "both branches execute on both sides," not a crash. Use colon-call (`self:IsServer()`) every time.
+
 ### Cross-boundary parameter types
 
-Allowed across server↔client RPC: `string`, `integer`, `number`, `boolean`, `table`, `Vector2/3/4`, `Color`, `Entity`, `Component`, `EntityRef`, `ComponentRef`. **`any` not allowed.** `SyncTable<k,v>` generics must also be from this list.
+Allowed across server↔client RPC: `string`, `integer`, `number`, `boolean`, `table`, `Vector2/3/4`, `Color`, `Entity`, `Component`, `EntityRef`, `ComponentRef`. **`any` not allowed.** Engine enums also do not cross — neither typed (the LSP rejects engine enum types as parameters) nor smuggled via `any` (runtime `LEA-3036 InvalidCast`). Standard workaround: encode the choice as a `string` key on the sender, branch on the receiver, and convert back to the enum locally. `SyncTable<k,v>` generics must also be from the allowed list.
 
 ---
 
@@ -330,9 +341,36 @@ property ButtonComponent btnOk = "uuid-string"                          -- typed
 ```lua
 @Sync property number CurrentHp = 100
 @TargetUserSync property number PrivateScore = 0
-@Sync property SyncTable<number> Scores = {}             -- array form
-@Sync property SyncTable<string, number> Stats = {}      -- dict form
+@Sync property SyncTable<number> Scores              -- array form, NO default literal
+@Sync property SyncTable<string, number> Stats       -- dict form, NO default literal
 ```
+
+#### `SyncTable<...>` property — no default literal
+
+Declare `SyncTable<V>` (array form) or `SyncTable<K, V>` (dict form) **without** an `= ...` initializer. The engine reserves the `=` slot of a SyncTable property for its own type bookkeeping and auto-initializes the property to an **empty collection** at runtime. Any literal you write (`= {}`, `= { key = val }`, `= nil`) is silently dropped — it is misleading noise, not a real default, and a round-trip through the codeblock will erase it.
+
+Populate initial entries in `OnInitialize` / `OnBeginPlay`:
+
+```lua
+@Sync property SyncTable<string, number> Stats       -- empty at construction
+@Sync property SyncTable<number> Scores              -- empty at construction
+
+method void OnBeginPlay()
+    if self:IsServer() then
+        self.Stats["hp"] = 100
+        self.Stats["mp"] = 50
+        self.Scores:Add(0)
+    end
+end
+```
+
+Assigning a plain Lua table to a `SyncTable` property at runtime is also rejected — the property accepts only its own proxy. Mutate it field by field (`self.Stats[k] = v`) or call its methods (`self.Scores:Add(v)` / `:Remove(v)` / `:Clear()`).
+
+#### `SyncList<V>` is not a user property type
+
+`SyncList<V>` is exposed only as a **readonly property on native engine Components** (e.g. `TagComponent.Tags`, `PhysicsColliderComponent.PolygonPoints`, `SkeletonRendererComponent.AnimationNames`, the various `JointComponent.Joints`). User scripts can **read** these and call their methods (`:Add(v)`, `:Remove(v)`, `:Clear()`, `.Count`, `:ToTable()`), but cannot declare `property SyncList<...> X` on their own `@Component` / `@Logic` and cannot instantiate `SyncList(...)`.
+
+For synced collections in your own scripts, use `SyncTable<V>` (array form) or `SyncTable<K, V>` (dict form) — see above.
 
 ### Temporary properties (`_T`)
 
@@ -462,6 +500,10 @@ Both events carry `TouchId` (int32) + `TouchPoint` (Vector2 screen coord). For w
 
 > **Selection rule**: "Which entity was touched" → `TouchEvent`; "Where on the screen" → `ScreenTouchEvent`.
 
+### PC mouse buttons (left/right/middle) — use `KeyDownEvent`, not `ScreenTouchEvent.TouchId == 2`
+
+`ScreenTouchEvent` fires on PC only for the left button (`TouchId == 1`); `TouchId == 2` is mobile two-finger touch — reading right-click through it works in the Maker simulator but is **silent no-input on real PCs**. For PC mouse buttons, `_InputService:ConnectEvent(KeyDownEvent, ...)` and branch on `event.key == KeyboardKey.Mouse0` / `Mouse1` / `Mouse2` (Left = 323, Right = 324, Middle = 325). To support both mobile multi-touch and PC, connect both `ScreenTouchEvent` and `KeyDownEvent` — they don't double-fire (no mobile right-click; no PC `TouchId == 2`).
+
 ### UI clicks
 
 For UI entities (`./ui/*.ui`, `ui` tree), use **`ButtonComponent` + `ButtonClickEvent`**. Putting UI events on a world object (or vice versa) silently does nothing — decide first whether the target is a world object or a UI panel button.
@@ -497,10 +539,20 @@ The collection is `Children` — `ChildList`/`Childs`/`GetChildren()` are wrong 
 | Access | Works on |
 |---|---|
 | `entity.SomeComponent` (dot) | **Engine-native only** (`TransformComponent`, `ButtonComponent`, …) |
-| `entity:GetComponentByTypeName("script.MyUnit")` | User `@Component` (any) |
+| `entity:GetComponent("script.MyUnit")` | User `@Component` (any) |
 | `entity:GetFirstChildComponentByTypeName("script.MyUnit", true)` | User `@Component` on descendant |
 
 User `@Component` typename is **always `"script.<FileBaseName>"`** — `MyUnit.mlua` → `"script.MyUnit"`, regardless of feature-folder nesting. `entity.MyUnit` (dot) returns `nil` with `LIA-1114`. To pass user-component refs between scripts, declare a typed property (`property MyUnit unit = ""`) and inject UUID.
+
+> ⚠ The method is `GetComponent` (overloaded as `GetComponent(Type)` and `GetComponent(string typename)` — see `Environment/NativeScripts/Misc/Entity.d.mlua`). The `*ByTypeName` suffix exists only on the **child** variants (`GetChildComponentsByTypeName` / `GetFirstChildComponentByTypeName`).
+
+`GetComponent(string)` returns the abstract `Component` type, so member access on the result drops to dynamic dispatch and the LSP raises `LIA-1114` Info (or a `type mismatch` Error when the value is passed to a function whose signature expects the concrete user `@Component`). Cast with `---@type` to restore static typing:
+
+```lua
+---@type MyUnit
+local unit = self.Entity:GetComponent("script.MyUnit")
+unit:DoSomething()  -- LSP now type-checks against MyUnit
+```
 
 ### Spawning at runtime
 
@@ -558,6 +610,15 @@ _UtilLogic.ServerElapsedSeconds
 ### mlua utility classes
 
 Collections beyond Lua stdlib: `List` / `ReadOnlyList` / `SyncList`, `Dictionary` / `ReadOnlyDictionary` / `SyncDictionary` (Sync* variants auto-sync server↔client). Other utility types: `DateTime`, `TimeSpan`, `Regex`, `Translator`, `Quaternion`, `Vector2Int`, `FastVector2/3` / `FastColor` (in-place ops for perf), `Item` (inventory).
+
+> `.Values` / `.Keys` on `Dictionary` / `ReadOnlyDictionary` / `SyncDictionary` returns a plain Lua `table` — iterate with `ipairs` directly. No `:GetValues()` / `:ToTable()` / `pairs(dict)` wrapper needed. Lists are similar but require `:ToTable()` first (`ReadOnlyList<T>` is not a Lua table).
+>
+> ```lua
+> -- All connected players (server-side fan-out)
+> for _, user in ipairs(_UserService.UserEntities.Values) do
+>     if isvalid(user) then ... end
+> end
+> ```
 
 > Detailed APIs in `Environment/NativeScripts/` or via `msw-search`.
 
@@ -644,6 +705,7 @@ The procedure for verifying behavior in **play mode** in Maker, then narrowing d
 | **Component missing** | nil component / `GetComponent` fails | `Components` array in `.model`; name typos |
 | **Sync / network** | Only client breaks, values mismatch or converge late | `@Sync`, `ExecSpace`, RPC flow |
 | **`Info` LIA 1113/1114/1115** (false positives) | Static-analysis can't resolve user cross-script refs (`_LogicName`, user `@Component` dot/method). Build still passes (errors=0/warnings=0) | Treat as noise; verify with `log()`. Scope next `logs` call to higher severity if they drown real issues. |
+| **User type `Symbol not found` / `type not found`** | Usage site authored before the user-type body `.mlua` exists. | Write the body `.mlua` first, then Maker `refresh` to regenerate the `.codeblock`. Build-log cache can hold one stale cycle — judge by the next diagnose. |
 
 If logs are inconclusive, add `log()` in `.mlua` to inspect entity/component/property state.
 

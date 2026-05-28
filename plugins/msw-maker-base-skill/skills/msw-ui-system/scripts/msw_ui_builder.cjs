@@ -6,6 +6,19 @@ const crypto = require("crypto");
 
 const DEFAULT_SPRITE_RUID = "4fea64a3307cda641809ad8be0d4890b";
 
+function normalizeComponentName(name) {
+  if (name == null) throw new TypeError("Component name must not be null");
+  const value = String(name);
+  if (value.startsWith("MOD.") || value.startsWith("script.")) return value;
+  throw new Error(
+    `Component type must be fully qualified with "MOD.Core." or "script." prefix, got: "${value}". ` +
+      `Native components use "MOD.Core.XxxComponent" (e.g. "MOD.Core.UITransformComponent"); ` +
+      `mlua script components use "script.XxxComponent" (e.g. "script.MyPopup"). ` +
+      `Engine .ui deserialization keys components by exact @type; a short name silently fails to attach (Maker logs only a warning and the inspector shows no component). ` +
+      `See msw-general/references/builder-protocol.md → "Rules common to all three builders" rule 8.`
+  );
+}
+
 const ANCHOR_DEFAULT_PIVOT = {
   "middle-center": [0.5, 0.5],
   "middle-left": [0.0, 0.5],
@@ -142,7 +155,7 @@ function sortFields(extra = {}) {
   };
 }
 
-function _resolve_sort_options(options = {}) {
+function _resolveSortOptions(options = {}) {
   if (options.world_ui === true) {
     return {
       sorting_layer: options.sorting_layer ?? "UI",
@@ -167,25 +180,25 @@ function int32Field(value, fieldName) {
   return n;
 }
 
-function assertNoInvalidNumbers(value, pathLabel = "$") {
+function collectInvalidNumbers(value, pathLabel, findings) {
   if (typeof value === "number") {
     if (!Number.isFinite(value)) {
-      throw new TypeError(`${pathLabel} must be a finite number. Got ${String(value)}`);
+      findings.push({ severity: "error", rule: "U001", message: `${pathLabel} must be a finite number. Got ${String(value)}` });
     }
     return;
   }
   if (Array.isArray(value)) {
-    value.forEach((item, idx) => assertNoInvalidNumbers(item, `${pathLabel}[${idx}]`));
+    value.forEach((item, idx) => collectInvalidNumbers(item, `${pathLabel}[${idx}]`, findings));
     return;
   }
   if (value && typeof value === "object") {
     for (const [key, item] of Object.entries(value)) {
-      assertNoInvalidNumbers(item, `${pathLabel}.${key}`);
+      collectInvalidNumbers(item, `${pathLabel}.${key}`, findings);
     }
   }
 }
 
-function assertComponentScalarTypes(data) {
+function collectComponentScalarTypeIssues(data, findings) {
   const entities = data?.ContentProto?.Entities || [];
   for (const entity of entities) {
     const js = typeof entity.jsonString === "string" ? JSON.parse(entity.jsonString) : entity.jsonString;
@@ -195,17 +208,29 @@ function assertComponentScalarTypes(data) {
       for (const [key, value] of Object.entries(component)) {
         const label = `${entityPath}.${compType}.${key}`;
         if (INT32_COMPONENT_FIELDS.has(key) && !Number.isInteger(value)) {
-          throw new TypeError(`${label} must be int32. Got ${JSON.stringify(value)}`);
+          findings.push({ severity: "error", rule: "U002", message: `${label} must be int32. Got ${JSON.stringify(value)}` });
         }
         if (NUMBER_COMPONENT_FIELDS.has(key) && (typeof value !== "number" || !Number.isFinite(value))) {
-          throw new TypeError(`${label} must be a finite number. Got ${JSON.stringify(value)}`);
+          findings.push({ severity: "error", rule: "U003", message: `${label} must be a finite number. Got ${JSON.stringify(value)}` });
         }
         if (BOOLEAN_COMPONENT_FIELDS.has(key) && typeof value !== "boolean") {
-          throw new TypeError(`${label} must be boolean. Got ${JSON.stringify(value)}`);
+          findings.push({ severity: "error", rule: "U004", message: `${label} must be boolean. Got ${JSON.stringify(value)}` });
         }
       }
     }
   }
+}
+
+function assertNoInvalidNumbers(value, pathLabel = "$") {
+  const findings = [];
+  collectInvalidNumbers(value, pathLabel, findings);
+  if (findings.length) throw new TypeError(findings[0].message);
+}
+
+function assertComponentScalarTypes(data) {
+  const findings = [];
+  collectComponentScalarTypeIssues(data, findings);
+  if (findings.length) throw new TypeError(findings[0].message);
 }
 
 class UIBuilder {
@@ -217,7 +242,8 @@ class UIBuilder {
     this.entities = [];
     this._data = null;
     this._display_counters = {};
-    this._create_root(int32Field(displayOrder, "displayOrder"), defaultShow);
+    this._lastId = null;
+    this._createRoot(int32Field(displayOrder, "displayOrder"), defaultShow);
   }
 
   static load(filepath) {
@@ -261,10 +287,10 @@ class UIBuilder {
   }
 
   static snapshot(filepath) {
-    return UIBuilder.load(filepath).list_entities();
+    return UIBuilder.load(filepath).listEntities();
   }
 
-  _create_root(displayOrder, defaultShow) {
+  _createRoot(displayOrder, defaultShow) {
     this.entities.push({
       id: this.root_uuid,
       path: this.root_path,
@@ -288,7 +314,7 @@ class UIBuilder {
         },
         modelId: "uigroup",
         "@components": [
-          this._ui_transform("stretch", [0, 0], [1920, 1080]),
+          this._uiTransform("stretch", [0, 0], [1920, 1080]),
           {
             "@type": "MOD.Core.UIGroupComponent",
             DefaultShow: defaultShow,
@@ -309,7 +335,7 @@ class UIBuilder {
     });
   }
 
-  _normalize_path(identifier) {
+  _normalizePath(identifier) {
     const value = String(identifier).trim();
     if (!value) throw new Error("Entity identifier must not be empty");
     if (value.startsWith("/ui/")) {
@@ -325,42 +351,42 @@ class UIBuilder {
   }
 
   _resolve(identifier) {
-    const fullPath = this._normalize_path(identifier);
+    const fullPath = this._normalizePath(identifier);
     const parentPath = fullPath.includes("/") ? fullPath.split("/").slice(0, -1).join("/") : this.root_path;
     const entityName = fullPath.split("/").pop();
     return [fullPath, parentPath, entityName];
   }
 
-  _next_display_order(parentPath) {
+  _nextDisplayOrder(parentPath) {
     const n = this._display_counters[parentPath] || 0;
     this._display_counters[parentPath] = n + 1;
     return n;
   }
 
-  _path_constraints(fullPath) {
+  _pathConstraints(fullPath) {
     if (fullPath === this.root_path) return "//";
     return "/".repeat((fullPath.slice(this.root_path.length).match(/\//g) || []).length + 2);
   }
 
-  _entity_json(entity) {
+  _entityJson(entity) {
     return entity.jsonString;
   }
 
-  _find_component(entity, compType) {
-    for (const component of this._entity_json(entity)["@components"] || []) {
+  _findComponent(entity, compType) {
+    for (const component of this._entityJson(entity)["@components"] || []) {
       if (component["@type"] === compType) return component;
     }
     return null;
   }
 
-  _refresh_component_names_from_components(entity) {
-    entity.componentNames = (this._entity_json(entity)["@components"] || [])
+  _refreshComponentNamesFromComponents(entity) {
+    entity.componentNames = (this._entityJson(entity)["@components"] || [])
       .map((component) => component["@type"])
       .filter(Boolean)
       .join(",");
   }
 
-  _ui_transform(anchor = "middle-center", pos = [0, 0], rectSize = [100, 100], pivot = null) {
+  _uiTransform(anchor = "middle-center", pos = [0, 0], rectSize = [100, 100], pivot = null) {
     const preset = ANCHOR_PRESETS[anchor] || ANCHOR_PRESETS["middle-center"];
     const px = Number(pos[0]);
     const py = Number(pos[1]);
@@ -407,7 +433,7 @@ class UIBuilder {
     };
   }
 
-  static _sprite_renderer(color = null, alpha = 1.0, raycast = false, fillMethod = 0, spriteType = 0, imageRuid = "", extra = {}) {
+  static _spriteRenderer(color = null, alpha = 1.0, raycast = false, fillMethod = 0, spriteType = 0, imageRuid = "", extra = {}) {
     const sort = sortFields(extra);
     return {
       "@type": "MOD.Core.SpriteGUIRendererComponent",
@@ -449,11 +475,11 @@ class UIBuilder {
     };
   }
 
-  _sprite_renderer(...args) {
-    return UIBuilder._sprite_renderer(...args);
+  _spriteRenderer(...args) {
+    return UIBuilder._spriteRenderer(...args);
   }
 
-  static _text_component(text = "", fontSize = 24, color = null, bold = false, alignment = 4, options = {}) {
+  static _textComponent(text = "", fontSize = 24, color = null, bold = false, alignment = 4, options = {}) {
     const maxSize = options.max_size != null ? options.max_size : Math.max(fontSize + 12, 40);
     const outlineWidth = options.outline_width != null ? options.outline_width : 1.0;
     const sort = sortFields(options);
@@ -493,11 +519,11 @@ class UIBuilder {
     };
   }
 
-  _text_component(...args) {
-    return UIBuilder._text_component(...args);
+  _textComponent(...args) {
+    return UIBuilder._textComponent(...args);
   }
 
-  static _button_component(extra = {}) {
+  static _buttonComponent(extra = {}) {
     const sort = sortFields(extra);
     return {
       "@type": "MOD.Core.ButtonComponent",
@@ -526,11 +552,11 @@ class UIBuilder {
     };
   }
 
-  _button_component(...args) {
-    return UIBuilder._button_component(...args);
+  _buttonComponent(...args) {
+    return UIBuilder._buttonComponent(...args);
   }
 
-  static _slider_component(minVal = 0, maxVal = 1, value = 0, direction = 0, useHandle = true, useInteger = false, extra = {}) {
+  static _sliderComponent(minVal = 0, maxVal = 1, value = 0, direction = 0, useHandle = true, useInteger = false, extra = {}) {
     const fillPadding = tuple(extra.fill_padding, [10, 10, 10, 10]);
     const handlePadding = tuple(extra.handle_padding, [0, 0, 0, 0]);
     const handleSize = tuple(extra.handle_size, [50, 50]);
@@ -558,11 +584,11 @@ class UIBuilder {
     };
   }
 
-  _slider_component(...args) {
-    return UIBuilder._slider_component(...args);
+  _sliderComponent(...args) {
+    return UIBuilder._sliderComponent(...args);
   }
 
-  static _scroll_layout_component(layoutType = 0, spacing = 0, cellSize = [100, 100], useScroll = true, padding = [0, 0, 0, 0], extra = {}) {
+  static _scrollLayoutComponent(layoutType = 0, spacing = 0, cellSize = [100, 100], useScroll = true, padding = [0, 0, 0, 0], extra = {}) {
     const gridSpacing = tuple(extra.grid_spacing, [0, 0]);
     const sort = sortFields(extra);
     return {
@@ -596,11 +622,11 @@ class UIBuilder {
     };
   }
 
-  _scroll_layout_component(...args) {
-    return UIBuilder._scroll_layout_component(...args);
+  _scrollLayoutComponent(...args) {
+    return UIBuilder._scrollLayoutComponent(...args);
   }
 
-  static _text_input_component(placeholder = "", charLimit = 0, contentType = 0, lineType = 0, extra = {}) {
+  static _textInputComponent(placeholder = "", charLimit = 0, contentType = 0, lineType = 0, extra = {}) {
     const sort = sortFields(extra);
     return {
       "@type": "MOD.Core.TextInputComponent",
@@ -621,11 +647,11 @@ class UIBuilder {
     };
   }
 
-  _text_input_component(...args) {
-    return UIBuilder._text_input_component(...args);
+  _textInputComponent(...args) {
+    return UIBuilder._textInputComponent(...args);
   }
 
-  static _ui_group_component(defaultShow = true, groupOrder = 0, groupType = 1) {
+  static _uiGroupComponent(defaultShow = true, groupOrder = 0, groupType = 1) {
     return {
       "@type": "MOD.Core.UIGroupComponent",
       DefaultShow: Boolean(defaultShow),
@@ -635,11 +661,11 @@ class UIBuilder {
     };
   }
 
-  _ui_group_component(...args) {
-    return UIBuilder._ui_group_component(...args);
+  _uiGroupComponent(...args) {
+    return UIBuilder._uiGroupComponent(...args);
   }
 
-  static _canvas_group_component(blocksRaycasts = true, groupAlpha = 1.0, interactable = true) {
+  static _canvasGroupComponent(blocksRaycasts = true, groupAlpha = 1.0, interactable = true) {
     return {
       "@type": "MOD.Core.CanvasGroupComponent",
       BlocksRaycasts: Boolean(blocksRaycasts),
@@ -649,11 +675,11 @@ class UIBuilder {
     };
   }
 
-  _canvas_group_component(...args) {
-    return UIBuilder._canvas_group_component(...args);
+  _canvasGroupComponent(...args) {
+    return UIBuilder._canvasGroupComponent(...args);
   }
 
-  static _mask_component(shape = 0, padding = [0, 0, 0, 0], softness = [0, 0]) {
+  static _maskComponent(shape = 0, padding = [0, 0, 0, 0], softness = [0, 0]) {
     return {
       "@type": "MOD.Core.MaskComponent",
       Shape: Number(shape),
@@ -663,11 +689,11 @@ class UIBuilder {
     };
   }
 
-  _mask_component(...args) {
-    return UIBuilder._mask_component(...args);
+  _maskComponent(...args) {
+    return UIBuilder._maskComponent(...args);
   }
 
-  static _grid_view_component(totalCount = 0, cellSize = [100, 100], fixedCount = 1, fixedType = 0, spacing = [0, 0], padding = [0, 0, 0, 0], useScroll = true, scrollBarVisible = 1, scrollBarThickness = 10.0, hScrollDir = 0, vScrollDir = 0, scrollBarBgColor = null, scrollBarHandleColor = null, scrollBarBgRuid = "", scrollBarHandleRuid = "") {
+  static _gridViewComponent(totalCount = 0, cellSize = [100, 100], fixedCount = 1, fixedType = 0, spacing = [0, 0], padding = [0, 0, 0, 0], useScroll = true, scrollBarVisible = 1, scrollBarThickness = 10.0, hScrollDir = 0, vScrollDir = 0, scrollBarBgColor = null, scrollBarHandleColor = null, scrollBarBgRuid = "", scrollBarHandleRuid = "") {
     return {
       "@type": "MOD.Core.GridViewComponent",
       CellSize: { x: Number(cellSize[0]), y: Number(cellSize[1]) },
@@ -689,11 +715,11 @@ class UIBuilder {
     };
   }
 
-  _grid_view_component(...args) {
-    return UIBuilder._grid_view_component(...args);
+  _gridViewComponent(...args) {
+    return UIBuilder._gridViewComponent(...args);
   }
 
-  static _avatar_renderer_component(color = null, flipX = false, flipY = false, playRate = 1.0, preserveAvatar = 0, raycast = true, materialId = "") {
+  static _avatarRendererComponent(color = null, flipX = false, flipY = false, playRate = 1.0, preserveAvatar = 0, raycast = true, materialId = "") {
     return {
       "@type": "MOD.Core.AvatarGUIRendererComponent",
       Color: colorDict(color),
@@ -707,19 +733,19 @@ class UIBuilder {
     };
   }
 
-  _avatar_renderer_component(...args) {
-    return UIBuilder._avatar_renderer_component(...args);
+  _avatarRendererComponent(...args) {
+    return UIBuilder._avatarRendererComponent(...args);
   }
 
-  static _touch_receive_component() {
+  static _touchReceiveComponent() {
     return { "@type": "MOD.Core.UITouchReceiveComponent", Enable: true };
   }
 
-  _touch_receive_component() {
-    return UIBuilder._touch_receive_component();
+  _touchReceiveComponent() {
+    return UIBuilder._touchReceiveComponent();
   }
 
-  static _skeleton_renderer_component(skeletonRuid = "", animations = null, skins = null, color = null, flipX = false, flipY = false, loop = true, playRate = 1.0, preserveMode = 0, raycast = true) {
+  static _skeletonRendererComponent(skeletonRuid = "", animations = null, skins = null, color = null, flipX = false, flipY = false, loop = true, playRate = 1.0, preserveMode = 0, raycast = true) {
     return {
       "@type": "MOD.Core.SkeletonGUIRendererComponent",
       AnimationNames: animations ? [...animations] : [],
@@ -736,11 +762,11 @@ class UIBuilder {
     };
   }
 
-  _skeleton_renderer_component(...args) {
-    return UIBuilder._skeleton_renderer_component(...args);
+  _skeletonRendererComponent(...args) {
+    return UIBuilder._skeletonRendererComponent(...args);
   }
 
-  static _area_particle_component(particleType = 0, areaSize = [100, 100], areaOffset = [0, 0], color = null, localScale = [1, 1], loop = true, playOnEnable = true, prewarm = false, autoRandomSeed = true, randomSeed = 0, playSpeed = 1.0, particleSize = 1.0, particleSpeed = 1.0, particleCount = 1.0, particleLifetime = 1.0) {
+  static _areaParticleComponent(particleType = 0, areaSize = [100, 100], areaOffset = [0, 0], color = null, localScale = [1, 1], loop = true, playOnEnable = true, prewarm = false, autoRandomSeed = true, randomSeed = 0, playSpeed = 1.0, particleSize = 1.0, particleSpeed = 1.0, particleCount = 1.0, particleLifetime = 1.0) {
     return {
       "@type": "MOD.Core.UIAreaParticleComponent",
       AreaOffset: { x: Number(areaOffset[0]), y: Number(areaOffset[1]) },
@@ -763,11 +789,11 @@ class UIBuilder {
     };
   }
 
-  _area_particle_component(...args) {
-    return UIBuilder._area_particle_component(...args);
+  _areaParticleComponent(...args) {
+    return UIBuilder._areaParticleComponent(...args);
   }
 
-  static _basic_particle_component(particleType = 0, color = null, localScale = [1, 1], loop = true, playOnEnable = true, prewarm = false, autoRandomSeed = true, randomSeed = 0, playSpeed = 1.0, particleSize = 1.0, particleSpeed = 1.0, particleCount = 1.0, particleLifetime = 1.0) {
+  static _basicParticleComponent(particleType = 0, color = null, localScale = [1, 1], loop = true, playOnEnable = true, prewarm = false, autoRandomSeed = true, randomSeed = 0, playSpeed = 1.0, particleSize = 1.0, particleSpeed = 1.0, particleCount = 1.0, particleLifetime = 1.0) {
     return {
       "@type": "MOD.Core.UIBasicParticleComponent",
       AutoRandomSeed: Boolean(autoRandomSeed),
@@ -788,11 +814,11 @@ class UIBuilder {
     };
   }
 
-  _basic_particle_component(...args) {
-    return UIBuilder._basic_particle_component(...args);
+  _basicParticleComponent(...args) {
+    return UIBuilder._basicParticleComponent(...args);
   }
 
-  static _sprite_particle_component(particleType = 0, spriteRuid = "", applySpriteColor = false, localScale = [1, 1], loop = true, playOnEnable = true, prewarm = false, autoRandomSeed = true, randomSeed = 0, playSpeed = 1.0, particleSize = 1.0, particleSpeed = 1.0, particleCount = 1.0, particleLifetime = 1.0, color = null) {
+  static _spriteParticleComponent(particleType = 0, spriteRuid = "", applySpriteColor = false, localScale = [1, 1], loop = true, playOnEnable = true, prewarm = false, autoRandomSeed = true, randomSeed = 0, playSpeed = 1.0, particleSize = 1.0, particleSpeed = 1.0, particleCount = 1.0, particleLifetime = 1.0, color = null) {
     return {
       "@type": "MOD.Core.UISpriteParticleComponent",
       ApplySpriteColor: Boolean(applySpriteColor),
@@ -815,11 +841,11 @@ class UIBuilder {
     };
   }
 
-  _sprite_particle_component(...args) {
-    return UIBuilder._sprite_particle_component(...args);
+  _spriteParticleComponent(...args) {
+    return UIBuilder._spriteParticleComponent(...args);
   }
 
-  static _joystick_component(dynamicStick = true, axis = 1, upArrow = 273, downArrow = 274, leftArrow = 276, rightArrow = 275) {
+  static _joystickComponent(dynamicStick = true, axis = 1, upArrow = 273, downArrow = 274, leftArrow = 276, rightArrow = 275) {
     return {
       "@type": "MOD.Core.JoystickComponent",
       Axis: Number(axis),
@@ -832,11 +858,11 @@ class UIBuilder {
     };
   }
 
-  _joystick_component(...args) {
-    return UIBuilder._joystick_component(...args);
+  _joystickComponent(...args) {
+    return UIBuilder._joystickComponent(...args);
   }
 
-  static _soft_mask_component(invertMask = false, invertOutsides = false) {
+  static _softMaskComponent(invertMask = false, invertOutsides = false) {
     return {
       "@type": "MOD.Core.SoftMaskComponent",
       InvertMask: Boolean(invertMask),
@@ -845,11 +871,11 @@ class UIBuilder {
     };
   }
 
-  _soft_mask_component(...args) {
-    return UIBuilder._soft_mask_component(...args);
+  _softMaskComponent(...args) {
+    return UIBuilder._softMaskComponent(...args);
   }
 
-  static _chat_component(useChatBalloon = false, expand = true, useChatEmotion = true, chatEmotionDuration = 5.0, enableVoiceChat = true, hideWorldChatButton = false, messageAlignBottom = false) {
+  static _chatComponent(useChatBalloon = false, expand = true, useChatEmotion = true, chatEmotionDuration = 5.0, enableVoiceChat = true, hideWorldChatButton = false, messageAlignBottom = false) {
     return {
       "@type": "MOD.Core.ChatComponent",
       ChatEmotionDuration: Number(chatEmotionDuration),
@@ -863,11 +889,11 @@ class UIBuilder {
     };
   }
 
-  _chat_component(...args) {
-    return UIBuilder._chat_component(...args);
+  _chatComponent(...args) {
+    return UIBuilder._chatComponent(...args);
   }
 
-  static _line_gui_renderer_component(points = null, isFlexible = true, flexibility = 3.0, isSmooth = false, loop = false, materialId = "") {
+  static _lineGuiRendererComponent(points = null, isFlexible = true, flexibility = 3.0, isSmooth = false, loop = false, materialId = "") {
     const pointList = Array.isArray(points) ? points.map((point) => {
       const pos = tuple(point.pos != null ? point.pos : point.position, [0, 0]);
       const colorValue = point.color != null ? colorDict(point.color) : { r: 1.0, g: 1.0, b: 1.0, a: 1.0 };
@@ -890,11 +916,11 @@ class UIBuilder {
     };
   }
 
-  _line_gui_renderer_component(...args) {
-    return UIBuilder._line_gui_renderer_component(...args);
+  _lineGuiRendererComponent(...args) {
+    return UIBuilder._lineGuiRendererComponent(...args);
   }
 
-  static _polygon_gui_renderer_component(points = null, color = null, useCustomUvs = false, uvs = null, materialId = "") {
+  static _polygonGuiRendererComponent(points = null, color = null, useCustomUvs = false, uvs = null, materialId = "") {
     const pointList = Array.isArray(points) ? points.map((point) => {
       const arr = tuple(point, [0, 0]);
       return { x: Number(arr[0]), y: Number(arr[1]) };
@@ -914,81 +940,88 @@ class UIBuilder {
     };
   }
 
-  _polygon_gui_renderer_component(...args) {
-    return UIBuilder._polygon_gui_renderer_component(...args);
+  _polygonGuiRendererComponent(...args) {
+    return UIBuilder._polygonGuiRendererComponent(...args);
   }
 
-  get_id(identifier) {
-    const idx = this._find_index(identifier);
+  getId(identifier) {
+    const idx = this._findIndex(identifier);
     return idx >= 0 ? this.entities[idx].id : null;
   }
 
-  _find_index(identifier) {
-    const fullPath = this._normalize_path(identifier);
-    return this.entities.findIndex((entity) => this._entity_json(entity).path === fullPath);
+  lastId() {
+    return this._lastId;
+  }
+
+  _findIndex(identifier) {
+    const fullPath = this._normalizePath(identifier);
+    return this.entities.findIndex((entity) => this._entityJson(entity).path === fullPath);
   }
 
   find(identifier) {
-    const idx = this._find_index(identifier);
+    const idx = this._findIndex(identifier);
     return idx < 0 ? null : this.entities[idx];
   }
 
-  has_component(identifier, compType) {
+  hasComponent(identifier, compType) {
+    normalizeComponentName(compType);
     const entity = this.find(identifier);
-    return entity != null && this._find_component(entity, compType) != null;
+    return entity != null && this._findComponent(entity, compType) != null;
   }
 
-  get_component(identifier, compType) {
+  getComponent(identifier, compType) {
+    normalizeComponentName(compType);
     const entity = this.find(identifier);
-    return entity == null ? null : this._find_component(entity, compType);
+    return entity == null ? null : this._findComponent(entity, compType);
   }
 
   remove(identifier) {
-    const fullPath = this._normalize_path(identifier);
+    const fullPath = this._normalizePath(identifier);
     if (fullPath === this.root_path) throw new Error("Cannot remove root UI group entity");
     const before = this.entities.length;
     this.entities = this.entities.filter((entity) => {
-      const entityPath = this._entity_json(entity).path || "";
+      const entityPath = this._entityJson(entity).path || "";
       return entityPath !== fullPath && !entityPath.startsWith(`${fullPath}/`);
     });
     const removed = before - this.entities.length;
-    if (removed > 0) {
-      console.log(`  Removed: ${fullPath} (${removed} entities)`);
-      return true;
-    }
-    return false;
+    if (removed === 0) throw new Error(`UI entity not found: ${identifier}`);
+    console.log(`  Removed: ${fullPath} (${removed} entities)`);
+    return this;
   }
 
   _add(name, compNames, entryId, modelId, components, enable = true) {
     const [fullPath, parentPath, entityName] = this._resolve(name);
-    const idx = this._find_index(name);
+    const idx = this._findIndex(name);
     let eid;
     let displayOrder;
     let action;
+    let existingJs = null;
     if (idx >= 0) {
       eid = this.entities[idx].id;
-      displayOrder = this.entities[idx].jsonString.displayOrder;
+      existingJs = this.entities[idx].jsonString;
+      displayOrder = existingJs.displayOrder;
       action = "Updated";
     } else {
       eid = crypto.randomUUID();
-      displayOrder = this._next_display_order(parentPath);
+      displayOrder = this._nextDisplayOrder(parentPath);
       action = "Added";
     }
+    const derivedNames = (components || []).map((component) => component["@type"]).filter(Boolean).join(",") || compNames;
     const entity = {
       id: eid,
       path: fullPath,
-      componentNames: compNames,
+      componentNames: derivedNames,
       jsonString: {
-        name: entityName,
+        name: existingJs ? existingJs.name : entityName,
         path: fullPath,
-        nameEditable: true,
+        nameEditable: existingJs ? existingJs.nameEditable : true,
         enable,
-        visible: true,
-        localize: true,
+        visible: existingJs ? existingJs.visible : true,
+        localize: existingJs ? existingJs.localize : true,
         displayOrder,
-        pathConstraints: this._path_constraints(fullPath),
-        revision: 0,
-        origin: {
+        pathConstraints: this._pathConstraints(fullPath),
+        revision: existingJs ? (existingJs.revision ?? 0) : 0,
+        origin: existingJs && existingJs.origin ? clone(existingJs.origin) : {
           type: "Model",
           entry_id: entryId,
           sub_entity_id: null,
@@ -1003,15 +1036,16 @@ class UIBuilder {
     if (idx >= 0) this.entities[idx] = entity;
     else this.entities.push(entity);
     console.log(`  ${action}: ${name}`);
-    return eid;
+    this._lastId = eid;
+    return this;
   }
 
   patch(identifier, options = {}) {
-    const idx = this._find_index(identifier);
-    if (idx < 0) return null;
+    const idx = this._findIndex(identifier);
+    if (idx < 0) throw new Error(`UI entity not found: ${identifier}`);
     const entity = this.entities[idx];
-    const js = this._entity_json(entity);
-    const transform = this._find_component(entity, "MOD.Core.UITransformComponent");
+    const js = this._entityJson(entity);
+    const transform = this._findComponent(entity, "MOD.Core.UITransformComponent");
     if (transform && (options.anchor != null || options.pos != null || options.rect_size != null || options.pivot != null)) {
       const curPos = transform.anchoredPosition || {};
       const curSize = transform.RectSize || {};
@@ -1034,7 +1068,7 @@ class UIBuilder {
         }
       }
       Object.keys(transform).forEach((key) => delete transform[key]);
-      Object.assign(transform, this._ui_transform(nextAnchor, nextPos, nextSize, nextPivot));
+      Object.assign(transform, this._uiTransform(nextAnchor, nextPos, nextSize, nextPivot));
     }
     if (options.enable != null) js.enable = Boolean(options.enable);
     if (options.visible != null) js.visible = Boolean(options.visible);
@@ -1042,99 +1076,106 @@ class UIBuilder {
     if (options.display_order != null) js.displayOrder = Number(options.display_order);
     if (options.new_name) this.rename(identifier, options.new_name);
     console.log(`  Patched: ${js.path}`);
-    return entity.id;
+    return this;
   }
 
   rename(identifier, newName) {
-    const idx = this._find_index(identifier);
-    if (idx < 0) return false;
+    const idx = this._findIndex(identifier);
+    if (idx < 0) throw new Error(`UI entity not found: ${identifier}`);
     const entity = this.entities[idx];
-    const js = this._entity_json(entity);
+    const js = this._entityJson(entity);
     const oldPath = js.path;
     if (oldPath === this.root_path) throw new Error("Cannot rename root UI group path");
     const parent = oldPath.split("/").slice(0, -1).join("/");
     const newPath = `${parent}/${newName}`;
     for (const current of this.entities) {
-      const currentJs = this._entity_json(current);
+      const currentJs = this._entityJson(current);
       const currentPath = currentJs.path || "";
       if (currentPath === oldPath || currentPath.startsWith(`${oldPath}/`)) {
         const suffix = currentPath.slice(oldPath.length);
         const updated = newPath + suffix;
         current.path = updated;
         currentJs.path = updated;
-        currentJs.pathConstraints = this._path_constraints(updated);
+        currentJs.pathConstraints = this._pathConstraints(updated);
         if (currentPath === oldPath) currentJs.name = newName;
       }
     }
     console.log(`  Renamed: ${oldPath} -> ${newPath}`);
-    return true;
+    return this;
   }
 
-  upsert_component(identifier, compType, compData = null) {
-    const idx = this._find_index(identifier);
-    if (idx < 0) return false;
+  upsertComponent(identifier, compType, compData = null) {
+    normalizeComponentName(compType);
+    const idx = this._findIndex(identifier);
+    if (idx < 0) throw new Error(`UI entity not found: ${identifier}`);
     const entity = this.entities[idx];
-    const js = this._entity_json(entity);
+    const js = this._entityJson(entity);
     const component = compData == null ? { "@type": compType, Enable: true } : clone(compData);
     if (!component["@type"]) component["@type"] = compType;
-    const current = this._find_component(entity, compType);
+    const current = this._findComponent(entity, compType);
     if (current != null) {
       Object.keys(current).forEach((key) => delete current[key]);
       Object.assign(current, component);
-      this._refresh_component_names_from_components(entity);
+      this._refreshComponentNamesFromComponents(entity);
       console.log(`  Replaced component ${compType} on ${js.name}`);
-      return true;
+      return this;
     }
     js["@components"] = js["@components"] || [];
     js["@components"].push(component);
-    this._refresh_component_names_from_components(entity);
+    this._refreshComponentNamesFromComponents(entity);
     console.log(`  Added component ${compType} to ${js.name}`);
-    return true;
+    return this;
   }
 
-  add_component(identifier, compType, compData = null) {
-    const idx = this._find_index(identifier);
-    if (idx < 0) return false;
-    if (this._find_component(this.entities[idx], compType) != null) return false;
-    return this.upsert_component(identifier, compType, compData);
+  addComponent(identifier, compType, compData = null) {
+    normalizeComponentName(compType);
+    const idx = this._findIndex(identifier);
+    if (idx < 0) throw new Error(`UI entity not found: ${identifier}`);
+    if (this._findComponent(this.entities[idx], compType) != null) {
+      throw new Error(`Component ${compType} already exists on ${identifier}; use upsertComponent to replace`);
+    }
+    return this.upsertComponent(identifier, compType, compData);
   }
 
-  patch_component(identifier, compType, updates) {
+  patchComponent(identifier, compType, updates) {
+    normalizeComponentName(compType);
     const entity = this.find(identifier);
-    if (entity == null) return false;
-    const component = this._find_component(entity, compType);
-    if (component == null) return false;
+    if (entity == null) throw new Error(`UI entity not found: ${identifier}`);
+    const component = this._findComponent(entity, compType);
+    if (component == null) throw new Error(`UI entity ${identifier} has no ${compType}`);
     Object.assign(component, updates);
-    console.log(`  Patched component ${compType} on ${this._entity_json(entity).name}`);
-    return true;
+    console.log(`  Patched component ${compType} on ${this._entityJson(entity).name}`);
+    return this;
   }
 
-  remove_component(identifier, compType) {
-    const idx = this._find_index(identifier);
-    if (idx < 0) return false;
+  removeComponent(identifier, compType) {
+    normalizeComponentName(compType);
+    const idx = this._findIndex(identifier);
+    if (idx < 0) throw new Error(`UI entity not found: ${identifier}`);
     if (compType === "MOD.Core.UITransformComponent") throw new Error("UITransformComponent cannot be removed from UI entities");
     const entity = this.entities[idx];
-    const js = this._entity_json(entity);
-    if (this._find_component(entity, compType) == null) return false;
+    const js = this._entityJson(entity);
+    if (this._findComponent(entity, compType) == null) throw new Error(`UI entity ${identifier} has no ${compType}`);
     js["@components"] = (js["@components"] || []).filter((component) => component["@type"] !== compType);
-    this._refresh_component_names_from_components(entity);
+    this._refreshComponentNamesFromComponents(entity);
     console.log(`  Removed component ${compType} from ${js.name}`);
-    return true;
+    return this;
   }
 
-  set_component_enabled(identifier, compType, enabled) {
+  setComponentEnabled(identifier, compType, enabled) {
+    normalizeComponentName(compType);
     const entity = this.find(identifier);
-    if (entity == null) return false;
-    const component = this._find_component(entity, compType);
-    if (component == null) return false;
+    if (entity == null) throw new Error(`UI entity not found: ${identifier}`);
+    const component = this._findComponent(entity, compType);
+    if (component == null) throw new Error(`UI entity ${identifier} has no ${compType}`);
     component.Enable = Boolean(enabled);
-    console.log(`  Set ${compType}.Enable=${enabled} on ${this._entity_json(entity).name}`);
-    return true;
+    console.log(`  Set ${compType}.Enable=${enabled} on ${this._entityJson(entity).name}`);
+    return this;
   }
 
   panel(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
     ], options.enable ?? true);
   }
 
@@ -1142,11 +1183,11 @@ class UIBuilder {
     const size = options.size ?? 24;
     let rectSize = options.rect_size;
     if (rectSize == null) rectSize = [Math.max(String(text).length * size, 400), size + 16];
-    const sort = _resolve_sort_options(options);
+    const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.TextComponent", "UIText", "uitext", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), rectSize, options.pivot ?? null),
-      this._sprite_renderer(null, 0.0, false, 0, 0, "", sort),
-      this._text_component(text, size, options.color ?? null, options.bold ?? false, options.alignment ?? 4, {
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), rectSize, options.pivot ?? null),
+      this._spriteRenderer(null, 0.0, false, 0, 0, "", sort),
+      this._textComponent(text, size, options.color ?? null, options.bold ?? false, options.alignment ?? 4, {
         overflow: options.overflow ?? 0,
         bestfit: options.bestfit ?? false,
         min_size: options.min_size ?? 10,
@@ -1167,170 +1208,170 @@ class UIBuilder {
 
   sprite(name, options = {}) {
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
-    const sort = _resolve_sort_options(options);
+    const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent", "UISprite", "uisprite", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
-      this._sprite_renderer(options.color ?? null, options.alpha ?? 1.0, options.raycast ?? false, options.fill_method ?? 0, options.sprite_type ?? 0, imageRuid, { preserve_aspect: options.preserve_aspect ?? false, material_id: options.material_id ?? "", ...sort }),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
+      this._spriteRenderer(options.color ?? null, options.alpha ?? 1.0, options.raycast ?? false, options.fill_method ?? 0, options.sprite_type ?? 0, imageRuid, { preserve_aspect: options.preserve_aspect ?? false, material_id: options.material_id ?? "", ...sort }),
     ], options.enable ?? true);
   }
 
   button(name, text = "", options = {}) {
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
-    const sort = _resolve_sort_options(options);
+    const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.ButtonComponent,MOD.Core.TextComponent", "UIButton", "uibutton", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 50]), options.pivot ?? null),
-      this._sprite_renderer(null, 1.0, true, 0, 0, imageRuid, sort),
-      this._button_component(sort),
-      this._text_component(text, options.font_size ?? 24, options.color ?? "#000000", false, 4, sort),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 50]), options.pivot ?? null),
+      this._spriteRenderer(null, 1.0, true, 0, 0, imageRuid, sort),
+      this._buttonComponent(sort),
+      this._textComponent(text, options.font_size ?? 24, options.color ?? "#000000", false, 4, sort),
     ], options.enable ?? true);
   }
 
   script(name, scriptName, options = {}) {
     return this._add(name, `MOD.Core.UITransformComponent,${scriptName}`, "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
+      this._uiTransform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
       { "@type": scriptName, Enable: true },
     ], options.enable ?? true);
   }
 
   slider(name, options = {}) {
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
-    const sort = _resolve_sort_options(options);
+    const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.SliderComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 30]), options.pivot ?? null),
-      this._sprite_renderer(null, 1.0, true, 0, 0, imageRuid, sort),
-      this._slider_component(options.min_val ?? 0, options.max_val ?? 1, options.value ?? 0, options.direction ?? 0, options.use_handle ?? true, options.use_integer ?? false, { ...options, ...sort }),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 30]), options.pivot ?? null),
+      this._spriteRenderer(null, 1.0, true, 0, 0, imageRuid, sort),
+      this._sliderComponent(options.min_val ?? 0, options.max_val ?? 1, options.value ?? 0, options.direction ?? 0, options.use_handle ?? true, options.use_integer ?? false, { ...options, ...sort }),
     ], options.enable ?? true);
   }
 
-  scroll_layout(name, options = {}) {
-    const sort = _resolve_sort_options(options);
+  scrollLayout(name, options = {}) {
+    const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.ScrollLayoutGroupComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [400, 600]), options.pivot ?? null),
-      this._scroll_layout_component(options.layout_type ?? 0, options.spacing ?? 0, tuple(options.cell_size, [100, 100]), options.use_scroll ?? true, tuple(options.padding, [0, 0, 0, 0]), { ...options, ...sort }),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [400, 600]), options.pivot ?? null),
+      this._scrollLayoutComponent(options.layout_type ?? 0, options.spacing ?? 0, tuple(options.cell_size, [100, 100]), options.use_scroll ?? true, tuple(options.padding, [0, 0, 0, 0]), { ...options, ...sort }),
     ], options.enable ?? true);
   }
 
-  text_input(name, options = {}) {
+  textInput(name, options = {}) {
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
-    const sort = _resolve_sort_options(options);
+    const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.TextComponent,MOD.Core.TextInputComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [300, 50]), options.pivot ?? null),
-      this._sprite_renderer(null, 1.0, true, 0, 0, imageRuid, sort),
-      this._text_component(String(options.text ?? ""), options.font_size ?? 24, options.color ?? "#000000", false, 4, sort),
-      this._text_input_component(options.placeholder ?? "", options.char_limit ?? 0, options.content_type ?? 0, options.line_type ?? 0, { ...options, ...sort }),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [300, 50]), options.pivot ?? null),
+      this._spriteRenderer(null, 1.0, true, 0, 0, imageRuid, sort),
+      this._textComponent(String(options.text ?? ""), options.font_size ?? 24, options.color ?? "#000000", false, 4, sort),
+      this._textInputComponent(options.placeholder ?? "", options.char_limit ?? 0, options.content_type ?? 0, options.line_type ?? 0, { ...options, ...sort }),
     ], options.enable ?? true);
   }
 
   group(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UIGroupComponent,MOD.Core.CanvasGroupComponent", "UIGroup", "uigroup", [
-      this._ui_transform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
-      this._ui_group_component(options.default_show ?? true, options.group_order ?? 0, options.group_type ?? 1),
-      this._canvas_group_component(options.blocks_raycasts ?? true, options.group_alpha ?? 1.0, options.interactable ?? true),
+      this._uiTransform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
+      this._uiGroupComponent(options.default_show ?? true, options.group_order ?? 0, options.group_type ?? 1),
+      this._canvasGroupComponent(options.blocks_raycasts ?? true, options.group_alpha ?? 1.0, options.interactable ?? true),
     ], options.enable ?? true);
   }
 
   mask(name, options = {}) {
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.MaskComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
-      this._sprite_renderer(options.color ?? null, options.alpha ?? 0.0, false, 0, 0, imageRuid),
-      this._mask_component(options.shape ?? 0, tuple(options.padding, [0, 0, 0, 0]), tuple(options.softness, [0, 0])),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
+      this._spriteRenderer(options.color ?? null, options.alpha ?? 0.0, false, 0, 0, imageRuid),
+      this._maskComponent(options.shape ?? 0, tuple(options.padding, [0, 0, 0, 0]), tuple(options.softness, [0, 0])),
     ], options.enable ?? true);
   }
 
-  grid_view(name, options = {}) {
+  gridView(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.GridViewComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [400, 600]), options.pivot ?? null),
-      this._grid_view_component(options.total_count ?? 0, tuple(options.cell_size, [100, 100]), options.fixed_count ?? 1, options.fixed_type ?? 0, tuple(options.spacing, [0, 0]), tuple(options.padding, [0, 0, 0, 0]), options.use_scroll ?? true, options.scroll_bar_visible ?? 1, options.scroll_bar_thickness ?? 10.0),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [400, 600]), options.pivot ?? null),
+      this._gridViewComponent(options.total_count ?? 0, tuple(options.cell_size, [100, 100]), options.fixed_count ?? 1, options.fixed_type ?? 0, tuple(options.spacing, [0, 0]), tuple(options.padding, [0, 0, 0, 0]), options.use_scroll ?? true, options.scroll_bar_visible ?? 1, options.scroll_bar_thickness ?? 10.0),
     ], options.enable ?? true);
   }
 
   avatar(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.AvatarGUIRendererComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 300]), options.pivot ?? null),
-      this._avatar_renderer_component(options.color ?? null, options.flip_x ?? false, options.flip_y ?? false, options.play_rate ?? 1.0, options.preserve_avatar ?? 0, options.raycast ?? true, options.material_id ?? ""),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 300]), options.pivot ?? null),
+      this._avatarRendererComponent(options.color ?? null, options.flip_x ?? false, options.flip_y ?? false, options.play_rate ?? 1.0, options.preserve_avatar ?? 0, options.raycast ?? true, options.material_id ?? ""),
     ], options.enable ?? true);
   }
 
-  touch_receive(name, options = {}) {
+  touchReceive(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UITouchReceiveComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
-      this._touch_receive_component(),
+      this._uiTransform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
+      this._touchReceiveComponent(),
     ], options.enable ?? true);
   }
 
   skeleton(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SkeletonGUIRendererComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
-      this._skeleton_renderer_component(options.skeleton_ruid ?? "", options.animations ?? null, options.skins ?? null, options.color ?? null, options.flip_x ?? false, options.flip_y ?? false, options.loop ?? true, options.play_rate ?? 1.0, options.preserve_mode ?? 0, options.raycast ?? true),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
+      this._skeletonRendererComponent(options.skeleton_ruid ?? "", options.animations ?? null, options.skins ?? null, options.color ?? null, options.flip_x ?? false, options.flip_y ?? false, options.loop ?? true, options.play_rate ?? 1.0, options.preserve_mode ?? 0, options.raycast ?? true),
     ], options.enable ?? true);
   }
 
-  area_particle(name, options = {}) {
+  areaParticle(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UIAreaParticleComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
-      this._area_particle_component(options.particle_type ?? 0, tuple(options.area_size, [100, 100]), tuple(options.area_offset, [0, 0]), options.color ?? null, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
+      this._areaParticleComponent(options.particle_type ?? 0, tuple(options.area_size, [100, 100]), tuple(options.area_offset, [0, 0]), options.color ?? null, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0),
     ], options.enable ?? true);
   }
 
-  basic_particle(name, options = {}) {
+  basicParticle(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UIBasicParticleComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
-      this._basic_particle_component(options.particle_type ?? 0, options.color ?? null, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
+      this._basicParticleComponent(options.particle_type ?? 0, options.color ?? null, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0),
     ], options.enable ?? true);
   }
 
-  sprite_particle(name, options = {}) {
+  spriteParticle(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UISpriteParticleComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
-      this._sprite_particle_component(options.particle_type ?? 0, options.sprite_ruid ?? "", options.apply_sprite_color ?? false, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0, options.color ?? null),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
+      this._spriteParticleComponent(options.particle_type ?? 0, options.sprite_ruid ?? "", options.apply_sprite_color ?? false, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0, options.color ?? null),
     ], options.enable ?? true);
   }
 
   joystick(name, options = {}) {
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.JoystickComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "bottom-left", tuple(options.pos, [200, 200]), tuple(options.rect_size, [300, 300]), options.pivot ?? null),
-      this._sprite_renderer(options.color ?? null, options.alpha ?? 1.0, false, 0, 0, imageRuid),
-      this._joystick_component(options.dynamic_stick ?? true, options.axis ?? 1, options.up_arrow ?? 273, options.down_arrow ?? 274, options.left_arrow ?? 276, options.right_arrow ?? 275),
+      this._uiTransform(options.anchor || "bottom-left", tuple(options.pos, [200, 200]), tuple(options.rect_size, [300, 300]), options.pivot ?? null),
+      this._spriteRenderer(options.color ?? null, options.alpha ?? 1.0, false, 0, 0, imageRuid),
+      this._joystickComponent(options.dynamic_stick ?? true, options.axis ?? 1, options.up_arrow ?? 273, options.down_arrow ?? 274, options.left_arrow ?? 276, options.right_arrow ?? 275),
     ], options.enable ?? true);
   }
 
-  soft_mask(name, options = {}) {
+  softMask(name, options = {}) {
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.SoftMaskComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
-      this._sprite_renderer(options.color ?? null, options.alpha ?? 0.0, false, 0, 0, imageRuid),
-      this._soft_mask_component(options.invert_mask ?? false, options.invert_outsides ?? false),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
+      this._spriteRenderer(options.color ?? null, options.alpha ?? 0.0, false, 0, 0, imageRuid),
+      this._softMaskComponent(options.invert_mask ?? false, options.invert_outsides ?? false),
     ], options.enable ?? true);
   }
 
   chat(name, options = {}) {
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.ChatComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "bottom-left", tuple(options.pos, [200, 200]), tuple(options.rect_size, [400, 300]), options.pivot ?? null),
-      this._sprite_renderer(options.color ?? null, options.alpha ?? 0.0, true, 0, 0, imageRuid),
-      this._chat_component(options.use_chat_balloon ?? false, options.expand ?? true, options.use_chat_emotion ?? true, options.chat_emotion_duration ?? 5.0, options.enable_voice_chat ?? true, options.hide_world_chat_button ?? false, options.message_align_bottom ?? false),
+      this._uiTransform(options.anchor || "bottom-left", tuple(options.pos, [200, 200]), tuple(options.rect_size, [400, 300]), options.pivot ?? null),
+      this._spriteRenderer(options.color ?? null, options.alpha ?? 0.0, true, 0, 0, imageRuid),
+      this._chatComponent(options.use_chat_balloon ?? false, options.expand ?? true, options.use_chat_emotion ?? true, options.chat_emotion_duration ?? 5.0, options.enable_voice_chat ?? true, options.hide_world_chat_button ?? false, options.message_align_bottom ?? false),
     ], options.enable ?? true);
   }
 
   line(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.LineGUIRendererComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
-      this._line_gui_renderer_component(options.points ?? null, options.is_flexible ?? true, options.flexibility ?? 3.0, options.is_smooth ?? false, options.loop ?? false, options.material_id ?? ""),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
+      this._lineGuiRendererComponent(options.points ?? null, options.is_flexible ?? true, options.flexibility ?? 3.0, options.is_smooth ?? false, options.loop ?? false, options.material_id ?? ""),
     ], options.enable ?? true);
   }
 
   polygon(name, options = {}) {
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.PolygonGUIRendererComponent", "UIEmpty", "uiempty", [
-      this._ui_transform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
-      this._polygon_gui_renderer_component(options.points ?? null, options.color ?? null, options.use_custom_uvs ?? false, options.uvs ?? null, options.material_id ?? ""),
+      this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
+      this._polygonGuiRendererComponent(options.points ?? null, options.color ?? null, options.use_custom_uvs ?? false, options.uvs ?? null, options.material_id ?? ""),
     ], options.enable ?? true);
   }
 
-  list_entities() {
+  listEntities() {
     const result = [];
-    for (const entity of [...this.entities].sort((a, b) => String(this._entity_json(a).path || "").localeCompare(String(this._entity_json(b).path || "")))) {
+    for (const entity of [...this.entities].sort((a, b) => String(this._entityJson(a).path || "").localeCompare(String(this._entityJson(b).path || "")))) {
       const js = entity.jsonString;
       const comps = (js["@components"] || []).map((component) => component["@type"]);
       let kind = "?";
@@ -1367,15 +1408,21 @@ class UIBuilder {
       }
       const entityPath = js.path || "";
       const depth = entityPath.startsWith(this.root_path) ? (entityPath.slice(this.root_path.length).match(/\//g) || []).length : 0;
-      const info = { name: js.name || "", path: entityPath, depth, kind, pos, size, enable: js.enable ?? true };
-      result.push(info);
-      const indent = "  ".repeat(depth);
-      const posStr = pos[0] !== 0 || pos[1] !== 0 ? `(${pos[0].toFixed(0)},${pos[1].toFixed(0)})` : "";
-      const sizeStr = `${Number(size[0]).toFixed(0)}x${Number(size[1]).toFixed(0)}`;
-      const enableStr = info.enable ? "" : " [disabled]";
-      console.log(`  ${indent}${kind.padEnd(6)} ${info.name.padEnd(20)} ${posStr.padEnd(12)} ${sizeStr}${enableStr}`);
+      result.push({ name: js.name || "", path: entityPath, depth, kind, pos, size, enable: js.enable ?? true });
     }
     return result;
+  }
+
+  printEntities() {
+    const items = this.listEntities();
+    for (const info of items) {
+      const indent = "  ".repeat(info.depth);
+      const posStr = info.pos[0] !== 0 || info.pos[1] !== 0 ? `(${info.pos[0].toFixed(0)},${info.pos[1].toFixed(0)})` : "";
+      const sizeStr = `${Number(info.size[0]).toFixed(0)}x${Number(info.size[1]).toFixed(0)}`;
+      const enableStr = info.enable ? "" : " [disabled]";
+      console.log(`  ${indent}${info.kind.padEnd(6)} ${info.name.padEnd(20)} ${posStr.padEnd(12)} ${sizeStr}${enableStr}`);
+    }
+    return items;
   }
 
   build() {
@@ -1399,24 +1446,53 @@ class UIBuilder {
     };
   }
 
+  validate() {
+    const findings = [];
+    const data = this.build();
+    collectInvalidNumbers(data, "$", findings);
+    collectComponentScalarTypeIssues(data, findings);
+    return findings;
+  }
+
   write(filepath, options = {}) {
     const lint = options.lint ?? true;
     const strict = options.strict ?? true;
     const lintVerbose = options.lint_verbose ?? false;
+
+    const findings = this.validate();
+    const errors = findings.filter((f) => f.severity === "error");
+    if (errors.length) {
+      throw new TypeError(`UI validation failed: ${errors.map((f) => `${f.rule}: ${f.message}`).join("; ")}`);
+    }
+
+    let bindPlan = null;
+    if (options.bind != null) {
+      const [mluaPath, props] = UIBuilder._normalizeBindArg(options.bind);
+      bindPlan = this._prepareBindings(mluaPath, props);
+    }
+
     const data = this.build();
-    assertNoInvalidNumbers(data);
-    assertComponentScalarTypes(data);
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
     fs.writeFileSync(filepath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
     console.log(`Written ${this.entities.length} entities to ${filepath}`);
-    if (lint) runUiLint(filepath, strict, lintVerbose);
-    if (options.bind != null) {
-      const [mluaPath, props] = UIBuilder._normalize_bind_arg(options.bind);
-      this.inject_bindings(mluaPath, props);
+
+    if (lint) {
+      try {
+        runUiLint(filepath, strict, lintVerbose);
+      } catch (err) {
+        try { fs.unlinkSync(filepath); } catch (_) { /* best-effort rollback */ }
+        throw err;
+      }
     }
+
+    if (bindPlan) {
+      fs.writeFileSync(bindPlan.mluaPath, bindPlan.updatedSrc, "utf8");
+      console.log(`  Bound ${Object.keys(bindPlan.resolved).length} property/properties in ${bindPlan.mluaPath}`);
+    }
+    return this;
   }
 
-  static _normalize_bind_arg(bind) {
+  static _normalizeBindArg(bind) {
     if (Array.isArray(bind) && bind.length === 2) return [bind[0], bind[1]];
     if (bind && typeof bind === "object") {
       if (bind.mlua == null || bind.props == null) {
@@ -1427,41 +1503,101 @@ class UIBuilder {
     throw new TypeError(`bind must be a dict {'mlua': ..., 'props': {...}} or a (mlua_path, props) tuple. Got ${typeof bind}`);
   }
 
-  inject_bindings(mluaPath, props) {
-    if (!fs.existsSync(mluaPath) || !fs.statSync(mluaPath).isFile()) throw new Error(`inject_bindings: target .mlua not found: ${mluaPath}`);
-    if (path.extname(mluaPath) !== ".mlua") throw new Error(`inject_bindings: target must be a .mlua file: ${mluaPath}`);
+  _prepareBindings(mluaPath, props) {
+    if (!fs.existsSync(mluaPath) || !fs.statSync(mluaPath).isFile()) throw new Error(`injectBindings: target .mlua not found: ${mluaPath}`);
+    if (path.extname(mluaPath) !== ".mlua") throw new Error(`injectBindings: target must be a .mlua file: ${mluaPath}`);
     const resolved = {};
     const missingEntities = [];
     for (const [propName, entityRef] of Object.entries(props)) {
-      const uid = this.get_id(entityRef);
+      const uid = this.getId(entityRef);
       if (uid == null) missingEntities.push(`${propName} -> ${entityRef}`);
       else resolved[propName] = uid;
     }
-    if (missingEntities.length) throw new Error(`inject_bindings: entity not found for ${missingEntities.join(", ")}`);
-    let src = fs.readFileSync(mluaPath, "utf8");
+    if (missingEntities.length) throw new Error(`injectBindings: entity not found for ${missingEntities.join(", ")}`);
+
+    const original = fs.readFileSync(mluaPath, "utf8");
+    const { src: updatedSrc, counts } = applyBindings(original, resolved);
     const missingProps = [];
     const duplicatedProps = [];
-    for (const [propName, uid] of Object.entries(resolved)) {
-      const pattern = new RegExp(`(property\\s+\\S+\\s+${escapeRegExp(propName)}\\s*=\\s*)"[^"]*"`, "g");
-      let count = 0;
-      const newSrc = src.replace(pattern, (_match, prefix) => {
-        count += 1;
-        return `${prefix}"${uid}"`;
-      });
+    for (const propName of Object.keys(resolved)) {
+      const count = counts[propName] || 0;
       if (count === 0) missingProps.push(propName);
       else if (count > 1) duplicatedProps.push(`${propName} (${count}x)`);
-      else src = newSrc;
     }
-    if (missingProps.length) throw new Error(`inject_bindings: property not found in ${mluaPath}: ${missingProps.join(", ")}`);
-    if (duplicatedProps.length) throw new Error(`inject_bindings: property declared multiple times in ${mluaPath}: ${duplicatedProps.join(", ")}`);
-    fs.writeFileSync(mluaPath, src, "utf8");
-    console.log(`  Bound ${Object.keys(resolved).length} property/properties in ${mluaPath}`);
-    return resolved;
+    if (missingProps.length) throw new Error(`injectBindings: property not found in ${mluaPath}: ${missingProps.join(", ")}`);
+    if (duplicatedProps.length) throw new Error(`injectBindings: property declared multiple times in ${mluaPath}: ${duplicatedProps.join(", ")}`);
+    return { mluaPath, resolved, updatedSrc };
   }
+
+  injectBindings(mluaPath, props) {
+    const plan = this._prepareBindings(mluaPath, props);
+    fs.writeFileSync(plan.mluaPath, plan.updatedSrc, "utf8");
+    console.log(`  Bound ${Object.keys(plan.resolved).length} property/properties in ${plan.mluaPath}`);
+    return this;
+  }
+
 }
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findLineCommentStart(line) {
+  let inDouble = false;
+  let inSingle = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    const prev = i > 0 ? line[i - 1] : "";
+    if (!inSingle && c === '"' && prev !== "\\") inDouble = !inDouble;
+    else if (!inDouble && c === "'" && prev !== "\\") inSingle = !inSingle;
+    else if (!inDouble && !inSingle && c === "-" && line[i + 1] === "-") return i;
+  }
+  return -1;
+}
+
+function replacePropertyDecls(segment, resolved, counts) {
+  const commentIdx = findLineCommentStart(segment);
+  const code = commentIdx >= 0 ? segment.slice(0, commentIdx) : segment;
+  const comment = commentIdx >= 0 ? segment.slice(commentIdx) : "";
+  let updated = code;
+  for (const [propName, uid] of Object.entries(resolved)) {
+    const pattern = new RegExp(
+      `^(\\s*property\\s+[A-Za-z_][A-Za-z0-9_.]*\\s+${escapeRegExp(propName)}\\b\\s*=\\s*)"[^"\\r\\n]*"`,
+    );
+    if (pattern.test(updated)) {
+      counts[propName] = (counts[propName] || 0) + 1;
+      updated = updated.replace(pattern, (_m, prefix) => `${prefix}"${uid}"`);
+    }
+  }
+  return updated + comment;
+}
+
+function applyBindings(src, resolved) {
+  const lineSep = src.includes("\r\n") ? "\r\n" : "\n";
+  const lines = src.split(/\r?\n/);
+  const counts = {};
+  let inBlockComment = false;
+  const out = lines.map((rawLine) => {
+    if (inBlockComment) {
+      const closeIdx = rawLine.indexOf("]]");
+      if (closeIdx < 0) return rawLine;
+      inBlockComment = false;
+      const after = rawLine.slice(closeIdx + 2);
+      return rawLine.slice(0, closeIdx + 2) + replacePropertyDecls(after, resolved, counts);
+    }
+    const blockStart = rawLine.indexOf("--[[");
+    if (blockStart < 0) return replacePropertyDecls(rawLine, resolved, counts);
+    const prefix = rawLine.slice(0, blockStart);
+    const replacedPrefix = replacePropertyDecls(prefix, resolved, counts);
+    const blockEnd = rawLine.indexOf("]]", blockStart + 4);
+    if (blockEnd < 0) {
+      inBlockComment = true;
+      return replacedPrefix + rawLine.slice(blockStart);
+    }
+    const after = rawLine.slice(blockEnd + 2);
+    return replacedPrefix + rawLine.slice(blockStart, blockEnd + 2) + replacePropertyDecls(after, resolved, counts);
+  });
+  return { src: out.join(lineSep), counts };
 }
 
 function runUiLint(filepath, strict, verbose) {

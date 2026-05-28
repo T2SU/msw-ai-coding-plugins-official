@@ -6,7 +6,7 @@
 
 - **Re-read this file at the start of every turn** that touches `.map` / `.model` / `.ui`. "I already saw it last turn" is not an exemption. Do not memorize call signatures / `typeKey` values / coverage gaps.
 - "Knowing one builder's protocol is enough" is a false assumption — model authoring → map placement → ui binding flow cross-builder (§4). If you only know one builder's protocol and call another, you bypass that builder's write-side contract (`componentNames` sync, `Values` metadata, write-time auto-lint, etc.) in full.
-- **No direct raw JSON editing.** Do not pull file contents with `Read` / `cat` / `Get-Content` / `Select-String` / `grep` and patch by hand either (a registered guard blocks `.ui`; the same rule applies to `.map` / `.model`). Use only the builders' read-side API (`Builder.read` / `snapshot` / `find` / `listEntities` / `list_entities`) for inspection.
+- **No direct raw JSON editing.** Do not pull file contents with `Read` / `cat` / `Get-Content` / `Select-String` / `grep` and patch by hand either (a registered guard blocks `.ui`; the same rule applies to `.map` / `.model`). Use only the builders' read-side API (`Builder.read` / `snapshot` / `find` / `listEntities`) for inspection.
 
 ### File → Builder routing
 
@@ -30,7 +30,19 @@
 | Patch a component field, rename, remove on `.map` | `MapBuilder.patchComponent` / `patch` / `rename` / `remove` | §1 |
 | Tile painting / `TileMapMode` switching / Foothold chaining | Not a builder operation — guide the user to Maker UI | §1 Coverage gaps |
 | Create / patch `.ui`, component CRUD | the full `UIBuilder` API | §3 |
-| Inject `.ui` entity UUIDs into `.mlua` property defaults | `b.write(path, { bind })` or `b.inject_bindings(...)` | §3 Binding injection |
+| Inject `.ui` entity UUIDs into `.mlua` property defaults | `b.write(path, { bind })` or `b.injectBindings(...)` | §3 Binding injection |
+
+---
+
+## Method index — what each builder actually exposes
+
+Alpha-sorted **camelCase** method names per builder. **camelCase is canonical** — if a name does not appear here, do not call it. Signatures live in the per-builder API Reference sections below (§1.3 / §2.3 / §3.3). Internal helpers (prefixed with `_`) are omitted.
+
+**`MapBuilder`** — instance: `build` · `component` · `empty` · `entity` · `find` · `getFootholdBounds` · `getFootholds` · `getMapInfo` · `getTileAt` · `getTileBounds` · `getTileMapMode` · `getTiles` · `listEntities` · `patch` · `patchComponent` · `placeModel` · `remove` · `removeComponent` · `rename` · `snapshot` · `sprite` · `upsertComponent` · `write`. Static: `MapBuilder.load` · `MapBuilder.read` · `MapBuilder.snapshot`.
+
+**`ModelBuilder`** — instance: `addComponent` · `build` · `child` · `childComponent` · `childEnable` · `childEventLink` · `childFromModel` · `childFromTemplate` · `childProperty` · `childValue` · `childVisible` · `component` · `enable` · `entityEnable` · `entityVisible` · `eventLink` · `getChild` · `getChildValue` · `getValue` · `getValueEntry` · `hasChild` · `hasComponent` · `hasValue` · `listChildren` · `listComponents` · `listEventLinks` · `listValues` · `moveChild` · `property` · `removeChild` · `removeChildComponent` · `removeChildEventLink` · `removeChildProperty` · `removeChildValue` · `removeComponent` · `removeEventLink` · `removeProperty` · `removeValue` · `renameChild` · `renameModel` · `setBaseModelId` · `setChildBaseModelId` · `snapshot` · `upsertEventLink` · `validate` · `value` · `write`. Static: `ModelBuilder.fromTemplate` · `ModelBuilder.load` · `ModelBuilder.read` · `ModelBuilder.snapshot`.
+
+**`UIBuilder`** — instance: `addComponent` · `areaParticle` · `avatar` · `basicParticle` · `build` · `button` · `chat` · `find` · `getComponent` · `getId` · `gridView` · `group` · `hasComponent` · `injectBindings` · `joystick` · `line` · `listEntities` · `mask` · `panel` · `patch` · `patchComponent` · `polygon` · `remove` · `removeComponent` · `rename` · `script` · `scrollLayout` · `setComponentEnabled` · `skeleton` · `softMask` · `sprite` · `spriteParticle` · `text` · `textInput` · `touchReceive` · `upsertComponent` · `write`. Static: `UIBuilder.load` · `UIBuilder.read` · `UIBuilder.snapshot`.
 
 ---
 
@@ -38,13 +50,30 @@
 
 ```
 (1) READ      Builder.read(path) | Builder.fromTemplate(...) | new Builder(...)
-(2) INSPECT   snapshot() / find() / list_entities() / getMapInfo() / listComponents()
+(2) INSPECT   snapshot() / find() / listEntities() / getMapInfo() / listComponents()
 (3) MUTATE    builder fluent API only (never raw JSON)
 (4) WRITE     write(path) — auto lint (UI) / validate (Model) / id+componentNames sync (Map)
 (5) REFRESH   Maker MCP `refresh` (call `stop` first if in play mode)
 ```
 
-On any mid-workflow failure (`false` return / RuntimeError / validate failure / lint error), **stop immediately**. Do not proceed to later steps; fix the cause and restart from (1).
+On any mid-workflow failure (RuntimeError / validate failure / lint error), **stop immediately**. Do not proceed to later steps; fix the cause and restart from (1).
+
+### Cross-builder chaining contract
+
+All three builders (`MapBuilder` / `ModelBuilder` / `UIBuilder`) share one contract: **every mutator — creators, updaters, removers, and `write()` — returns the builder itself, and a missing target throws `Error` (never returns `false` / `null`).** Inspection helpers (`find` / `getId` / `get*` / `has*` / `list*` / `snapshot` / `validate` / `build`) return data and must be called on their own line; pre-check with `has*()` / `find()` when conditional behavior is needed. `MapBuilder` and `UIBuilder` additionally expose `b.lastId()` — the id of the entity targeted by the most recent creator call (`entity` / `empty` / `sprite` / `placeModel`, or any of the 22 UI creators). For a brand-new path a fresh UUID is assigned; for a path that already exists the creator upserts in place and `lastId()` returns the existing UUID, so the caller always gets the id usable to address that entity. Update/remove mutators (`patch` / `patchComponent` / `rename` / `upsertComponent` / `setComponentEnabled` / `remove` / `removeComponent`) do **not** touch `lastId()`. For `MapBuilder.placeModel`, `lastId()` returns the **root** id of the placed model, not the last placed child. `ModelBuilder` operates on a single model file and has no `lastId()`.
+
+```javascript
+// MapBuilder — chain + lastId() for the newly created entity
+const map = MapBuilder.read("map/map01.map")
+  .empty("WaveController", { pos: [0, 0, 0] })
+  .placeModel("Boss", "RootDesk/MyDesk/Models/Monsters/Boss.model", { pos: [3, 1, 0] });
+const bossId = map.lastId();  // root id of the placed model
+
+// ModelBuilder — chain + has-pre-check for conditional remove
+const slime = ModelBuilder.read("RootDesk/MyDesk/Models/Monsters/Slime.model");
+if (slime.hasValue("MovementComponent", "InputSpeed")) slime.removeValue("MovementComponent", "InputSpeed");
+slime.value("MovementComponent", "InputSpeed", 2.5, "float").write("RootDesk/MyDesk/Models/Monsters/Slime.model");
+```
 
 ### Rules common to all three builders
 
@@ -55,6 +84,7 @@ On any mid-workflow failure (`false` return / RuntimeError / validate failure / 
 5. **Empty `SpriteRUID` = invisible** (no error). Never leave `SpriteRUID` empty in any builder.
 6. **Entity / Component / EntityRef / ComponentRef property defaults are UUID strings.** In AI automation, the builder injects UUIDs directly — never tell the user to "drag in Maker."
 7. **Stop work on CoreVersion mismatch** — verify `Environment/config`'s CoreVersion is `26.5.0.0` before any work.
+8. **Component type strings must be fully qualified.** Native components use `MOD.Core.XxxComponent` (e.g. `MOD.Core.TransformComponent`); mlua script components use `script.XxxComponent` (e.g. `script.Monster`). Any other form (e.g. `"MovementComponent"`, `"Monster"` without prefix) breaks the engine: `.map` / `.model` / `.ui` deserialization keys components by exact `@type`, and a mistyped or short name silently fails to attach (Maker logs only a warning and the inspector shows no component). **All three builders throw at the call site whenever a non-prefixed component-type string reaches _any_ helper that accepts one** — not just the obvious `addComponent` / `upsertComponent`. The same guard fires on read-side helpers (`hasComponent` / `getComponent` / `patchComponent` / `removeComponent` / `setComponentEnabled` where the builder exposes them), on value / property-link / event-link helpers that key by component type (e.g. `ModelBuilder.value(targetType, ...)`, `getValue`, `removeValue`, `property({ target, ... })`), and on option-bag entries that key by component type (e.g. `MapBuilder.placeModel`'s `componentOverrides`). Each builder only exposes a subset of these helpers; calling one a particular builder does **not** expose (e.g. `MapBuilder.hasComponent`, `ModelBuilder.getComponent`) raises `TypeError: ... is not a function`, not the prefix-guard error. To look up the canonical name of a native component, list the workspace's `Environment/NativeScripts/Component/*.d.mlua` — each filename (e.g. `MovementComponent.d.mlua`) is the bare name; prefix it with `MOD.Core.` to get the fully qualified `@type`.
 
 ---
 
@@ -133,16 +163,17 @@ map.component("Monster01", "MOD.Core.TransformComponent");
 | `listEntities()` | array | Compact entity list |
 | `find(name)` | entity record | Lookup by map root name, relative child name, or `/maps/...` path |
 | `component(name, compType)` | component object | Read a component on an entity |
-| `placeModel(name, modelPath, opts)` | entity id string | Place a `.model` instance (`pos`, `componentOverrides`, ...) |
-| `sprite(name, opts)` | entity id string | Inline sprite entity (`ruid`, `pos`, `order`) |
-| `empty(name, opts)` | entity id string | Empty / script-only entity (`pos`, `scripts`) |
-| `entity(name, components, opts)` | entity id string | Low-level entity placement |
-| `patch(name, updates)` | boolean | Position / enable / rename in one call |
-| `patchComponent(name, compType, fields)` | boolean | Field-level component update |
-| `upsertComponent(name, compType, body)` | boolean | Add or replace a component |
-| `removeComponent(name, compType)` | boolean | Drop a component |
-| `rename(oldName, newName)` | boolean | Rename an entity |
-| `remove(name)` | boolean | Delete an entity and its descendants |
+| `placeModel(name, modelPath, opts)` | `MapBuilder` | Place a `.model` instance (`pos`, `componentOverrides`, ...). Root id via `lastId()` |
+| `sprite(name, opts)` | `MapBuilder` | Inline sprite entity (`ruid`, `pos`, `order`). Id via `lastId()` |
+| `empty(name, opts)` | `MapBuilder` | Empty / script-only entity (`pos`, `scripts`). Id via `lastId()` |
+| `entity(name, components, opts)` | `MapBuilder` | Low-level entity placement. Id via `lastId()`. Upsert: existing-path root metadata (`name`/`nameEditable`/`enable`/`visible`/`localize`/`modelId`/`origin`/`displayOrder`) is preserved unless overridden in `opts`; `@components` is always replaced |
+| `patch(name, updates)` | `MapBuilder` | Position / enable / rename in one call. Throws if `name` missing |
+| `patchComponent(name, compType, fields)` | `MapBuilder` | Field-level component update. Throws if entity or component missing |
+| `upsertComponent(name, compType, body)` | `MapBuilder` | Add or replace a component. Throws if entity missing |
+| `removeComponent(name, compType)` | `MapBuilder` | Drop a component. Throws if entity or component missing |
+| `rename(oldName, newName)` | `MapBuilder` | Rename an entity. Throws if `oldName` missing |
+| `remove(name)` | `MapBuilder` | Delete an entity and its descendants. Throws if `name` missing |
+| `lastId()` | UUID string \| `null` | UUID of the entity targeted by the most recent creator call — new path → fresh UUID, existing path → existing UUID (upsert). Not touched by update/remove mutators |
 | `getTiles()` / `getTileAt(x,y)` / `getTileBounds()` | tile data | Tile inspection |
 | `getFootholds(layer)` / `getFootholdBounds(layer)` | foothold data | Foothold inspection |
 | `build()` | JSON | In-memory map JSON |
@@ -151,24 +182,20 @@ map.component("Monster01", "MOD.Core.TransformComponent");
 
 Read-only inspection is `find()` + `component()`. To read raw entity JSON when the builder cannot cover the case, fall back to parsing the `.map` file's `ContentProto.Entities[*].jsonString` directly (only within a §1.6 gap).
 
-`MapBuilder` returns `false` from `patch()` / `rename()` / `upsertComponent()` / `patchComponent()` / `removeComponent()` / `remove()` when the target is missing. **Treat `false` as a failed edit and stop instead of writing.**
+`MapBuilder` throws when the target is missing (`patch` / `rename` / `upsertComponent` / `patchComponent` / `removeComponent` / `remove`). Use `find()` to pre-check if conditional behavior is needed.
 
 ```javascript
-const map = MapBuilder.read("map/map01.map");
-
-if (!map.patch("Slime01", { pos: [5, 1, 0], enable: true })) {
-  throw new Error("Slime01 not found in map/map01.map");
-}
-if (!map.patchComponent("Slime01", "MOD.Core.SpriteRendererComponent", { OrderInLayer: 20 })) {
-  throw new Error("Slime01 has no SpriteRendererComponent");
-}
-
-map.write("map/map01.map");
+MapBuilder.read("map/map01.map")
+  .patch("Slime01", { pos: [5, 1, 0], enable: true })
+  .patchComponent("Slime01", "MOD.Core.SpriteRendererComponent", { OrderInLayer: 20 })
+  .write("map/map01.map");
 ```
 
 ### §1.4 Entity Placement
 
 Prefer `.model` + `modelId` placement for repeated or runtime-spawned content. `pos` accepts `[x, y, z]` (preferred), `{ x, y, z }`, or the exported `vector3(x, y, z)` helper; all normalize to the same component value.
+
+> ⚠️ Unknown option keys are silently ignored — only `pos` and `componentOverrides` are read. Keys like `position`, `transform`, `location` are dropped without warning, so the entity spawns at `(0,0,0)` with no error.
 
 ```javascript
 map.placeModel("Monster01", "RootDesk/MyDesk/Models/Monsters/Slime.model", {
@@ -435,13 +462,13 @@ b.value("MovementComponent", "InputSpeed", 2.5, "float")
 console.log(b.snapshot());
 ```
 
-When a mutation can fail and returns `false`, keep it separate and stop on failure:
+Removal mutators throw when the target value/property/child/event-link is missing. Guard with `hasValue` / `hasChild` if you need idempotent semantics:
 
 ```javascript
 const b = ModelBuilder.read("RootDesk/MyDesk/Models/Monsters/Slime.model");
 
-if (!b.removeValue("MovementComponent", "InputSpeed")) {
-  throw new Error("MovementComponent.InputSpeed not found");
+if (b.hasValue("MovementComponent", "InputSpeed")) {
+  b.removeValue("MovementComponent", "InputSpeed");
 }
 
 b.value("MovementComponent", "InputSpeed", 2.5, "float")
@@ -565,7 +592,8 @@ b.component(compName);
 b.addComponent(compName);
 b.hasComponent(compName);
 b.removeComponent(compName);
-b.listComponents();
+b.listComponents();           // silent — returns array of component type names
+b.printComponents();          // listComponents() + log each
 
 b.value(targetType, name, val, typeKey);
 b.getValue(targetType, name, fallback);
@@ -575,7 +603,8 @@ b.removeValue(targetType, name);
 b.enable(targetType, enabled);
 b.entityEnable(enabled);
 b.entityVisible(visible);
-b.listValues();
+b.listValues();               // silent — returns cloned values array
+b.printValues();              // listValues() + log each
 
 b.property(name, { target, property, type_key, display_name, show_in_inspector });
 b.removeProperty(name);
@@ -601,24 +630,24 @@ b.renameChild(childName, newName);
 b.childEventLink(childName, linkObject, { key });
 b.removeChildEventLink(childName, key, value);
 b.removeChild(name);
-b.listChildren();
+b.listChildren();             // silent — returns cloned children array
+b.printChildren();            // listChildren() + log summary
 
 b.eventLink(linkObject, { key });
 b.upsertEventLink(linkObject, { key });
 b.removeEventLink(key, value);
-b.listEventLinks();
+b.listEventLinks();           // silent — returns cloned event_links array
+b.printEventLinks();          // listEventLinks() + log each
 
 b.build();
 b.write(filepath, { ensure_sprite_ruid: true });
 ```
 
-**Chaining-safe mutators**: `renameModel()`, `setBaseModelId()`, `component()`, `addComponent()`, `removeComponent()`, `value()`, `enable()`, `entityEnable()`, `entityVisible()`, `property()`, `child()`, `childFromTemplate()`, `childFromModel()`, `childComponent()`, `removeChildComponent()`, `childValue()`, `childEnable()`, `childVisible()`, `childProperty()`, `setChildBaseModelId()`, `moveChild()`, `renameChild()`, `childEventLink()`, `eventLink()`, `upsertEventLink()`, `write()`.
+**Every mutator chains** (`return this`). Missing target → `Error`. See the cross-builder chaining contract above.
 
-**Do not chain through non-builder returns**:
-
-- `removeComponent()` and `removeChildComponent()` return the builder, but removal is unconditional — use them only when missing targets are acceptable.
-- `removeValue()`, `removeProperty()`, `removeChildValue()`, `removeChildProperty()`, `removeChildEventLink()`, `removeChild()`, and `removeEventLink()` return `boolean`; check `false` before writing.
-- `snapshot()`, `validate()`, `build()`, `get*()`, `has*()`, and `list*()` return data for inspection — call them on their own line.
+- Creators / updaters: `renameModel()`, `setBaseModelId()`, `component()`, `addComponent()`, `value()`, `enable()`, `entityEnable()`, `entityVisible()`, `property()`, `child()`, `childFromTemplate()`, `childFromModel()`, `childComponent()`, `childValue()`, `childEnable()`, `childVisible()`, `childProperty()`, `setChildBaseModelId()`, `moveChild()`, `renameChild()`, `childEventLink()`, `eventLink()`, `upsertEventLink()`, `write()`.
+- Removers (throw on miss): `removeComponent()`, `removeChildComponent()`, `removeValue()`, `removeProperty()`, `removeChildValue()`, `removeChildProperty()`, `removeChildEventLink()`, `removeChild()`, `removeEventLink()`.
+- Inspection (no chaining): `snapshot()`, `validate()`, `build()`, `get*()`, `has*()`, `list*()` — call on their own line.
 
 **`typeKey` values**: `bool`, `int`, `long`, `float`, `double`, `string`, `vector2`, `vector3`, `quaternion`, `collision_group`, `data_ref`, `sync_string_dict`, `action_sheet`.
 
@@ -710,7 +739,7 @@ b.write("ui/PopupGroup.ui", { lint_verbose: true });            // verbose warni
 b.write("ui/_scratch.ui", { lint: false });                     // skip lint
 ```
 
-Applied rule IDs (`L001`–`L012`) are described in the header of `<SKILL_ROOT>/msw-ui-system/scripts/ui_lint.cjs`.
+Applied rule IDs (`L001`–`L017`, `L023`–`L024`) are implemented as `ruleLNNN` functions in `<SKILL_ROOT>/msw-ui-system/scripts/ui_lint.cjs`.
 
 ### §3.4 pos / anchor Rules — Builder Auto-Pivot
 
@@ -741,7 +770,7 @@ b.panel("Left", {
 
 > **Breaking note**: among `.ui` files generated with older builder versions that appeared to use edge anchor + center pivot, restore intentionally center-based layouts by explicitly specifying `pivot=(0.5, 0.5)`.
 
-All public APIs (`panel / text / sprite / button / script / slider / scroll_layout / text_input`, etc.) and `patch()` accept `pivot=(x, y)`. `patch()` preserves the existing `Pivot` value when not explicitly specified.
+All public APIs (`panel / text / sprite / button / script / slider / scrollLayout / textInput`, etc.) and `patch()` accept `pivot=(x, y)`. `patch()` preserves the existing `Pivot` value when not explicitly specified.
 
 ### §3.5 API Reference
 
@@ -777,10 +806,12 @@ UIBuilder.snapshot(filepath);                              // returns compact en
 
 ```javascript
 b.find(identifier);                         // raw entity dict or null
-b.get_id(identifier);                       // UUID string or null
-b.has_component(identifier, comp_type);
-b.get_component(identifier, comp_type);     // {"@type": ..., ...} or null
-b.list_entities();                          // tree output + return (name/path/depth/kind/pos/size/enable)
+b.getId(identifier);                       // UUID string or null (lookup by path)
+b.lastId();                                 // UUID of entity targeted by the most recent creator call (new path → fresh UUID, existing path → existing UUID via upsert); not touched by update/remove
+b.hasComponent(identifier, comp_type);
+b.getComponent(identifier, comp_type);     // {"@type": ..., ...} or null
+b.listEntities();                          // silent — returns array (name/path/depth/kind/pos/size/enable)
+b.printEntities();                         // listEntities() + indented tree log to console
 ```
 
 `find()` return dict — `@components` is one level deeper, so direct access raises KeyError:
@@ -798,14 +829,17 @@ b.list_entities();                          // tree output + return (name/path/d
 }
 ```
 
-When you only need component data, use `b.get_component(path, comp_type)` instead of unwrapping the raw structure:
+When you only need component data, use `b.getComponent(path, comp_type)` instead of unwrapping the raw structure:
 
 ```javascript
-const btn = b.get_component("Panel/BtnOk", "MOD.Core.ButtonComponent");
+const btn = b.getComponent("Panel/BtnOk", "MOD.Core.ButtonComponent");
 if (btn?.Enable) { /* use */ }
 ```
 
-#### Entity Creation (upsert — replaces if the same path exists)
+#### Entity Creation (upsert — components replaced, existing root metadata preserved)
+
+> When the same path already exists, the creator preserves the existing root metadata (`name`, `nameEditable`, `visible`, `localize`, `revision`, `origin`) and re-applies only what the caller passed. `@components` is always replaced with the new value (that is the point of re-creating). To change `name` / `enable` / `visible` on an existing entity, call `patch()` rather than re-invoking the creator, or pass the field explicitly in the creator options.
+
 
 Tuple-shaped options (`pos`, `rect_size`, `cell_size`, `padding`, `spacing`, `softness`, ...) accept `[a, b]` / `[a, b, c, d]` (preferred) or `{ x, y, z, w }`. Both normalize to the same value.
 
@@ -823,8 +857,8 @@ b.text(name, text, {
 b.sprite(name, { anchor, pos, rect_size, color, alpha: 1.0, fill_method: 0, sprite_type: 0, raycast: false, enable: true, image_ruid: null, pivot: null });
 b.button(name, text, { rect_size: null, pos, anchor, font_size: 24, color: "#000000", enable: true, image_ruid: null, pivot: null });
 b.slider(name, { min_val: 0, max_val: 1, value: 0, direction: 0, use_handle: true, use_integer: false, anchor, pos, rect_size: [200, 30], enable: true, image_ruid: null, pivot: null });
-b.scroll_layout(name, { layout_type: 0, spacing: 0, cell_size: [100, 100], use_scroll: true, padding: [0, 0, 0, 0], anchor, pos, rect_size: [400, 600], enable: true, pivot: null });
-b.text_input(name, { placeholder: "", char_limit: 0, content_type: 0, line_type: 0, font_size: 24, color: "#000000", anchor, pos, rect_size: [300, 50], enable: true, image_ruid: null, pivot: null });
+b.scrollLayout(name, { layout_type: 0, spacing: 0, cell_size: [100, 100], use_scroll: true, padding: [0, 0, 0, 0], anchor, pos, rect_size: [400, 600], enable: true, pivot: null });
+b.textInput(name, { placeholder: "", char_limit: 0, content_type: 0, line_type: 0, font_size: 24, color: "#000000", anchor, pos, rect_size: [300, 50], enable: true, image_ruid: null, pivot: null });
 b.script(name, scriptName, { anchor: "stretch", pos: [0, 0], rect_size: [1920, 1080], enable: true, pivot: null });
 
 // Child UIGroup — popup / overlay subgroup
@@ -834,21 +868,21 @@ b.group(name, { default_show: true, group_order: 0, group_type: 1, blocks_raycas
 b.mask(name, { shape: 0, padding: [0, 0, 0, 0], softness: [0, 0], anchor: "middle-center", pos: [0, 0], rect_size: [200, 200], color: null, alpha: 0.0, image_ruid: null, enable: true, pivot: null });
 
 // Virtualized grid
-b.grid_view(name, { total_count: 0, cell_size: [100, 100], fixed_count: 1, fixed_type: 0, spacing: [0, 0], padding: [0, 0, 0, 0], use_scroll: true, scroll_bar_visible: 1, scroll_bar_thickness: 10.0, anchor, pos, rect_size: [400, 600], enable: true, pivot: null });
+b.gridView(name, { total_count: 0, cell_size: [100, 100], fixed_count: 1, fixed_type: 0, spacing: [0, 0], padding: [0, 0, 0, 0], use_scroll: true, scroll_bar_visible: 1, scroll_bar_thickness: 10.0, anchor, pos, rect_size: [400, 600], enable: true, pivot: null });
 
 // Avatar / Touch / Skeleton / Particle
 b.avatar(name, { color: null, flip_x: false, flip_y: false, play_rate: 1.0, preserve_avatar: 0, raycast: true, material_id: "", anchor, pos, rect_size: [200, 300], enable: true, pivot: null });
-b.touch_receive(name, { anchor: "stretch", pos: [0, 0], rect_size: [1920, 1080], enable: true, pivot: null });
+b.touchReceive(name, { anchor: "stretch", pos: [0, 0], rect_size: [1920, 1080], enable: true, pivot: null });
 b.skeleton(name, { skeleton_ruid: "", animations: null, skins: null, color: null, flip_x: false, flip_y: false, loop: true, play_rate: 1.0, preserve_mode: 0, raycast: true, anchor, pos, rect_size: [200, 200], enable: true, pivot: null });
-b.area_particle(name, { particle_type: 0, area_size: [100, 100], area_offset: [0, 0], color: null, local_scale: [1, 1], play_speed: 1.0, particle_size: 1.0, particle_speed: 1.0, particle_count: 1.0, particle_lifetime: 1.0, loop: true, play_on_enable: true, prewarm: false, auto_random_seed: true, random_seed: 0, anchor, pos, rect_size: [100, 100], enable: true, pivot: null });
-b.basic_particle(name, { particle_type: 0, color: null, local_scale: [1, 1], play_speed: 1.0, particle_size: 1.0, particle_speed: 1.0, particle_count: 1.0, particle_lifetime: 1.0, loop: true, play_on_enable: true, prewarm: false, auto_random_seed: true, random_seed: 0, anchor, pos, rect_size: [100, 100], enable: true, pivot: null });
-b.sprite_particle(name, { particle_type: 0, sprite_ruid: "", apply_sprite_color: false, color: null, local_scale: [1, 1], play_speed: 1.0, particle_size: 1.0, particle_speed: 1.0, particle_count: 1.0, particle_lifetime: 1.0, loop: true, play_on_enable: true, prewarm: false, auto_random_seed: true, random_seed: 0, anchor, pos, rect_size: [100, 100], enable: true, pivot: null });
+b.areaParticle(name, { particle_type: 0, area_size: [100, 100], area_offset: [0, 0], color: null, local_scale: [1, 1], play_speed: 1.0, particle_size: 1.0, particle_speed: 1.0, particle_count: 1.0, particle_lifetime: 1.0, loop: true, play_on_enable: true, prewarm: false, auto_random_seed: true, random_seed: 0, anchor, pos, rect_size: [100, 100], enable: true, pivot: null });
+b.basicParticle(name, { particle_type: 0, color: null, local_scale: [1, 1], play_speed: 1.0, particle_size: 1.0, particle_speed: 1.0, particle_count: 1.0, particle_lifetime: 1.0, loop: true, play_on_enable: true, prewarm: false, auto_random_seed: true, random_seed: 0, anchor, pos, rect_size: [100, 100], enable: true, pivot: null });
+b.spriteParticle(name, { particle_type: 0, sprite_ruid: "", apply_sprite_color: false, color: null, local_scale: [1, 1], play_speed: 1.0, particle_size: 1.0, particle_speed: 1.0, particle_count: 1.0, particle_lifetime: 1.0, loop: true, play_on_enable: true, prewarm: false, auto_random_seed: true, random_seed: 0, anchor, pos, rect_size: [100, 100], enable: true, pivot: null });
 
 // Virtual joystick (mobile controls)
 b.joystick(name, { dynamic_stick: true, axis: 1, up_arrow: 273, down_arrow: 274, left_arrow: 276, right_arrow: 275, anchor: "bottom-left", pos: [200, 200], rect_size: [300, 300], image_ruid: null, color: null, alpha: 1.0, enable: true, pivot: null });
 
 // Soft mask (UGUI SoftMask style)
-b.soft_mask(name, { invert_mask: false, invert_outsides: false, anchor: "middle-center", pos: [0, 0], rect_size: [200, 200], color: null, alpha: 0.0, image_ruid: null, enable: true, pivot: null });
+b.softMask(name, { invert_mask: false, invert_outsides: false, anchor: "middle-center", pos: [0, 0], rect_size: [200, 200], color: null, alpha: 0.0, image_ruid: null, enable: true, pivot: null });
 
 // Chat UI
 b.chat(name, { use_chat_balloon: false, expand: true, use_chat_emotion: true, chat_emotion_duration: 5.0, enable_voice_chat: true, hide_world_chat_button: false, message_align_bottom: false, anchor: "bottom-left", pos: [200, 200], rect_size: [400, 300], image_ruid: null, color: null, alpha: 0.0, enable: true, pivot: null });
@@ -858,7 +892,7 @@ b.line(name, { points: [{ pos: [0, 0], color: "#FFFFFF", width: 2.0 }, /* ... */
 b.polygon(name, { points: [[0, 0], [100, 0], [50, 100]], color: null, use_custom_uvs: false, uvs: null, material_id: "", anchor, pos, rect_size: [100, 100], enable: true, pivot: null });
 ```
 
-All creation methods return the UUID (`str`) of the created / updated entity.
+All creation methods return the builder for chaining. The UUID of the created / updated entity is exposed via `b.lastId()` — call it immediately after the creator if you need the id.
 
 Use `button()` as the default for any colored or imaged rectangle that needs centered text and click handling. It creates the clickable tile as one entity instead of requiring a separate `sprite()` + `text()` pair.
 
@@ -875,7 +909,7 @@ b.button("BtnAttack", "Attack", {
   anchor: "bottom-center", pos: [-220, 80], rect_size: [400, 120],
   font_size: 30, color: "#FFFFFF",
 });
-b.patch_component("BtnAttack", "MOD.Core.SpriteGUIRendererComponent", {
+b.patchComponent("BtnAttack", "MOD.Core.SpriteGUIRendererComponent", {
   Color: { r: 0.12, g: 0.16, b: 0.22, a: 1.0 },
 });
 
@@ -884,9 +918,25 @@ b.button("BtnRun", "Run", {
   anchor: "bottom-center", pos: [220, 80], rect_size: [400, 120],
   font_size: 30, color: "#111827",
 });
-b.patch_component("BtnRun", "MOD.Core.SpriteGUIRendererComponent", {
+b.patchComponent("BtnRun", "MOD.Core.SpriteGUIRendererComponent", {
   Color: { r: 0.90, g: 0.94, b: 1.0, a: 1.0 },
 });
+```
+
+#### Signature gotchas
+
+**`sprite()` fill options are int-only.** `sprite_type` and `fill_method` accept integer codes; string enums (`"Filled"`, `"Horizontal"`) throw at the int32 cast. The full enum catalog is in `#### Enum catalog` below — `sprite_type` ∈ `Simple=0 / Sliced=1 / Tiled=2 / Filled=3`, `fill_method` ∈ `Horizontal=0 / Vertical=1 / Radial90=2 / Radial180=3 / Radial360=4`. `fill_origin` and `fill_amount` are **not** exposed as builder options — they start at engine defaults (`FillOrigin=0`, `FillAmount=1.0`). Runtime code that animates a fill writes `entity.FillAmount` directly each frame.
+
+```javascript
+b.sprite("HPBar/Fill", { color: "2ecc71", sprite_type: 3, fill_method: 0 });   // ✅ int
+b.sprite("HPBar/Fill", { image_type: "Filled", fill_method: "Horizontal" });   // ❌ throws "FillMethod must be int32. Got 'Horizontal'"
+```
+
+**`script(name, scriptName, options)` is 3-arg.** Same shape as `text(name, text, opts)` / `button(name, text, opts)` — the second positional argument is the **content string** (the script type name, e.g. `"WoWPlayerHUDController"`), not the options object. Packing the script name into options (`b.script(name, { script_name: "X" })`) leaves `scriptName` undefined; the resulting component's `@type` becomes `"MOD.Core.UITransformComponent,undefined"`, the build still succeeds, `ui_lint` flags `L010` (componentNames out of sync), and the controller silently never runs. Options-only patterns are reserved for content-free entities (`panel` / `sprite` / `mask` / etc.).
+
+```javascript
+b.script("Controller", "WoWPlayerHUDController", { anchor: "stretch", pos: [0, 0], rect_size: [1920, 1080] });  // ✅
+b.script("Controller", { script_name: "WoWPlayerHUDController" });                                              // ❌ silent — L010 only
 ```
 
 #### Enum catalog
@@ -894,44 +944,44 @@ b.patch_component("BtnRun", "MOD.Core.SpriteGUIRendererComponent", {
 | Method | Argument | Enum | Values |
 |---|---|---|---|
 | `mask` | `shape` | `MaskShape` | `Rect=0` |
-| `grid_view` | `fixed_type` | `GridViewFixedType` | `ColumnCountFixed=0` (vertical scroll), `RowCountFixed=1` (horizontal) |
-| `grid_view` | `scroll_bar_visible` | `ScrollBarVisibility` | `AlwaysShow=0`, `AutoHide=1`, `Hide=2` |
+| `gridView` | `fixed_type` | `GridViewFixedType` | `ColumnCountFixed=0` (vertical scroll), `RowCountFixed=1` (horizontal) |
+| `gridView` | `scroll_bar_visible` | `ScrollBarVisibility` | `AlwaysShow=0`, `AutoHide=1`, `Hide=2` |
 | `avatar` | `preserve_avatar` | `PreserveSpriteType` | `None=0`, `AspectOnly=1`, `NativeSize=2` |
 | `group` | `group_type` | `UIGroupType` | `DefaultType=0`, `UIType=1` (recommended), `EditorType=2` |
 | `skeleton` | `preserve_mode` | `PreserveSpriteType` | `None=0`, `AspectOnly=1`, `NativeSize=2` |
-| `area_particle` | `particle_type` | `UIAreaParticleType` | `None=0`, `FogCalm=1`, `FogHeavy=2`, `FogLively=3`, `CalmStarField=4`, `StarFieldSimple=5`, `StarFog=6`, `StarFogFlow=7` |
-| `basic_particle` | `particle_type` | `UIBasicParticleType` | `None=0` + 1–45 (full table in [`ui-system/references/component-api.md`](../../msw-ui-system/references/component-api.md) §Enums) |
-| `sprite_particle` | `particle_type` | `UISpriteParticleType` | `None=0`, `BurstBig=1`, `SpawnField=2`, `BurstNova=3`, `SimpleSpawn=4`, `Burst=5`, `Stream=6`, `StreamSharp=7`, `AdditiveColor=8` |
+| `areaParticle` | `particle_type` | `UIAreaParticleType` | `None=0`, `FogCalm=1`, `FogHeavy=2`, `FogLively=3`, `CalmStarField=4`, `StarFieldSimple=5`, `StarFog=6`, `StarFogFlow=7` |
+| `basicParticle` | `particle_type` | `UIBasicParticleType` | `None=0` + 1–45 (full table in [`ui-system/references/component-api.md`](../../msw-ui-system/references/component-api.md) §Enums) |
+| `spriteParticle` | `particle_type` | `UISpriteParticleType` | `None=0`, `BurstBig=1`, `SpawnField=2`, `BurstNova=3`, `SimpleSpawn=4`, `Burst=5`, `Stream=6`, `StreamSharp=7`, `AdditiveColor=8` |
 | `joystick` | `axis` | `AxisType` | `Axis_4=0`, `Axis_8=1` (default) |
 | `joystick` | arrow keys | `KeyboardKey` | Integer key codes. Defaults: `UpArrow=273`, `DownArrow=274`, `RightArrow=275`, `LeftArrow=276` |
 
-#### Notes on group / mask / grid_view
+#### Notes on group / mask / gridView
 
 - **`group(default_show=False)` pitfall is the same as root** — if the group is saved hidden, child scripts' `OnBeginPlay` / `OnUpdate` are not called. Keep `default_show=True` for groups containing controller scripts and toggle child `Visible` / `Enable` instead.
 - **`mask` requires `SpriteGUIRenderer`** — the builder attaches it automatically, but leaving `image_ruid` empty renders a placeholder (SpawnLocation pin shape). To hide the visual mask shape, keep the default `alpha=0`; to make it visible, specify `alpha` / `color` / `image_ruid`.
-- **`grid_view`'s `ItemEntity` is a runtime prefab** — the builder only fills static fields like `TotalCount` / `CellSize`. The actual cell template must be injected in the script's `OnBeginPlay` via `self.Entity.GridViewComponent.ItemEntity = ...` followed by a `Refresh()` call. This is the only component that cannot be completed by the builder alone.
+- **`gridView`'s `ItemEntity` is a runtime prefab** — the builder only fills static fields like `TotalCount` / `CellSize`. The actual cell template must be injected in the script's `OnBeginPlay` via `self.Entity.GridViewComponent.ItemEntity = ...` followed by a `Refresh()` call. This is the only component that cannot be completed by the builder alone.
 
-#### Notes on touch_receive / skeleton / particle
+#### Notes on touchReceive / skeleton / particle
 
-- **`touch_receive` has no rendering** — works without `RaycastTarget`. To create a visible area, place a `b.sprite(...)` or `b.panel(...)` at the same position and put the touch receiver on the layer above. All 7 events (`UITouchEnter/Exit/Down/Up/BeginDrag/Drag/EndDrag`) are ClientOnly. Actions requiring server sync (e.g. inventory moves resulting from a drag) should be delegated by calling `Server` ExecSpace methods.
+- **`touchReceive` has no rendering** — works without `RaycastTarget`. To create a visible area, place a `b.sprite(...)` or `b.panel(...)` at the same position and put the touch receiver on the layer above. All 7 events (`UITouchEnter/Exit/Down/Up/BeginDrag/Drag/EndDrag`) are ClientOnly. Actions requiring server sync (e.g. inventory moves resulting from a drag) should be delegated by calling `Server` ExecSpace methods.
 - **`skeleton` is Spine 4.1 only** — RUIDs from other versions fail to load. Track 1 is reserved by the engine, so passing 1 as the `trackIndex` argument to `SetAnimation` / `AddAnimation` / `ClearTrack` in user code is ignored (use only 0, 2+). The `animations` / `skins` fields only set the initial track-0 animation and active skin list at builder time — runtime changes use ClientOnly methods (`SetAnimation`, `SetAttachment`, etc.).
 - **`SkeletonRUID` is a plain string** — the builder serializes it as `"SkeletonRUID": "<ruid>"`. Do not confuse it with SpriteGUIRenderer's `ImageRUID: {"DataId": ...}` MODDataRef wrapping.
-- **`area_particle` / `basic_particle` are preset-based** — the `ParticleType` value determines the visual appearance. `LocalScale` / `ParticleSize` / `ParticleSpeed` / `ParticleCount` / `ParticleLifeTime` are global tuning multipliers on top of the preset. To change the shape itself, switch to a different `particle_type`.
+- **`areaParticle` / `basicParticle` are preset-based** — the `ParticleType` value determines the visual appearance. `LocalScale` / `ParticleSize` / `ParticleSpeed` / `ParticleCount` / `ParticleLifeTime` are global tuning multipliers on top of the preset. To change the shape itself, switch to a different `particle_type`.
 - **Default particle Color is `(0.5, 0.25, 0.25, 1)`** (brown/sepia) — preserves the engine default. For white or high-saturation colors, specify `color="#FFFFFF"` / `color=(1,1,1)` explicitly.
 - **`AreaSize` engine metadata default is `(0,0)`**, which emits particles from a point. The builder uses `(100, 100)` as a usable default. To intentionally emit from a point, specify `area_size=(0, 0)` explicitly.
 - **`play_on_enable=True` (default) + `loop=True`** → infinite playback starts immediately when the entity is enabled. To show the effect only once, use `loop=False`, or set `play_on_enable=False` and control the `Play()` call from script. `Play` / `Stop` are ClientOnly.
 
-#### Notes on joystick / soft_mask / chat / line / polygon
+#### Notes on joystick / softMask / chat / line / polygon
 
 - **`joystick` is for mobile input only** — desktop uses keyboard mappings (`up_arrow` / `down_arrow` / `left_arrow` / `right_arrow`) for alternative input. With `dynamic_stick=true` (default), the stick follows the touch start position. The builder attaches both `SpriteGUIRenderer` and `Joystick`, and the engine automatically sets `SpriteGUIRenderer.RaycastTarget` to `false` at `BeginPlay`. If `image_ruid` is not specified, the builder's default sprite is used.
-- **`soft_mask` is an unpublish feature** — gated by permission (`EnableUnpublishFeature`). Unlike `MaskComponent`, it supports soft-edge clipping, and only `RawImageGUIRenderer` / `SpriteGUIRenderer` children are clipped. `invert_mask=true` clips inside the mask, `invert_outsides=true` clips outside.
+- **`softMask` is an unpublish feature** — gated by permission (`EnableUnpublishFeature`). Unlike `MaskComponent`, it supports soft-edge clipping, and only `RawImageGUIRenderer` / `SpriteGUIRenderer` children are clipped. `invert_mask=true` clips inside the mask, `invert_outsides=true` clips outside.
 - **`chat` is a world / session-level chat UI** — typically only one per world. `use_chat_balloon=true` enables speech-bubble mode (bubbles above other users' characters). `expand` / `use_chat_emotion` / `enable_voice_chat` / `hide_world_chat_button` / `message_align_bottom` are UI display details.
 - **`line`'s `points`** — `[{ pos: [x, y], color: "#RRGGBB" | Color, width: float }, ...]`. An empty array draws nothing. A single `null` point prevents the engine from drawing any of it. Corners are smoothed only when `is_flexible=true` + `flexibility>=1`.
 - **`polygon`'s `points`** — `[[x, y], ...]` Vector2 array. Fewer than 3 points or self-intersecting polygons are not drawn (`IsDrawable()` false). `uvs` is used only when `use_custom_uvs=true`, and its length must match `points`.
 
 #### WorldUI sort fields (common)
 
-All 6 methods `sprite` / `text` / `button` / `slider` / `scroll_layout` / `text_input` support the same 4 sort fields. These are meaningful only when UITransform `UIMode=World(2)` (Screen UI ignores sort fields).
+All 6 methods `sprite` / `text` / `button` / `slider` / `scrollLayout` / `textInput` support the same 4 sort fields. These are meaningful only when UITransform `UIMode=World(2)` (Screen UI ignores sort fields).
 
 ```javascript
 b.text("BossName", "Boss", { world_ui: true, sorting_layer: "World", order_in_layer: 10 });
@@ -944,22 +994,22 @@ b.text("BossName", "Boss", { world_ui: true, sorting_layer: "World", order_in_la
 #### Patch / Rename / Remove
 
 ```javascript
-b.patch(identifier, { anchor, pos, rect_size, pivot, enable, visible, localize, display_order, new_name }); // UUID or null
-b.rename(identifier, newName);  // updates all child paths
-b.remove(identifier);           // deletes subtree (root not allowed)
+b.patch(identifier, { anchor, pos, rect_size, pivot, enable, visible, localize, display_order, new_name }); // throws if missing
+b.rename(identifier, newName);  // updates all child paths; throws if missing
+b.remove(identifier);           // deletes subtree (root not allowed); throws if missing
 ```
 
 #### Component CRUD
 
 ```javascript
-b.add_component(identifier, comp_type, comp_data = null);       // no-op if it already exists
-b.upsert_component(identifier, comp_type, comp_data = null);    // replaces if it exists
-b.patch_component(identifier, comp_type, updates);              // field merge
-b.remove_component(identifier, comp_type);                      // rejects UITransform
-b.set_component_enabled(identifier, comp_type, enabled);
+b.addComponent(identifier, comp_type, comp_data = null);       // throws if it already exists
+b.upsertComponent(identifier, comp_type, comp_data = null);    // replaces if it exists
+b.patchComponent(identifier, comp_type, updates);              // field merge; throws if missing
+b.removeComponent(identifier, comp_type);                      // rejects UITransform; throws if missing
+b.setComponentEnabled(identifier, comp_type, enabled);         // throws if missing
 ```
 
-`comp_data` defaults to `{"@type": comp_type, "Enable": True}` when omitted. The `componentNames` field is auto-synced.
+`comp_data` defaults to `{"@type": comp_type, "Enable": True}` when omitted. The `componentNames` field is auto-synced. All mutators return the builder; missing entity/component throws.
 
 #### Output
 
@@ -980,7 +1030,7 @@ property TextComponent message = "<entity UUID>"  -- same for components
 property ButtonComponent btnOk = "<entity UUID>"
 ```
 
-The engine reads the property declaration type (`TextComponent`, etc.) and wraps it at runtime as `MODComponentRef("{uuid}:{TypeName}")` → resolves the component via `entity.GetComponent(typeId)`. Therefore the builder only needs to pass **one kind: `get_id(path)`**. (Earlier guides describing a separate "extract component UUID" procedure were based on an incorrect assumption.)
+The engine reads the property declaration type (`TextComponent`, etc.) and wraps it at runtime as `MODComponentRef("{uuid}:{TypeName}")` → resolves the component via `entity.GetComponent(typeId)`. Therefore the builder only needs to pass **one kind: `getId(path)`**. (Earlier guides describing a separate "extract component UUID" procedure were based on an incorrect assumption.)
 
 **`write(path, { bind: ... })` — write + injection in one call**:
 
@@ -1004,7 +1054,7 @@ Or as separate calls:
 
 ```javascript
 b.write("ui/PopupGroup.ui");
-b.inject_bindings("RootDesk/MyDesk/UIPopup.mlua", {
+b.injectBindings("RootDesk/MyDesk/UIPopup.mlua", {
   popupGroup: "Panel",
   btnOk: "Panel/BtnOk",
 });
@@ -1019,6 +1069,10 @@ b.inject_bindings("RootDesk/MyDesk/UIPopup.mlua", {
 
 Verify that the `.mlua` actually exists and the target property is declared before calling. `.codeblock` is not touched — Maker Refresh regenerates it.
 
+**Failure ordering** — `b.write({ bind })` runs `validate()` and pre-bakes the `.mlua` patch in memory **before** writing `.ui`. If anything before the `.ui` write throws (validation error, missing entity, undeclared property, duplicate property), neither file is touched. If strict `ui_lint` fails after `.ui` is on disk, the `.ui` is removed (rolled back) and `.mlua` is left untouched. `.mlua` is written last, only after `.ui` + lint pass. Property replacement is line-anchored and skips Lua line comments (`--`) and block comments (`--[[ ... ]]`), so a commented-out `property string Foo = "..."` is never overwritten.
+
+**`b.validate()`** — call directly to inspect findings (`{ severity, rule, message }[]`) without writing. `write()` calls it internally and throws on any `severity: "error"`. Rules: `U001` invalid number (NaN / Infinity), `U002` int32 component field, `U003` finite-number component field, `U004` boolean component field.
+
 **Naming convention (recommended)**:
 
 ```
@@ -1031,31 +1085,31 @@ Keep the last path segment in camelCase + role suffix (`Btn` / `Text` / `Panel`)
 
 ### §3.7 Scope (what UIBuilder covers)
 
-- Adding panel / text / sprite / button / slider / scroll_layout / text_input / script
+- Adding panel / text / sprite / button / slider / scrollLayout / textInput / script
 - Child UIGroup (`group`) — subgroup show / hide control
-- mask / grid_view / avatar — clipping, virtualized lists, avatar rendering
-- touch_receive — invisible drag / multi-touch receiver
+- mask / gridView / avatar — clipping, virtualized lists, avatar rendering
+- touchReceive — invisible drag / multi-touch receiver
 - skeleton — Spine 4.1 skeleton UI renderer
-- area_particle / basic_particle / sprite_particle — preset-based particles
+- areaParticle / basicParticle / spriteParticle — preset-based particles
 - anchor / position / rect_size adjustment
 - HUD / popup / menu layout modification
 - entity rename / remove (including subtree)
 - component add / replace / patch / remove
 - path-based entity lookup
 
-### §3.8 `patch_component` workaround for fields beyond the signature
+### §3.8 `patchComponent` workaround for fields beyond the signature
 
-Component fields not covered by the signature parameters of `text()` / `sprite()` / `button()` (e.g. `Font`, `LineSpacing`, `DropShadow`, `Padding`, `FillAmount`, `FillOrigin`, `OrderInLayer`) must be set explicitly via `patch_component(path, comp_type, updates)`.
+Component fields not covered by the signature parameters of `text()` / `sprite()` / `button()` (e.g. `Font`, `LineSpacing`, `DropShadow`, `Padding`, `FillAmount`, `FillOrigin`, `OrderInLayer`) must be set explicitly via `patchComponent(path, comp_type, updates)`.
 
 ```javascript
-b.patch_component("Panel/Title", "MOD.Core.TextComponent",
+b.patchComponent("Panel/Title", "MOD.Core.TextComponent",
                   { Font: 1, LineSpacing: 1.2 });
 
-b.patch_component("Panel/Title", "MOD.Core.TextComponent",
+b.patchComponent("Panel/Title", "MOD.Core.TextComponent",
                   { DropShadow: true,
                     DropShadowColor: { r: 0, g: 0, b: 0, a: 0.6 } });
 
-b.patch_component("HPBar/Fill", "MOD.Core.SpriteGUIRendererComponent",
+b.patchComponent("HPBar/Fill", "MOD.Core.SpriteGUIRendererComponent",
                   { Type: 3, FillMethod: 0, FillOrigin: 0,
                     FillAmount: 1.0 });
 ```
@@ -1076,9 +1130,9 @@ The `PlatformType` enum (`PC=1, Mobile=2, All=0xff(255)`) determines which platf
 
 The builder automatically injects `ActivePlatform: 255` (all platforms) when creating a new UITransformComponent. Only watch out for these patterns:
 
-- When partially modifying UITransform fields via `patch_component(identifier, "MOD.Core.UITransformComponent", updates)`, do not touch `ActivePlatform`.
-- For mobile-only UI, set explicitly with `b.patch_component(name, "MOD.Core.UITransformComponent", { ActivePlatform: 2 })`. For PC-only, use `1`.
-- Among **existing `.ui` files** loaded via `load()`, entries missing the `ActivePlatform` field entirely are **not** auto-corrected. Fill them in manually with `patch_component`.
+- When partially modifying UITransform fields via `patchComponent(identifier, "MOD.Core.UITransformComponent", updates)`, do not touch `ActivePlatform`.
+- For mobile-only UI, set explicitly with `b.patchComponent(name, "MOD.Core.UITransformComponent", { ActivePlatform: 2 })`. For PC-only, use `1`.
+- Among **existing `.ui` files** loaded via `load()`, entries missing the `ActivePlatform` field entirely are **not** auto-corrected. Fill them in manually with `patchComponent`.
 
 **`default_show=False` caveat — script lifecycle halted**
 
@@ -1129,15 +1183,14 @@ ModelBuilder.fromTemplate(
   .write(modelPath);
 
 // (2) Map placement
-const map = MapBuilder.read("map/map01.map");
-const placedId = map.placeModel("Slime01", modelPath, {
-  pos: [3, 1, 0],
-  componentOverrides: {
-    "MOD.Core.SpriteRendererComponent": { OrderInLayer: 10 },
-  },
-});
-console.log({ placedId });
-map.write("map/map01.map");
+MapBuilder.read("map/map01.map")
+  .placeModel("Slime01", modelPath, {
+    pos: [3, 1, 0],
+    componentOverrides: {
+      "MOD.Core.SpriteRendererComponent": { OrderInLayer: 10 },
+    },
+  })
+  .write("map/map01.map");
 
 // (3) Maker MCP `refresh`
 ```
@@ -1145,7 +1198,7 @@ map.write("map/map01.map");
 `placeModel(name, modelPathOrJson, options)` behavior:
 
 - Reads the `.model`, derives `modelId` from `ContentProto.Json.Id` or `EntryKey`, mirrors its component list into the placed map entity, and applies model `Values` to matching component fields.
-- Returns the placed root entity id string, not the builder. Do not chain `.write()` after `placeModel()`.
+- Returns the builder for chaining. The root entity id of the placed instance is exposed via `b.lastId()`.
 - Replaces an existing entity with the same map path and removes its existing descendants before placing the new model instance.
 - Places model children recursively, preserving parent-child paths and `origin` metadata.
 - Accepts `options.pos` as `[x, y, z]` / `{ x, y, z }` / `vector3(...)`; arrays preferred.
@@ -1233,7 +1286,7 @@ After calls to all three builders, consolidate into a single `refresh`.
 | [platform-maple.md](platform-maple.md) / [platform-rect.md](platform-rect.md) / [platform-sideview.md](platform-sideview.md) | Per-map-type physics / events / patterns |
 | [troubleshooting.md](troubleshooting.md) | Symptom → cause → fix (LEA-3004, "won't move", "won't render", LWA-3047, etc.) |
 | [`msw-ui-system` SKILL](../../msw-ui-system/SKILL.md) | UI design guide + component API — read together when working on `.ui` |
-| [`msw-ui-system/references/component-api.md`](../../msw-ui-system/references/component-api.md) | Full UI component fields / enums — when applying the `patch_component` workaround |
+| [`msw-ui-system/references/component-api.md`](../../msw-ui-system/references/component-api.md) | Full UI component fields / enums — when applying the `patchComponent` workaround |
 | [`msw-ui-system/references/ui-fundamentals.md`](../../msw-ui-system/references/ui-fundamentals.md) | Coordinate system / 16 anchor presets, resolution / safe area |
 
 **Core principle**: *"`.map` / `.model` / `.ui` mutations all go through dedicated builders, and the builders re-confirm with this document at the start of every call."*

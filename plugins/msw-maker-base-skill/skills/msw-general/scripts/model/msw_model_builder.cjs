@@ -15,51 +15,6 @@ const DEFAULT_DAMAGE_SKIN_ATTACK = "3271c3e79bf04ecba9a107d55495970d";
 const DEFAULT_DAMAGE_SKIN_HIT = "02c22d93421b4038b3c413b3e40b57ec";
 const DEFAULT_DAMAGE_SKIN_HEAL = "d58b67cf0f3a4eaf9fe1ad87c0ffac8a";
 
-const NATIVE_COMPONENTS = new Set([
-  "AIChaseComponent", "AIComponent", "AIWanderComponent",
-  "AnimationSequenceControllerComponent", "AreaParticleComponent",
-  "AttackComponent", "AvatarBodyActionSelectorComponent",
-  "AvatarFaceActionSelectorComponent", "AvatarGUIRendererComponent",
-  "AvatarRendererComponent", "AvatarStateAnimationComponent",
-  "BackgroundComponent", "BasicParticleComponent", "ButtonComponent",
-  "CameraComponent", "CanvasGroupComponent", "ChatBalloonComponent",
-  "ChatComponent", "ClimbableComponent", "ClimbableSpriteRendererComponent",
-  "Component", "CostumeManagerComponent", "CustomFootholdComponent",
-  "DamageSkinComponent", "DamageSkinSettingComponent",
-  "DamageSkinSpawnerComponent", "DirectionSynchronizerComponent",
-  "DistanceJointComponent", "FootholdComponent", "GridViewComponent",
-  "HitComponent", "HitEffectSpawnerComponent", "InteractionComponent",
-  "InventoryComponent", "JoystickComponent", "KinematicbodyComponent",
-  "LightComponent", "LineGUIRendererComponent", "LineRendererComponent",
-  "MapComponent", "MapLayerComponent", "MaskComponent", "MissingComponent",
-  "MovementComponent", "NameTagComponent", "OverlayLightComponent",
-  "PhysicsColliderComponent", "PhysicsRigidbodyComponent",
-  "PhysicsSimulatorComponent", "PixelGUIRendererComponent",
-  "PixelRendererComponent", "PlayerComponent", "PlayerControllerComponent",
-  "PolygonGUIRendererComponent", "PolygonRendererComponent", "PortalComponent",
-  "PrismaticJointComponent", "PulleyJointComponent",
-  "RawImageGUIRendererComponent", "RawImageRendererComponent",
-  "RectTileMapComponent", "RevoluteJointComponent", "RigidbodyComponent",
-  "ScrollLayoutGroupComponent", "SideviewbodyComponent",
-  "SkeletonGUIRendererComponent", "SkeletonRendererComponent",
-  "SliderComponent", "SoundComponent", "SpawnLocationComponent",
-  "SpriteGUIRendererComponent", "SpriteParticleComponent",
-  "SpriteRendererComponent", "StateAnimationComponent", "StateComponent",
-  "StateStringToAvatarActionComponent", "StateStringToMonsterActionComponent",
-  "TagComponent", "TextComponent", "TextGUIRendererComponent",
-  "TextGUIRendererInputComponent", "TextInputComponent",
-  "TextRendererComponent", "TileMapComponent", "TouchReceiveComponent",
-  "TransformComponent", "TriggerComponent", "TweenCircularComponent",
-  "TweenFloatingComponent", "TweenLineComponent", "UIAreaParticleComponent",
-  "UIBasicParticleComponent", "UIGroupComponent", "UISpriteParticleComponent",
-  "UITouchReceiveComponent", "UITransformComponent", "WebSpriteComponent",
-  "WebViewComponent", "WeldJointComponent", "WheelJointComponent",
-  "WorldComponent", "YoutubePlayerCommonComponent",
-  "YoutubePlayerGUIComponent", "YoutubePlayerWorldComponent",
-]);
-
-const NATIVE_COMPONENTS_LC = new Map([...NATIVE_COMPONENTS].map((name) => [name.toLowerCase(), name]));
-
 const TYPE_MAP = {
   bool: `System.Boolean, ${MSCORLIB}`,
   boolean: `System.Boolean, ${MSCORLIB}`,
@@ -231,16 +186,14 @@ function normalizeModelId(value) {
 function normalizeComponentName(name) {
   if (name == null) throw new TypeError("Component name must not be null");
   const value = String(name);
-  if (value.startsWith("script.") || value.startsWith("MOD.")) return value;
-  const canonical = NATIVE_COMPONENTS_LC.get(value.toLowerCase());
-  if (canonical != null) {
-    if (canonical !== value) {
-      console.error(`[ModelBuilder] NOTE: '${value}' normalized to native '${canonical}' (case-insensitive match).`);
-    }
-    return `MOD.Core.${canonical}`;
-  }
-  console.error(`[ModelBuilder] WARN: '${value}' is not a known native component. Treating as script component -> 'script.${value}'.`);
-  return `script.${value}`;
+  if (value.startsWith("MOD.") || value.startsWith("script.")) return value;
+  throw new Error(
+    `Component type must be fully qualified with "MOD.Core." or "script." prefix, got: "${value}". ` +
+      `Native components use "MOD.Core.XxxComponent" (e.g. "MOD.Core.TransformComponent"); ` +
+      `mlua script components use "script.XxxComponent" (e.g. "script.Monster"). ` +
+      `Engine .model deserialization keys components by exact @type; a short name silently fails to attach (Maker logs only a warning and the inspector shows no component). ` +
+      `See msw-general/references/builder-protocol.md → "Rules common to all three builders" rule 8.`
+  );
 }
 
 function normalizeTargetType(targetType) {
@@ -365,12 +318,11 @@ class ModelBuilder {
     return this.components.includes(normalizeComponentName(compName));
   }
 
-  remove_component(compName) {
-    return this.removeComponent(compName);
-  }
-
   removeComponent(compName) {
     const normalized = normalizeComponentName(compName);
+    if (!this.components.includes(normalized)) {
+      throw new Error(`Component not found: ${normalized}`);
+    }
     this.components = this.components.filter((c) => c !== normalized);
     this.values = this.values.filter((v) => v.TargetType !== normalized);
     this.properties = this.properties.filter((p) => {
@@ -400,28 +352,19 @@ class ModelBuilder {
     return this.values.some((v) => v.TargetType === normalizedTarget && v.Name === name);
   }
 
-  remove_value(targetType, name) {
-    return this.removeValue(targetType, name);
-  }
-
   removeValue(targetType, name) {
-    return removeValueEntry(this.values, targetType, name);
+    if (!removeValueEntry(this.values, targetType, name)) {
+      throw new Error(`Value not found: ${targetType}.${name}`);
+    }
+    return this;
   }
 
   enable(targetType, enabled = true) {
     return this.value(targetType, "Enable", Boolean(enabled), "bool");
   }
 
-  entity_enable(enabled = true) {
-    return this.entityEnable(enabled);
-  }
-
   entityEnable(enabled = true) {
     return this.value("MOD.Core.MODEntity", "Enable", Boolean(enabled), "bool");
-  }
-
-  entity_visible(visible = true) {
-    return this.entityVisible(visible);
   }
 
   entityVisible(visible = true) {
@@ -434,7 +377,10 @@ class ModelBuilder {
   }
 
   removeProperty(name) {
-    return removePropertyEntry(this.properties, name);
+    if (!removePropertyEntry(this.properties, name)) {
+      throw new Error(`Property not found: ${name}`);
+    }
+    return this;
   }
 
   child(name, componentsOrOptions = null, maybeOptions = {}) {
@@ -481,6 +427,9 @@ class ModelBuilder {
   removeChildComponent(childName, compName) {
     const child = this._requireChild(childName);
     const comp = normalizeComponentName(compName);
+    if (!child.Model.Components.includes(comp)) {
+      throw new Error(`Child ${childName} has no ${comp}`);
+    }
     child.Model.Components = child.Model.Components.filter((c) => c !== comp);
     child.Model.Values = child.Model.Values.filter((v) => v.TargetType !== comp);
     child.Model.Properties = child.Model.Properties.filter((p) => !p.Link || normalizeLinkTarget(p.Link.Target) !== comp);
@@ -500,7 +449,10 @@ class ModelBuilder {
 
   removeChildValue(childName, targetType, name) {
     const child = this._requireChild(childName);
-    return removeValueEntry(child.Model.Values, targetType, name);
+    if (!removeValueEntry(child.Model.Values, targetType, name)) {
+      throw new Error(`Value not found on child '${childName}': ${targetType}.${name}`);
+    }
+    return this;
   }
 
   childEnable(childName, enabled = true) {
@@ -519,7 +471,10 @@ class ModelBuilder {
 
   removeChildProperty(childName, name) {
     const child = this._requireChild(childName);
-    return removePropertyEntry(child.Model.Properties, name);
+    if (!removePropertyEntry(child.Model.Properties, name)) {
+      throw new Error(`Property not found on child '${childName}': ${name}`);
+    }
+    return this;
   }
 
   setChildBaseModelId(childName, baseModelId) {
@@ -552,7 +507,10 @@ class ModelBuilder {
 
   removeChildEventLink(childName, key, value = undefined) {
     const child = this._requireChild(childName);
-    return removeEventLinkFrom(child.Model.EventLinks, key, value);
+    if (!removeEventLinkFrom(child.Model.EventLinks, key, value)) {
+      throw new Error(`EventLink not found on child '${childName}': ${typeof key === "function" ? "<predicate>" : `${key}=${value}`}`);
+    }
+    return this;
   }
 
   eventLink(link, options = {}) {
@@ -565,12 +523,20 @@ class ModelBuilder {
   }
 
   removeEventLink(key, value = undefined) {
-    return removeEventLinkFrom(this.event_links, key, value);
+    if (!removeEventLinkFrom(this.event_links, key, value)) {
+      throw new Error(`EventLink not found: ${typeof key === "function" ? "<predicate>" : `${key}=${value}`}`);
+    }
+    return this;
   }
 
   listEventLinks() {
-    this.event_links.forEach((entry, index) => console.log(`  [${index}] ${JSON.stringify(entry)}`));
     return clone(this.event_links);
+  }
+
+  printEventLinks() {
+    const entries = this.listEventLinks();
+    entries.forEach((entry, index) => console.log(`  [${index}] ${JSON.stringify(entry)}`));
+    return entries;
   }
 
   _requireChild(name) {
@@ -600,13 +566,9 @@ class ModelBuilder {
     return id.replace(/^model:\/\//, "");
   }
 
-  remove_child(name) {
-    return this.removeChild(name);
-  }
-
   removeChild(name) {
     const target = this._findChild(name);
-    if (!target) return false;
+    if (!target) throw new Error(`Child not found: ${name}`);
     const removeIds = new Set([target.Id || (target.Model && target.Model.Id)]);
     let changed = true;
     while (changed) {
@@ -619,35 +581,40 @@ class ModelBuilder {
         }
       }
     }
-    const before = this.children.length;
     this.children = this.children.filter((child) => !removeIds.has(child.Id || (child.Model && child.Model.Id)));
-    return this.children.length !== before;
-  }
-
-  list_components() {
-    return this.listComponents();
+    return this;
   }
 
   listComponents() {
-    this.components.forEach((c) => console.log(`  ${c}`));
     return clone(this.components);
   }
 
-  list_values() {
-    return this.listValues();
+  printComponents() {
+    const items = this.listComponents();
+    items.forEach((c) => console.log(`  ${c}`));
+    return items;
   }
 
   listValues() {
-    this.values.forEach((v) => console.log(`  ${shortTarget(v.TargetType)}.${v.Name} = ${JSON.stringify(v.Value)}`));
     return clone(this.values);
   }
 
+  printValues() {
+    const items = this.listValues();
+    items.forEach((v) => console.log(`  ${shortTarget(v.TargetType)}.${v.Name} = ${JSON.stringify(v.Value)}`));
+    return items;
+  }
+
   listChildren() {
+    return clone(this.children);
+  }
+
+  printChildren() {
     this.children.forEach((child) => {
       const summary = childSummary(child);
       console.log(`  ${summary.name} id=${summary.id} parent=${summary.parent_id} model=${summary.model_id} (${summary.components.length} components)`);
     });
-    return clone(this.children);
+    return this.listChildren();
   }
 
   build() {
@@ -812,6 +779,8 @@ function createChildModel(name, parentId, options = {}) {
 
 function applyChildOptions(child, options = {}, fallbackName, parentId, flags = {}) {
   const model = child.Model;
+  const oldChildId = child.Id;
+  const oldModelId = model.Id;
   child.ParentId = parentId;
   child.Name = String(options.name ?? child.Name ?? fallbackName);
   if (options.id || options.child_id || options.childId) child.Id = String(options.id ?? options.child_id ?? options.childId);
@@ -822,6 +791,8 @@ function applyChildOptions(child, options = {}, fallbackName, parentId, flags = 
   const explicitModelId = options.model_id ?? options.modelId;
   if (explicitModelId != null) model.Id = normalizeModelId(explicitModelId);
   else if (flags.isNew && (options.model == null || options.preserve_model_id === false || options.preserveModelId === false)) model.Id = child.Id;
+  else if (child.Id !== oldChildId && oldModelId === oldChildId) model.Id = child.Id;
+  if (!model.Id) model.Id = child.Id;
   model.BaseModelId = normalizeModelId(options.base_model_id ?? options.baseModelId ?? model.BaseModelId);
   const normalizedComponents = normalizeComponentList(options.components);
   if (normalizedComponents != null) model.Components = normalizedComponents;

@@ -65,7 +65,13 @@ function normalizeComponentName(name) {
   if (name == null) throw new TypeError("Component name must not be null");
   const value = String(name);
   if (value.startsWith("MOD.") || value.startsWith("script.")) return value;
-  return `script.${value}`;
+  throw new Error(
+    `Component type must be fully qualified with "MOD.Core." or "script." prefix, got: "${value}". ` +
+      `Native components use "MOD.Core.XxxComponent" (e.g. "MOD.Core.TransformComponent"); ` +
+      `mlua script components use "script.XxxComponent" (e.g. "script.Monster"). ` +
+      `Engine .map deserialization keys components by exact @type; a short name silently fails to attach (Maker logs only a warning and the inspector shows no component). ` +
+      `See msw-general/references/builder-protocol.md → "Rules common to all three builders" rule 8.`
+  );
 }
 
 function modelContent(modelJson) {
@@ -181,6 +187,7 @@ class MapBuilder {
     };
     this.entities = this.data.ContentProto.Entities;
     this.displayCounter = this._nextDisplayOrder();
+    this._lastId = null;
   }
 
   static read(filepath) {
@@ -223,6 +230,10 @@ class MapBuilder {
 
   snapshot() {
     return { mapName: this.mapName, mapInfo: this.getMapInfo(), entities: this.listEntities() };
+  }
+
+  lastId() {
+    return this._lastId;
   }
 
   _nextDisplayOrder() {
@@ -316,26 +327,25 @@ class MapBuilder {
     const path = this._normalizePath(identifier);
     const existingIndex = this._findIndex(path);
     const existing = existingIndex >= 0 ? this.entities[existingIndex] : null;
+    const existingJs = existing ? this._entityJson(existing) : null;
     const id = existing ? existing.id : crypto.randomUUID();
-    const modelId = options.modelId ?? null;
-    const origin = options.origin === undefined && modelId == null ? undefined : (options.origin || {
-      type: "Model",
-      entry_id: modelId,
-      sub_entity_id: null,
-      root_entity_id: id,
-      replaced_model_id: null,
-    });
+    const modelId = options.modelId !== undefined ? options.modelId : (existingJs ? existingJs.modelId : null);
+    let origin;
+    if (options.origin !== undefined) origin = options.origin;
+    else if (existingJs && existingJs.origin !== undefined) origin = clone(existingJs.origin);
+    else if (modelId != null) origin = { type: "Model", entry_id: modelId, sub_entity_id: null, root_entity_id: id, replaced_model_id: null };
+    else origin = undefined;
     if (origin && origin.root_entity_id == null) origin.root_entity_id = id;
     const js = {
-      name: options.name || this._entityName(path),
+      name: options.name ?? (existingJs ? existingJs.name : this._entityName(path)),
       path,
-      nameEditable: options.nameEditable ?? true,
-      enable: options.enable ?? true,
-      visible: options.visible ?? true,
-      localize: options.localize ?? false,
-      displayOrder: options.displayOrder ?? (existing ? this._entityJson(existing).displayOrder : this.displayCounter++),
+      nameEditable: options.nameEditable ?? (existingJs ? existingJs.nameEditable : true),
+      enable: options.enable ?? (existingJs ? existingJs.enable : true),
+      visible: options.visible ?? (existingJs ? existingJs.visible : true),
+      localize: options.localize ?? (existingJs ? existingJs.localize : false),
+      displayOrder: options.displayOrder ?? (existingJs ? existingJs.displayOrder : this.displayCounter++),
       pathConstraints: this._pathConstraints(path),
-      revision: existing ? (this._entityJson(existing).revision ?? 1) : (options.revision ?? 1),
+      revision: existingJs ? (existingJs.revision ?? 1) : (options.revision ?? 1),
       modelId,
       "@components": clone(components),
       "@version": 1,
@@ -345,7 +355,8 @@ class MapBuilder {
     this._syncComponentNames(entity);
     if (existingIndex >= 0) this.entities[existingIndex] = entity;
     else this.entities.push(entity);
-    return id;
+    this._lastId = id;
+    return this;
   }
 
   empty(name, options = {}) {
@@ -385,15 +396,17 @@ class MapBuilder {
       });
       this.data.ContentProto.Entities = this.entities;
     }
-    const rootId = this.entity(name, components, {
+    this.entity(name, components, {
       modelId,
       enable: options.enable,
       visible: options.visible,
       origin: { type: "Model", entry_id: modelId, sub_entity_id: null, root_entity_id: null, replaced_model_id: null },
     });
+    const rootId = this._lastId;
     const model = modelContent(modelJson);
     this._placeModelChildren(path, rootId, modelId, model.Children || [], modelId);
-    return rootId;
+    this._lastId = rootId;
+    return this;
   }
 
   _placeModelChildren(parentPath, rootEntityId, rootModelId, children, parentModelId) {
@@ -431,7 +444,7 @@ class MapBuilder {
 
   patch(identifier, updates = {}) {
     const entity = this.find(identifier);
-    if (!entity) return false;
+    if (!entity) throw new Error(`Entity not found: ${identifier}`);
     const js = this._entityJson(entity);
     if (updates.pos) {
       const transform = this.component(entity, "MOD.Core.TransformComponent");
@@ -442,12 +455,12 @@ class MapBuilder {
       if (Object.prototype.hasOwnProperty.call(updates, key)) js[key] = updates[key];
     }
     if (updates.name) this.rename(identifier, updates.name);
-    return true;
+    return this;
   }
 
   rename(identifier, newName) {
     const entity = this.find(identifier);
-    if (!entity) return false;
+    if (!entity) throw new Error(`Entity not found: ${identifier}`);
     const oldPath = this._entityJson(entity).path;
     const newPath = `${oldPath.split("/").slice(0, -1).join("/")}/${newName}`;
     for (const item of this.entities) {
@@ -461,12 +474,12 @@ class MapBuilder {
         if (currentPath === oldPath) js.name = newName;
       }
     }
-    return true;
+    return this;
   }
 
   upsertComponent(identifier, componentType, data = null) {
     const entity = this.find(identifier);
-    if (!entity) return false;
+    if (!entity) throw new Error(`Entity not found: ${identifier}`);
     const js = this._entityJson(entity);
     const component = data ? clone(data) : defaultComponent(componentType);
     component["@type"] = normalizeComponentName(component["@type"] || componentType);
@@ -474,25 +487,27 @@ class MapBuilder {
     if (idx >= 0) js["@components"][idx] = component;
     else js["@components"].push(component);
     this._syncComponentNames(entity);
-    return true;
+    return this;
   }
 
   patchComponent(identifier, componentType, updates) {
     const component = this.component(identifier, componentType);
-    if (!component) return false;
+    if (!component) throw new Error(`Entity ${identifier} has no ${componentType}`);
     Object.assign(component, clone(updates));
-    return true;
+    return this;
   }
 
   removeComponent(identifier, componentType) {
     const entity = this.find(identifier);
-    if (!entity) return false;
+    if (!entity) throw new Error(`Entity not found: ${identifier}`);
     const js = this._entityJson(entity);
     const target = normalizeComponentName(componentType);
-    const before = js["@components"].length;
+    if (!(js["@components"] || []).some((component) => component["@type"] === target)) {
+      throw new Error(`Entity ${identifier} has no ${target}`);
+    }
     js["@components"] = js["@components"].filter((component) => component["@type"] !== target);
     this._syncComponentNames(entity);
-    return js["@components"].length !== before;
+    return this;
   }
 
   remove(identifier) {
@@ -503,7 +518,8 @@ class MapBuilder {
       return currentPath !== target && !currentPath.startsWith(`${target}/`);
     });
     this.data.ContentProto.Entities = this.entities;
-    return this.entities.length !== before;
+    if (this.entities.length === before) throw new Error(`Entity not found: ${identifier}`);
+    return this;
   }
 
   _tileEntity(name = null) {

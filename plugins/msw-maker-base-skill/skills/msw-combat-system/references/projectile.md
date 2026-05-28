@@ -127,12 +127,12 @@ script ProjectileComponent extends Component
     -- Recommended: add an AttackComponent-derived script to the projectile model → fire an ad-hoc hitbox via AttackFrom
     @ExecSpace("ServerOnly")
     method void OnHit()
-        local pos = self.Entity.TransformComponent.Position
+        local pos = self.Entity.TransformComponent.Position      -- Vector3
         local ac = self.Entity.AttackComponent
         if ac ~= nil then
             ac:AttackFrom(
-                Vector2(self.HitRadius * 2, self.HitRadius * 2),  -- hitbox
-                pos,                                              -- hit position
+                Vector2(self.HitRadius * 2, self.HitRadius * 2),  -- hitbox size (Vector2)
+                pos:ToVector2(),                                  -- hit position (Vector2 — AttackFrom takes Vector2, not Vector3)
                 "projectile",                                     -- attackInfo
                 CollisionGroups.Monster
             )
@@ -207,7 +207,7 @@ method void FireProjectile(Entity target)
 
     local myPos = self.Entity.TransformComponent.Position
     local proj = _SpawnService:SpawnByModelId(
-        self._T.projectileModelId,     -- "model:///UUID" format
+        self._T.projectileModelId,     -- the .model's EntryKey (case-insensitive), not a URL
         name,
         Vector3(myPos.x, myPos.y, myPos.z),
         parent
@@ -296,12 +296,12 @@ Remove `Destroy` in `OnHit`, prevent duplicates with `hitList`. Damage goes thro
 method void OnHit()
     if self._T.hitList == nil then self._T.hitList = {} end
 
-    local pos = self.Entity.TransformComponent.Position
+    local pos = self.Entity.TransformComponent.Position          -- Vector3
     local ac = self.Entity.AttackComponent
     if ac ~= nil then
         ac:AttackFrom(
             Vector2(self.HitRadius * 2, self.HitRadius * 2),
-            pos, "projectile.pierce", CollisionGroups.Monster
+            pos:ToVector2(), "projectile.pierce", CollisionGroups.Monster  -- AttackFrom takes Vector2
         )
     end
 
@@ -332,12 +332,12 @@ end
 ```lua
 @ExecSpace("ServerOnly")
 method void OnHit()
-    local pos = self.Entity.TransformComponent.Position
+    local pos = self.Entity.TransformComponent.Position          -- Vector3
     local blastRadius = 2.0
     local ac = self.Entity.AttackComponent
     if ac ~= nil then
-        -- Circular AoE in one call — Shape-based Attack
-        ac:Attack(CircleShape(pos, blastRadius), "projectile.aoe", CollisionGroups.Monster)
+        -- Circular AoE in one call — Shape-based Attack (CircleShape takes Vector2)
+        ac:Attack(CircleShape(pos:ToVector2(), blastRadius), "projectile.aoe", CollisionGroups.Monster)
     end
     self:ShowHitEffect(pos.x, pos.y, pos.z)
     _EntityService:Destroy(self.Entity)
@@ -351,7 +351,7 @@ end
 | Item | Rule |
 |------|------|
 | Spawn | `SpawnByModelId` can only be called on the server |
-| Model id format | `"model:///UUID"` — use the actual UUID of the `.model` file |
+| Model id format | The `.model` file's **EntryKey** (case-insensitive bare string, e.g. `"Fireball"`). The engine lowercases it and prepends `model://` internally; do **not** pass the URL form (`"model://..."` or `"model:///UUID"`) yourself. |
 | Name uniqueness | The name parameter must be unique within the map → use a counter (`_T.projCount`) |
 | MaxLifetime | Always set it — so the projectile does not linger forever when the target is destroyed |
 | Effect | Use `PlayEffect` (fixed coordinates) — `PlayEffectAttached` disappears when the entity is destroyed |

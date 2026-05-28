@@ -138,7 +138,7 @@ method void OnBeginPlay()
 end
 ```
 
-All APIs used are documented in `.d.mlua` (`_ResourceService:LoadAnimationClipAndWait`, `Sprite.Width/Height/PixelPerUnit/PivotPixel`). Values are normalized to **workspace units (world units)**, so they can be used directly in `BoxShape` / `RectangleShape`.
+All APIs used are documented in `.d.mlua` (`_ResourceService:LoadAnimationClipAndWait`, `Sprite.Width/Height/PixelPerUnit/PivotPixel`). Values are normalized to **workspace units (world units)**, so they can be used directly in `BoxShape(position, size, angle)` (use `angle=0` for an axis-aligned rectangle).
 
 > ⚠ `LoadAnimationClipAndWait` is a synchronous load (blocks the server for one frame). Call it once in `OnBeginPlay` and cache in `_T` or a property. Do not re-load every frame inside `OnUpdate`. Wrap in `_ResourceService:PreloadAsync({ruid}, function() ... end)` if you want to avoid the block — `MonsterAttack` does this.
 
