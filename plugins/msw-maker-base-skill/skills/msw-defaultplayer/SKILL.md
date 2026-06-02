@@ -153,6 +153,8 @@ Mapped to actual component properties through the links defined in Player.model'
 | cameraScreen | CameraComponent.ScreenOffset | Dead-zone center point | `{x: 0.5, y: 0.655}` |
 | cameraDutch | CameraComponent.DutchAngle | Camera rotation | 0.0 |
 | cameraOffset | CameraComponent.CameraOffset | Camera position offset | `{x: 0.0, y: 0.0}` |
+| message | ChatBalloonComponent.Message | Chat balloon message | `""` |
+| chatModeEnabled | ChatBalloonComponent.ChatModeEnabled | Whether chat is processed (e.g. balloon shown) | `true` |
 | nameTag | NameTagComponent.Name | Name tag | `""` |
 | damageSkinId | DamageSkinSettingComponent.DamageSkinId | Damage skin type | DataRef |
 | damageDelayPerAttack | DamageSkinSettingComponent.DelayPerAttack | Damage delay | 0.05 |
@@ -239,7 +241,25 @@ local state = self.Entity:GetComponent("StateComponent")
 state:ChangeState("ATTACK")   -- ActionSheet keys are UPPERCASE
 ```
 
-State keys come from the player's ActionSheet. The DefaultPlayer ships with: `IDLE`, `MOVE`, `ATTACK`, `HIT`, `CROUCH`, `FALL`, `JUMP`, `CLIMB`, `LADDER`, `DEAD`, `SIT`. The state machine auto-returns to `IDLE` once the action finishes — no manual restore timer needed.
+State keys come from the player's ActionSheet. The DefaultPlayer ships with **11 UPPERCASE keys**, each mapped to a default animation:
+
+| `StateComponent:ChangeState(...)` key | Default animation |
+|---|---|
+| `"IDLE"` | `stand` |
+| `"MOVE"` | `walk` |
+| `"ATTACK"` | `attack` |
+| `"HIT"` | `hit` |
+| `"CROUCH"` | `crouch` |
+| `"FALL"` | `fall` |
+| `"JUMP"` | `fall` |
+| `"CLIMB"` | `rope` |
+| `"LADDER"` | `ladder` |
+| `"DEAD"` | `dead` |
+| `"SIT"` | `sit` |
+
+The state machine auto-returns to `IDLE` once the action finishes — no manual restore timer needed.
+
+> **Casing pitfall**: the **string key** passed to `ChangeState` is **UPPERCASE** (`"ATTACK"`). The **enum value** written to `selector.ActionState` directly (NPC path — see below) is `MapleAvatarBodyActionState.Attack` — **PascalCase**, separate API surface, same underlying state. Wrong casing on the string side (`"attack"` / `"Attack"`) misses the ActionSheet mapping silently — no warning.
 
 ### When *can* you write the selector directly?
 
@@ -334,7 +354,8 @@ Common pitfalls when **adding to Components** and **changing Values** in Default
 | C2 | Duplicate-adding a native component already on Player.model (e.g. `MOD.Core.MovementComponent`) | Only a duplicate-component warning is emitted, not blocked → workspace warnings accumulate, behavior becomes non-deterministic | Check the base component list (§65-89) before adding. If it's already there, just change settings via Values |
 | C3 | Removing `script.PlayerHit` / `script.PlayerAttack` | These are the only extra scripts DefaultPlayer ships with. Removing them eliminates hit immunity / attack logic | If the goal is to disable, toggle the logic inside the script, or use Enable=false in Values |
 | C4 | Disabling `AvatarRendererComponent` and adding `SpriteRendererComponent` (or other renderer swap) | If Avatar and Sprite renderers are active at the same time, you get z-fighting / costumes not applied | Only add Sprite after disabling Avatar (see the pattern at §395) |
-| C5 | Custom damage path bypasses `HitComponent` (e.g. decrementing HP directly or calling `StateComponent:ChangeState("HIT")` from outside) | `script.PlayerHit` (C3) is what drives i-frame, hit animation, death and respawn off `HitEvent`. Bypassing it leaves the player un-hittable on the next frame, stuck in pose, or alive past 0 HP | Route damage through `entity.HitComponent:OnHit(HitEvent)` so the existing pipeline fires. Replace behavior by editing `PlayerHit.mlua`, not by reimplementing it alongside |
+| C5 | Custom damage path only decrements an HP property (or only broadcasts a damage-skin event) — the engine hit/death pipeline never fires | The avatar state machine reacts to `StateChangeEvent`, not to property writes. Damage numbers / particles render fine but the avatar stays idle through hit / dead / revive — silent visual miss with no error log | **First choice**: route damage through `HitComponent:OnHit(attacker, damage, isCrit, attackInfo, hitCount)`. `script.PlayerHit` then handles the hit / death / respawn transitions automatically. **When you must drive damage manually** (channeled / aura / scripted): pair `StateComponent:ChangeState("HIT")` for the hit pose with `PlayerComponent:ProcessDead()` / `ProcessRevive()` for the death and revive cycle. Don't only edit HP — the avatar won't react. |
+| C6 | Setting `SpriteRendererComponent.Color` / `FlipX` on an entity where `AvatarRendererComponent` is active (e.g. DefaultPlayer) | The component is present and `GetComponent` returns non-nil, but the sprite output is hidden behind the avatar renderer's own pipeline — color/flip writes are silently no-op. The same pattern works on plain sprite-rendered entities, so first-try copy-paste fails without any warning | Use `AvatarRendererComponent:SetColor(r, g, b, a)` (0–1 floats) for tint and `:SetAlpha(a)` for fade. Both are `ClientOnly`. For facing, drive the character through `MovementComponent.MoveDirection` (or the facing API of your game logic) instead of `sprite.FlipX` |
 
 ### Values change pitfall — only `jumpForce` / `speed` need extra care
 

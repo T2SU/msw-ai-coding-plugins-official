@@ -174,7 +174,9 @@ A single field, `DefenderEntity: Entity`. The attacker is the handler's `self`.
 
 ### 2-3. ⚠️ Antipattern: direct HP subtraction — do not bypass `HitEvent`
 
-Subtracting the defender's HP directly, such as `monster.Hp -= damage` / `target.MonsterAI.HP -= damage`, **does not emit `HitEvent`**.
+Subtracting the defender's HP directly, such as `monster.Hp -= damage` / `target.MonsterAI.HP -= damage`, **does not emit `HitEvent`** — damage skin, hit effect, `IsHitTarget` immunity, and `OnHit` overrides all silently skip.
+
+For **player-side** custom damage (channel / aura / DoT), the bypass also breaks avatar animation: `AvatarStateAnimationComponent` only reacts to `StateChangeEvent`, so the player avatar stays in idle even though the HP bar drops. If you must apply damage without `HitEvent`, also manually call `StateComponent:ChangeState("HIT")` (UPPERCASE key — see §10) and, for death/revive, `PlayerComponent:ProcessDead()` / `ProcessRevive()`. Otherwise hit/dead motions silently miss with no error.
 
 ---
 
@@ -354,7 +356,7 @@ Looping particles (`isLoop=true`) must be cleaned up via `RemoveParticle(serial)
 |-------|--------------------|---------|
 | `DeadEvent` | Auto on `StateComponent:ChangeState("DEAD")` | **none** |
 | `ReviveEvent` | Auto on `PlayerComponent:Respawn()` (players only) | **none** |
-| `StateChangeEvent` | Auto on every state transition | `CurrentStateName`, `PrevStateName`, `IsInitial` |
+| `StateChangeEvent` | Auto on every state transition | `CurrentStateName`, `PrevStateName` |
 
 **Tracking the killer**: DeadEvent has no payload → cache `self.LastAttacker = event.AttackerEntity` in `HandleHitEvent` and use it in `HandleDeadEvent`.
 
@@ -389,7 +391,7 @@ For player-specific death/revive, prefer §9-1 `PlayerComponent.Respawn/ProcessD
 |---------|-----|-----------|
 | **FSM** (`StateComponent` + `@State`) | Simple enemies (3~5 states), player IDLE/HIT/DEAD, boss phases, animation sync (`AvatarStateAnimationComponent` auto mapping §10). Requires `StateComponent.IsLegacy=false` if you want `StateAnimationComponent` to auto-swap clips. | **[`../msw-general/references/animation-state.md`](../msw-general/references/animation-state.md)** (state-machine + animation pipeline unified) |
 | **BT** (`AIComponent` + 4 Composite types + `@BTNode`) | Patrol + chase + attack combos, varied boss patterns, Composite/Decorator reuse, probability-weighted actions. Requires `StateComponent.IsLegacy=false`. | **[`references/ai-bt.md`](references/ai-bt.md)** |
-| **Custom script with self-state** (`@Component` holding `CurrentAIState` plus direct `SpriteRUID` assignment — proven by `Soldier.model` / `script.SoldierAI` in `D:\msw-world-projects\20260526-4\RootDesk\MyDesk\Soldier\`) | Behaviors that don't fit `AIChase`/`AIWander` (roam ↔ stand ↔ say ↔ attack, range-gated attacks, talking idle). **No `AIChaseComponent`/`AIWanderComponent`, no `IsLegacy=false` needed** — the script bypasses the ActionSheet pipeline. Reserve `StateComponent` for `IDLE` ↔ `DEAD` only. | [`../msw-general/references/monster.md` §7 "Canonical Pattern A Scripts (Soldier)"](../msw-general/references/monster.md) |
+| **Custom script with self-state** (`@Component` holding `CurrentAIState` plus direct `SpriteRUID` assignment — Soldier-style pattern) | Behaviors that don't fit `AIChase`/`AIWander` (roam ↔ stand ↔ say ↔ attack, range-gated attacks, talking idle). **No `AIChaseComponent`/`AIWanderComponent`, no `IsLegacy=false` needed** — the script bypasses the ActionSheet pipeline. Reserve `StateComponent` for `IDLE` ↔ `DEAD` only. | [`../msw-general/references/monster.md` §7 "Canonical Pattern A Scripts (Soldier)"](../msw-general/references/monster.md) |
 
 ### 7-1. FSM — `StateComponent` (summary)
 

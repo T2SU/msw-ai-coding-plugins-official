@@ -20,7 +20,7 @@ Monsters/NPCs drive their visible clip one of two ways. They are mutually exclus
 
 ### Pattern A — script-driven `SpriteRUID` assignment (proven working canonical)
 
-The user's verified working sample (`Soldier.model` + `script.SoldierAI` in `D:\msw-world-projects\20260526-4\RootDesk\MyDesk\Soldier\`) takes this route. A custom Component holds its **own** state variable (e.g. `CurrentAIState ∈ {"ROAM","STAND","SAY","ATTACK"}`) and on each transition does `self.Entity.SpriteRendererComponent.SpriteRUID = <clipRUID>` directly. `StateComponent` is used only for `IDLE` ↔ `DEAD` transitions (so `script.Monster.IsDead` syncs and `DeadEvent` fires correctly). `StateAnimationComponent` + `ActionSheet` are still present in the `.model` for completeness, but the pipeline is bypassed.
+The verified working sample (`Soldier.model` + `script.SoldierAI`, full source inlined in [`monster.md` §7](monster.md)) takes this route. A custom Component holds its **own** state variable (e.g. `CurrentAIState ∈ {"ROAM","STAND","SAY","ATTACK"}`) and on each transition does `self.Entity.SpriteRendererComponent.SpriteRUID = <clipRUID>` directly. `StateComponent` is used only for `IDLE` ↔ `DEAD` transitions (so `script.Monster.IsDead` syncs and `DeadEvent` fires correctly). `StateAnimationComponent` + `ActionSheet` are still present in the `.model` for completeness, but the pipeline is bypassed.
 
 In this pattern **`StateComponent.IsLegacy` does not need to be set** — Soldier.model leaves it at the default and animations work fine, because the script never relies on `StateChangeEvent → ActionSheet → AnimationClipEvent`.
 

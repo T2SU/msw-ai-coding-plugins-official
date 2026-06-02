@@ -5,7 +5,7 @@
 // Whenever Claude Code reads a skill (`Read` on SKILL.md / references), invokes
 // one (`Skill` tool), or loads CLAUDE.md / `.claude/rules/*.md` into context
 // (`InstructionsLoaded`), this hook appends a single human-readable line to
-// `.claude/skill.log` under the working directory.
+// `.mswai/logs/skill.log` under the working directory.
 //
 // Auto-registered via the plugin's `hooks/hooks.json` — no manual setup required.
 // Non-skill events are ignored and the hook exits immediately.

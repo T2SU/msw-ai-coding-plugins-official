@@ -98,24 +98,22 @@ process.stdout.write(
   `    Therefore the following two layers are MSW's "rules of physics" — both REQUIRED before\n` +
   `    Plan on EVERY turn, REGARDLESS of which domain triggers fire:\n` +
   `\n` +
-  `    (a) **Foundation Skills (3)** — load via the agent's skill system (R1), in this order:\n` +
+  `    (a) **Foundation Skills (2)** — load via the agent's skill system (R1), in this order:\n` +
   `        1. msw-general\n` +
   `             foundation — workspace structure, platform rules, MCP tools, authoring rules for\n` +
   `             .model/.map/.ui/.dataset, and the verified template catalog. Every other MSW skill\n` +
   `             assumes this one is already loaded.\n` +
-  `        2. msw-packages\n` +
-  `             Catalog of standard game systems (inventory / shop / ranking / mail / quest /\n` +
-  `             collection / key binding / GM / drop table, etc.).\n` +
-  `             An MSW world IS a game, and almost every game includes one or two standard systems.\n` +
-  `             Starting from scratch without knowing this catalog is the single biggest time sink.\n` +
-  `             **Always check the catalog for a match FIRST, every turn.**\n` +
-  `        3. msw-ui-system\n` +
+  `        2. msw-ui-system\n` +
   `             The single entry point for UI — score/HP/lives HUD, popups, toasts, menus, tabs, dialogs, etc.\n` +
   `             An MSW world with zero UI is virtually nonexistent — even a simple "Galaga"-style mini-game\n` +
   `             needs a score/lives HUD, so planning without UI-system knowledge breaks on the very first screen.\n` +
   `             The rule "no raw .ui JSON editing → must go through the builder" lives only in this skill.\n` +
-  `        ※ Do NOT reason that "this task has no UI / no system, so I can skip (2)/(3)."\n` +
+  `        ※ Do NOT reason that "this task has no UI, so I can skip (2)."\n` +
   `          The Galaga case (missing score HUD) was exactly that anti-pattern.\n` +
+  `        ※ msw-packages (standard game-system catalog: inventory / shop / ranking / mail / quest /\n` +
+  `          collection / key binding / GM / drop table, etc.) is NOT Foundation — it is domain-triggered\n` +
+  `          (see [PACKAGES] in the matrix below). Load it via the Domain matrix the moment the user request\n` +
+  `          matches a catalog keyword, BEFORE suggesting a from-scratch implementation.\n` +
   `\n` +
   `    (b) **Foundation references (4)** — immediately after (a) is loaded, Read in FULL every turn, unconditionally:\n` +
   `        • msw-general/references/platform.md (core)\n` +
@@ -140,7 +138,7 @@ process.stdout.write(
   `      • msw-general/references/platform-sideview.md (TileMapMode = 2)\n` +
   `    is also Foundation. If you see debugging / silent-failure symptoms, read troubleshooting.md immediately as well.\n` +
   `\n` +
-  `    Skipping any single Foundation Skill (3) or any single Foundation reference (4) =\n` +
+  `    Skipping any single Foundation Skill (2) or any single Foundation reference (4) =\n` +
   `    "skill NOT loaded" — even when no domain sub-trigger fires.\n` +
   `    "It's a trivial task so it's fine" is NOT a valid excuse — even a single-line .mlua edit touches\n` +
   `    the .mlua+.codeblock pair + RootDesk/ rules, and even a simple coordinate tweak touches\n` +
@@ -164,8 +162,8 @@ process.stdout.write(
   `         → Recognizing the genre is only a hint for matching platform-{type}.md; planning without references breaks on the first Edit.\n` +
   `      X "This task has no explicit UI, so I can skip msw-ui-system"\n` +
   `         → Side UI like score HUD / toasts / menus accompanies almost every game. Load it every turn, unconditionally.\n` +
-  `      X "This task looks simple, so I don't need to check the msw-packages catalog"\n` +
-  `         → Standard systems like inventory / shop / ranking may already exist in the catalog — check for that FIRST every turn.\n` +
+  `      X "The user asked for inventory / shop / ranking — let me just write it from scratch"\n` +
+  `         → [PACKAGES] trigger fires. Load msw-packages and check the catalog FIRST; a prebuilt package may eliminate the work entirely.\n` +
   `\n` +
   `R7. Cross-platform tool selection — never use the shell for workspace exploration; use tools only.\n` +
   `    Windows (PowerShell / Git Bash) and macOS (bash / zsh) are not compatible in shell command\n` +
@@ -188,7 +186,7 @@ process.stdout.write(
   `    stop immediately and retry the same operation with Glob/Read/Grep.\n` +
   `\n` +
   `Domain matrix (Korean / English trigger phrases → skill to LOAD + references to READ in full).\n` +
-  `**This matrix sits ON TOP of the 3 Foundation Skills (R6 (a)) and 4 Foundation references (R6 (b))** —\n` +
+  `**This matrix sits ON TOP of the 2 Foundation Skills (R6 (a)) and 4 Foundation references (R6 (b))** —\n` +
   `Foundation is loaded EVERY turn unconditionally; the matrix below adds further skills/references when triggered.\n` +
   `When multiple sub-triggers fire under one domain, LOAD the skill AND READ every matching reference.\n` +
   `\n` +
@@ -296,10 +294,12 @@ process.stdout.write(
   `      → Read: references/resource/avatar.md\n` +
   `\n` +
   `[PACKAGES] inventory / shop / ranking / mail / quest / collection / key binding / GM / slash command / inventory / shop / ranking / mail / quest\n` +
-  `  → msw-packages is already loaded every turn as a Foundation (R6 / Decision rule 1).\n` +
-  `    For any standard game-system request, immediately consult the catalog in SKILL.md to check\n` +
-  `    whether a matching package exists — if so, stop writing from scratch and switch to the package path.\n` +
-  `    (no references/ siblings; each catalog package's README is fetched on demand from GitHub.)\n` +
+  `  → Load skill: msw-packages\n` +
+  `    Once loaded, consult the catalog in SKILL.md to check whether a matching package exists —\n` +
+  `    if so, stop writing from scratch and switch to the package path. (no references/ siblings;\n` +
+  `    each catalog package's README is fetched on demand from GitHub.)\n` +
+  `    Note: msw-packages is NOT Foundation (it is domain-triggered) — load it only when this\n` +
+  `    domain fires, not every turn.\n` +
   `\n` +
   `Notation in this matrix:\n` +
   `- 'Load skill: <name>' = load the skill's SKILL.md via your agent's skill system (see R1).\n` +
@@ -311,18 +311,18 @@ process.stdout.write(
   `Decision rule:\n` +
   `1. **Foundation Skills + Foundation references FIRST, sub-triggers SECOND.** Per R6, on EVERY turn,\n` +
   `   regardless of any domain trigger:\n` +
-  `     (a) Load skills: msw-general → msw-packages → msw-ui-system  (3 Foundation Skills)\n` +
+  `     (a) Load skills: msw-general → msw-ui-system  (2 Foundation Skills)\n` +
   `     (b) Read msw-general/references/{platform.md (core), workspace.md, entity.md, authoring.md} in full\n` +
   `         (4 Foundation references)\n` +
   `   Once TileMapMode is identified, the matching ONE of platform-{maple|rect|sideview}.md joins Foundation.\n` +
   `   Skipping any single Foundation Skill or any single Foundation reference = "skill NOT loaded".\n` +
   `2. If this turn's domain ≠ previous turn's domain → LOAD the matching ADDITIONAL skill (msw-scripting /\n` +
-  `   msw-search / msw-combat-system / msw-defaultplayer / msw-avatar) per rules R1–R6 BEFORE planning.\n` +
-  `   These domain-specific skills come ON TOP OF the 3 Foundation Skills, never in place of them.\n` +
+  `   msw-search / msw-combat-system / msw-defaultplayer / msw-avatar / msw-packages) per rules R1–R6 BEFORE planning.\n` +
+  `   These domain-specific skills come ON TOP OF the 2 Foundation Skills, never in place of them.\n` +
   `3. If this turn touches multiple domains → LOAD all matching skills, each in full, plus READ every triggered reference.\n` +
   `4. If a sub-trigger under a domain fires (e.g. 'BT' under combat, 'DataStorage' under scripting),\n` +
   `   the listed references/*.md is REQUIRED in ADDITION to Foundations, not optional — SKILL.md alone is insufficient.\n` +
-  `5. If unsure which additional skill applies → load all 3 Foundations (rule 1) anyway, then route from there.\n` +
+  `5. If unsure which additional skill applies → load all 2 Foundations (rule 1) anyway, then route from there.\n` +
   `6. Never answer a cross-domain request from a previously-loaded skill alone.\n` +
   `</msw-skill-router-reminder>\n`
 );

@@ -1,16 +1,16 @@
 'use strict';
 
 // MSW Log Root Resolver
-// Single source of truth for "where do logs live", shared by all log scripts
-// (`skill-log.cjs`, `mcp-log.cjs`, `lsp-log.cjs`).
+// Single source of truth for "where do logs live", shared by all hook log
+// scripts (`skill-log.cjs`, `mcp-log.cjs`, `lsp-log.cjs`).
 //
 // The `input.cwd` value Claude Code passes to hooks is the working directory
 // at the moment the hook runs, and it can vary every time due to things like
-// Bash's `cd subdir` or sessions started from a sub-directory. Creating
-// `.claude/*.log` directly off of it scatters logs around like:
-//   - `./.claude/lsp.log`                    (correct)
-//   - `./otherdir/.claude/lsp.log`           (wrong)
-//   - `./otherdir/otherdir/.claude/lsp.log`  (wrong)
+// sessions started from a sub-directory. Creating `.mswai/logs/*.log` directly
+// off of it scatters logs around like:
+//   - `./.mswai/logs/lsp.log`                    (correct)
+//   - `./otherdir/.mswai/logs/lsp.log`           (wrong)
+//   - `./otherdir/otherdir/.mswai/logs/lsp.log`  (wrong)
 // This helper resolves "always the same project root" and returns it.
 //
 // Resolution priority:
@@ -79,7 +79,7 @@ function findRootByMarkers(startPath, markers) {
 
 /**
  * Resolves the project root directory under which logs should be stored.
- * Log files are created under `<returned root>/.claude/`.
+ * Log files are created under `<returned root>/.mswai/logs/`.
  *
  * @param {string|undefined} inputCwd  The `input.cwd` value passed to the hook
  *                                     (falls back to `process.cwd()` when missing).
@@ -99,8 +99,8 @@ function resolveLogRoot(inputCwd) {
 }
 
 /**
- * Returns the full log file path (`<root>/.claude/<filename>`).
- * The `.claude/` directory is created up front so callers don't have to mkdir.
+ * Returns the full log file path (`<root>/.mswai/logs/<filename>`).
+ * The `.mswai/logs/` directory is created up front so callers don't have to mkdir.
  *
  * @param {string|undefined} inputCwd  The `input.cwd` value passed to the hook.
  * @param {string} filename            e.g. 'skill.log', 'mcp.log', 'lsp.log'.
@@ -108,7 +108,7 @@ function resolveLogRoot(inputCwd) {
  */
 function resolveLogFile(inputCwd, filename) {
   const root = resolveLogRoot(inputCwd);
-  const dir = path.join(root, '.claude');
+  const dir = path.join(root, '.mswai', 'logs');
   fs.mkdirSync(dir, { recursive: true });
   return path.join(dir, filename);
 }

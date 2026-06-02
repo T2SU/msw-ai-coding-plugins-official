@@ -3,7 +3,7 @@
 // MSW LSP Log Helper
 // Every time `mlua-lsp` runs (SessionStart's `start`, PostToolUse's `diagnose`,
 // SessionEnd's `stop`), this helper appends a single line per invocation to
-// `.claude/lsp.log` under the working directory.
+// `.mswai/logs/lsp.log` under the working directory.
 // Uses the same `key=value` single-line format as `skill.log`. The command line
 // and outputs (stdout/stderr) are escaped via `JSON.stringify`, so embedded
 // newlines/tabs never break the one-line layout.

@@ -4,7 +4,7 @@ This reference is for building a working monster model on MapleTile side-view ma
 
 **Read [`animation-state.md`](animation-state.md) §0 first to pick an animation pattern** — Pattern A (script-driven `SpriteRUID`, proven by `Soldier.model`) vs Pattern B (`ActionSheet` auto-swap, `MonsterCanonical.model`). Composition / `IsLegacy` requirement / `ActionSheet` keys all differ. The rest of this doc covers monster-specific composition, AI choices, HP/respawn, spawn, and placement under both patterns.
 
-**Canonical working sample (Pattern A):** `D:\msw-world-projects\20260526-4\RootDesk\MyDesk\` — `Soldier\SoldierAI.mlua`, `Soldier\SoldierAttack.mlua`, `Soldier\SoldierSpawner.mlua`, `Monster.mlua`, `Models\Monsters\Soldier.model`. Read these any time the skill output drifts from what visibly works.
+**Canonical working sample (Pattern A):** a Soldier monster setup — `Soldier/SoldierAI.mlua`, `Soldier/SoldierAttack.mlua`, `Soldier/SoldierSpawner.mlua`, `Monster.mlua`, and `Models/Monsters/Soldier.model`. Full source for all four scripts is inlined in §7 below; refer back to those sections any time the skill output drifts from what visibly works.
 
 ```javascript
 const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("<SKILL_PATH>/scripts/model/msw_model_builder.cjs");
@@ -371,7 +371,7 @@ Omit any action key whose RUID is missing from the resource pack.
 
 ## 7. Canonical Pattern A Scripts (Soldier)
 
-Three `.mlua` files cover HP / AI / attack, plus a fourth for spawning. Write each `.mlua` → Maker Refresh once → `.codeblock` is generated → then include in the `.model` (see CLAUDE.md pitfall #4). Full source lives at `D:\msw-world-projects\20260526-4\RootDesk\MyDesk\` (`Monster.mlua`, `Soldier\SoldierAI.mlua`, `Soldier\SoldierAttack.mlua`, `Soldier\SoldierSpawner.mlua`).
+Three `.mlua` files cover HP / AI / attack, plus a fourth for spawning. Write each `.mlua` → Maker Refresh once → `.codeblock` is generated → then include in the `.model` (script-component lifecycle order — see §2 above). Full source for all four scripts (`Monster.mlua`, `SoldierAI.mlua`, `SoldierAttack.mlua`, `SoldierSpawner.mlua`) is inlined verbatim in §7a–§7d.
 
 ### 7a. `script.Monster` — HP / Death / Respawn (shared between Pattern A and B)
 
@@ -720,4 +720,4 @@ After writing the model:
 | `msw-scripting` | Custom monster behaviors (`script.Monster`, `StateType`, `HitEvent`/`StateChangeEvent`/`DeadEvent` handlers) |
 | `mlua_api_retriever` MCP | Runtime API for `AIChaseComponent`/`AIWanderComponent`/`AIComponent`/`HitComponent` (state/animation APIs covered in `animation-state.md` §9) |
 | [`../models/MonsterCanonical.model`](../models/MonsterCanonical.model) | Pattern B verbatim copy source (paste, then swap RUIDs) |
-| Soldier sample at `D:\msw-world-projects\20260526-4\RootDesk\MyDesk\` | Pattern A verified canonical (`Models\Monsters\Soldier.model` + `Soldier\SoldierAI.mlua` + `Soldier\SoldierAttack.mlua` + `Soldier\SoldierSpawner.mlua` + `Monster.mlua`) |
+| Soldier reference (this file, §7a–§7d) | Pattern A verified canonical — full source for `Monster.mlua` + `SoldierAI.mlua` + `SoldierAttack.mlua` + `SoldierSpawner.mlua` inlined; `.model` composition in §2 + §6a |

@@ -1,7 +1,6 @@
 # HP gauge — PixelRendererComponent + Lazy Init
 
-> Verification basis: `PixelRendererComponent.d.mlua`
-> All PixelRenderer methods are `@ExecSpace("ClientOnly")`
+> All `PixelRendererComponent` methods are `@ExecSpace("ClientOnly")` — the buffer init and per-pixel writes must run on the client.
 
 ---
 
@@ -16,7 +15,7 @@ Alternative ways to attach a health bar to a dynamically spawned entity, and the
 | `SpriteRendererComponent` + a solid-color sprite | A solid-color rectangle RUID is not provided by default — requires a separate upload |
 | **Include `PixelRendererComponent` directly in the model's Components** | **Most stable** — as a native component, it can be included in `.model` |
 
-`PixelRendererComponent` is a native component — it can be included in `.model` regardless of CLAUDE.md pitfall #4 (no dropping custom scripts).
+`PixelRendererComponent` is a native component — it can be included in `.model` directly, without the missing-`.codeblock` silent-drop risk that custom scripts have.
 
 ---
 

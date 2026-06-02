@@ -40,7 +40,7 @@ The engine API lives under `./Environment/NativeScripts/`:
 | `Event/` | Event types | 202 |
 | `Logic/` | Built-in logic | 9 |
 | `Enum/` | Enumerations | 118 |
-| `Misc/` | Utility types (Vector2, …) | 135 |
+| `Misc/` | Utility types (Vector2, …) | 140 |
 
 Known name → `Read ./Environment/NativeScripts/{folder}/{name}.d.mlua`. Unknown name → Grep keywords there.
 
@@ -287,6 +287,19 @@ method void RequestBuyItem(integer itemId)
     self:ProcessPurchase(itemId)
 end
 ```
+
+### Reserved parameter names — `name is unavailable`
+
+Four parameter names are reserved for the RPC marshaller and cannot be used as your own parameter names on any `@ExecSpace(...)` method. The LSP blocks the script with `'<name>' name is unavailable.`:
+
+| Reserved | What the engine uses it for |
+|---|---|
+| `self` | Method receiver |
+| `senderUserId` | Calling client's UserId on `@ExecSpace("Server")` bodies |
+| `targetUserId` | Recipient client's UserId (last call-site arg on `@ExecSpace("Client")` bodies — do NOT declare it; the engine appends it) |
+| `messageOwnerEntity` | Originating entity for some service callbacks |
+
+Rename your own parameters when they collide (`targetUserId` → `forUserId`, `senderUserId` → `fromUserId`). `self` is the receiver and cannot be aliased — pick any other name for an unrelated parameter.
 
 ### Manual branching — `IsServer()` / `IsClient()` are **methods**, not properties
 

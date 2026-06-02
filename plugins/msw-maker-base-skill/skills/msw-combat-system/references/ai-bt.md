@@ -113,6 +113,21 @@ local logNode = self.Entity.AIComponent:CreateLeafNode("printLog", function(delt
 end)
 ```
 
+> ⚠ **Engine enums cannot cross execution spaces via `any`.** Boss/monster Action Nodes commonly broadcast a particle / effect from server logic via an `@ExecSpace("Client")` helper. Passing an engine enum (`BasicParticleType.SparkRadialExplosion`, etc.) through an `any` parameter triggers `[LEA-3036] InvalidCast` on the first call, and declaring the parameter with the enum type itself is rejected by mlua diagnostics. Encode the enum as a `string` key and branch on the receiver:
+>
+> ```lua
+> @ExecSpace("Client")
+> method void BroadcastParticle(string particleKey, Vector3 pos)
+>     if particleKey == "spark_radial" then
+>         _ParticleService:PlayBasicParticle(BasicParticleType.SparkRadialExplosion, self.Entity, pos, 0, Vector3(1,1,1), false, nil)
+>     elseif particleKey == "charge" then
+>         _ParticleService:PlayBasicParticle(BasicParticleType.Charge, self.Entity, pos, 0, Vector3(1,1,1), false, nil)
+>     end
+> end
+> ```
+>
+> Same rule for `@ExecSpace("Server" | "Multicast")` parameters that carry enum values — declare them as `string` and decode in the receiver.
+
 ---
 
 ## 4. Decorator Node — custom (not native)
@@ -222,7 +237,7 @@ Usable immediately without writing your own BT. Both have `CreateLeafNode`/`Crea
 | `AIChaseComponent` | Auto-chases the nearest player within `DetectionRange` (default 5) | `IsChaseNearPlayer`, `TargetEntityRef`, `GetCurrentTarget()`, `SetTarget(Entity)` |
 | `AIWanderComponent` | Random direction wandering | — |
 
-> ⚠ **CLAUDE.md Pitfall #10**: `AIChaseComponent`/`AIWanderComponent` call `MovementComponent.MoveToDirection` → `Body.SetVelocity` every frame. When used alongside a custom chase script, they overwrite the velocity. **Remove both from the `.model` when using custom AI.** The two cannot coexist.
+> ⚠ **Velocity conflict**: `AIChaseComponent`/`AIWanderComponent` call `MovementComponent.MoveToDirection` → `Body.SetVelocity` every frame. When used alongside a custom chase script, they overwrite the velocity. **Remove both from the `.model` when using custom AI.** The two cannot coexist.
 
 ---
 

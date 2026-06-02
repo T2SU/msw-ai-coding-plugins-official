@@ -45,6 +45,7 @@ The string written into a costume is an **avatar item RUID** (typically a 32-cha
 
 - Never **guess or fabricate** an RUID. Look it up with the `msw-search` skill — for the avatar RUID workflow (default body/head, item detail, render composition) see [`../msw-search/references/resource/avatar.md`](../msw-search/references/resource/avatar.md); for generic search see [`../msw-search/references/resource/search.md`](../msw-search/references/resource/search.md); for single-item detail see [`../msw-search/references/resource/detail.md`](../msw-search/references/resource/detail.md).
 - The script API `SetEquip(MapleAvatarItemCategory, itemRUID)` and the value stored in the editor/model are **the same RUID string**.
+- `Custom*Equip` slots only accept a **plain Guid**. Any prefixed form — including `thumbnail://<ruid>` — is silently rejected and the slot is left unequipped (no error, no warning). RUIDs returned by `msw-search` are already plain Guids; do not prepend a scheme. See the `msw-sprite-ruid` skill for the broader thumbnail / icon rule.
 
 ---
 
@@ -199,6 +200,31 @@ Map the `category` field of an item returned by `GET /v3/avatars` to a `Custom*E
 
 ---
 
+## Avatar tint / alpha (visual recoloring)
+
+For color and transparency effects (hit flash, ghost fade, palette swap, etc.) on any entity that has `AvatarRendererComponent` attached — DefaultPlayer, avatar-bearing NPCs, monsters — use the renderer's own methods. **`SpriteRendererComponent.Color` and `FlipX` are a silent no-op on an avatar entity** (the avatar renderer paints over the sprite renderer's output even though `isvalid(spriteRenderer)` returns true).
+
+| Method | Signature | Notes |
+|--------|-----------|-------|
+| `SetColor` | `(r, g, b, a [, targetUserId])` | r/g/b/a are floats in `0~1`. Tints the whole avatar. **Client ExecSpace.** |
+| `SetAlpha` | `(a [, targetUserId])` | Float in `0~1`. Independent transparency. **Client ExecSpace.** |
+| `SetAvatarPartColor` | `(category, r, g, b, a [, targetUserId])` | Tint only one `MapleAvatarItemCategory` slot. |
+
+```lua
+@ExecSpace("Client")
+method void FlashRed()
+    local renderer = self.Entity.AvatarRendererComponent
+    if isvalid(renderer) == false then return end
+    renderer:SetColor(1.0, 0.25, 0.25, 1.0)   -- red flash
+    wait(0.1)
+    renderer:SetColor(1.0, 1.0, 1.0, 1.0)     -- restore
+end
+```
+
+For **avatar facing/flip**, use the facing API on `MovementComponent` (e.g. `MoveDirection`) instead of writing the sprite-level flip — same silent-no-op reason.
+
+---
+
 ## Avatar animation — overall structure
 
 Avatar animation flows through a **3-layer pipeline**. Working on only one layer leads to the other layers overwriting your changes and producing unintended motions.
@@ -225,7 +251,7 @@ Key distinctions:
 | **MapleAvatarBodyActionState (enum)** | PascalCase | `Stand`, `Walk`, `Attack`, `Hit`, `Crouch`, `Fall`, `Sit`, `Rope`, `Ladder`, `Dead`, `Blink`, `Fly`, `Heal`, `Alert`, `Invalid` |
 | **CoreActionName / PartsActionName (actual sprite action ID)** | lowercase + digits | `stand1`, `walk1`, `swingO1`, `shoot1`, `prone`, `jump`, `alert`, etc. |
 
-> Common confusion: `"attack"` is **not a State**. The State is the uppercase `ATTACK`, the mapping Value is the lowercase `attack` (= `MapleAvatarBodyActionState.Attack`), and that Value is then resolved into a sprite action ID such as `swingO1` / `shoot1` depending on the weapon.
+> Common confusion: `"attack"` is **not a State**. The State is the uppercase `ATTACK`, the mapping Value is the lowercase `attack` (= `MapleAvatarBodyActionState.Attack`), and that Value is then resolved into a sprite action ID such as `swingO1` / `shoot1` depending on the weapon. From script, the call that triggers the state is `StateComponent:ChangeState("ATTACK")` (UPPERCASE string) — `"Attack"` or `"attack"` silently misses (no error, the state simply does not change).
 
 ---
 

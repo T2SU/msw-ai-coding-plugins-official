@@ -51,11 +51,18 @@ Retain the raw logs for Step 3.
 - [ ] Are **custom scripts NOT declared directly in `.model`**, and instead attached via `entity:AddComponent("name")` immediately after spawn?
 - [ ] Is `ConnectEvent` called **only from Entity/Logic/Service** (not Component), with the returned handler stored in a `property any`?
 - [ ] Do DataStorage calls follow the **cache → dirty check → debounce flush** pattern? No individual Set/Get inside loops?
+- [ ] At typed-enum parameter slots (e.g. `GetSortedAndWait(SortDirection sortDirection, ...)`), is an **enum member** (`SortDirection.Descending`) passed, not an integer literal (`1`)? The runtime tolerates the int form, but `mlua-diagnose` rejects it as a type mismatch.
 
 ### File & Path Checks
 - [ ] `.mlua` → `RootDesk/MyDesk/`, `.model` → `RootDesk/MyDesk/Models/`, `.map` → `map/`, `.ui` → `ui/`?
 - [ ] Are `Global/` and `Environment/` left unmodified?
 - [ ] Are `.codeblock` files left unmodified?
+
+---
+
+## Step 1b — Tool limitations to know during runtime checks
+
+- **`mouse_input` simulator does not fire `KeyDownEvent` for mouse buttons.** Only `ScreenTouchEvent` is emitted. PC right-click code paths bound to `KeyDownEvent` + `KeyboardKey.Mouse1` cannot be regression-tested through the simulator — verify those on a real PC build instead. Listening to both `ScreenTouchEvent` and `KeyDownEvent` simultaneously is the standard pattern: the simulator validates the `ScreenTouchEvent` path while the real PC covers the `KeyDownEvent` path; they do not double-fire.
 
 ---
 

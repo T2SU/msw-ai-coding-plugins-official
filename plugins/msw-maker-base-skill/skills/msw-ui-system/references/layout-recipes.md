@@ -210,7 +210,7 @@ b.write("ui/InventoryGroup.ui");
 
 See [`runtime-patterns.md`](runtime-patterns.md) §5 GridView Large List. Property binding injects two items — `grid` / `itemTemplate` — via `b.write(path, { bind: {...} })`.
 
-> **Caution**: `OnRefresh` is called frequently during scrolling. Do not call DataStorage; only query the in-memory cache. (Common Pitfall #9)
+> **Caution**: `OnRefresh` is called frequently during scrolling. Do not call DataStorage; only query the in-memory cache.
 
 ---
 

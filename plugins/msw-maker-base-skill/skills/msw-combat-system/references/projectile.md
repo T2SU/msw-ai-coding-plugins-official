@@ -1,7 +1,6 @@
 # Projectile system — ProjectileComponent + SpawnByModelId
 
-> Verification basis: `SpawnService.d.mlua`, `TransformComponent.d.mlua` (2026-04-22)
-> Attack Resolution basics, per-Body knockback → [`msw-combat-system/SKILL.md`](../SKILL.md) §1·§3
+> Attack Resolution basics and per-Body knockback live in [`msw-combat-system/SKILL.md`](../SKILL.md) §1·§3.
 
 ---
 
@@ -356,4 +355,4 @@ end
 | MaxLifetime | Always set it — so the projectile does not linger forever when the target is destroyed |
 | Effect | Use `PlayEffect` (fixed coordinates) — `PlayEffectAttached` disappears when the entity is destroyed |
 | Movement | Body-less projectile → use `TransformComponent:Translate` (per §1-6) |
-| Custom script | Write the `.mlua` → Maker Refresh once → include in `.model` as a component. Placing it in `.model` while the `.codeblock` is missing causes silent exclusion during deserialization (CLAUDE.md pitfall #4) |
+| Custom script | Write the `.mlua` → Maker Refresh once → include in `.model` as a component. Placing it in `.model` while the `.codeblock` is missing causes silent exclusion during deserialization. |

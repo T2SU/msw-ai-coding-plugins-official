@@ -4,7 +4,7 @@
 // MSW MCP Log Hook
 // Every time Claude Code invokes any MCP tool (`PostToolUse` with a tool_name shaped
 // like `mcp__<server>__<tool>`), this hook appends a single human-readable line to
-// `.claude/mcp.log` under the working directory — one line per invocation.
+// `.mswai/logs/mcp.log` under the working directory — one line per invocation.
 //
 // Uses the same `key=value` single-line format as `lsp.log` / `skill.log`. The
 // `arguments` payload (`input`) and the response body (`response`) are escaped via

@@ -312,6 +312,8 @@ into the `resourceTypeFilter` array when searching):
 > - `sprite` → that single Sprite renders only
 >
 > Symptom of mistake: feeding an `animationclip` RUID where you intended a `sprite` (or vice-versa) leaves only the shadow layer visible — the body silently vanishes. Always check `payload.type` of the response before assigning to `SpriteRUID`. Use `sprite` for the static idle/default frame; use `animationclip` only for fields like `StateAnimationComponent.ActionSheet` values.
+>
+> **`skeleton` and `avataritem` RUIDs fail silently (no error, nothing renders) when assigned to `SpriteRUID` / `ImageRUID` without the `thumbnail://` prefix.** Conversely, `CostumeManagerComponent.Custom*Equip` / `SkeletonRendererComponent.SkeletonRUID` / `StateAnimationComponent.ActionSheet` do **not** accept the `thumbnail://` prefix — pass a plain RUID there. If the search query targeted an icon / thumbnail image and returned a `sprite` RUID, that RUID is already renderable directly — adding `thumbnail://` is redundant. Full assignment rules — accepted types, slot-by-slot prefix matrix, RUID-vs-prefix usage — live in [`msw-sprite-ruid/SKILL.md`](../msw-sprite-ruid/SKILL.md).
 
 ## Categories
 

@@ -193,6 +193,14 @@ const decorators = btNodes.filter(n => n.Kind === 'Decorator').sort(byName);
 console.log(`Found ${actions.length} action nodes, ${decorators.length} decorator nodes`);
 console.log(`Non-BT codeblocks: ${nonBtCount}, parse failures: ${failCount}`);
 
+if (actions.length === 0 && decorators.length === 0) {
+    console.warn('');
+    console.warn('WARNING: zero Action and zero Decorator nodes discovered.');
+    console.warn('  - If the project genuinely has no BT codeblocks yet, create them in the Maker BehaviourTree editor first, then re-run this script.');
+    console.warn('  - If you expected nodes here, the mlua-lsp environment may be rejecting `script <Name> extends ActionNode`/`extends DecoratorNode` declarations. In that case, the .codeblock + .mlua pairs must be created through the Maker BT editor GUI (the agent cannot author them directly). Falling back to a code-driven AI pattern (@BTNode extends BTNode + AIComponent:CreateNode) is an alternative.');
+    console.warn('');
+}
+
 // --- Emit markdown ------------------------------------------------------------
 function pad2(n) { return String(n).padStart(2, '0'); }
 function nowStamp() {
