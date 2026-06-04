@@ -1,6 +1,6 @@
 # Layout Recipes
 
-A collection of layout templates based on this skill's CJS UIBuilder (`<SKILL_PATH>/scripts/msw_ui_builder.cjs`; see [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3 for the call protocol — unified entry point).
+A collection of layout templates based on this skill's CJS UIBuilder (`scripts/msw_ui_builder.cjs`; see [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3 for the call protocol — unified entry point).
 
 Each recipe is copy-ready from file creation to placement. In actual use, change only path / size / color / RUID values to match your project.
 
@@ -9,7 +9,7 @@ Each recipe is copy-ready from file creation to placement. In actual use, change
 ## Common Preparation
 
 ```javascript
-const { UIBuilder } = require("<SKILL_PATH>/scripts/msw_ui_builder.cjs");
+const { UIBuilder } = require("./scripts/msw_ui_builder.cjs");
 ```
 
 - Coordinates: center origin, 1920x1080, Y-axis positive upward
@@ -372,7 +372,7 @@ Use this for card games, board cells, inventory slots, quick slots, tabs, and sa
 After running any recipe:
 
 1. **Binding Injection** — Auto-inject entity UUIDs into the corresponding `.mlua` property defaults via `b.write(filepath, { bind: { mlua, props } })` or `b.injectBindings(mlua_path, props)`. See [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3.6 Binding Injection for details.
-2. **Preview Check** — Visualize the layout with `<SKILL_PATH>/scripts/preview_ui_layout.cjs`
+2. **Preview Check** — Visualize the layout with `scripts/preview_ui_layout.cjs`
 3. **Maker Refresh** — Reflect changes in the engine via MCP refresh
 4. **Play Mode Verification** — Verify on actual resolution and mobile scale
 

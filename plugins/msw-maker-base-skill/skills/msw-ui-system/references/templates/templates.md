@@ -85,32 +85,32 @@ Located in `./scripts/`:
 
 ```bash
 # Show all .ui files in a style (top-level only)
-node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --depth 0
+node scripts/ui-structure.cjs --style 1 --depth 0
 
 # Show specific file with full hierarchy
-node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --file PopupGroup.ui
+node scripts/ui-structure.cjs --style 1 --file PopupGroup.ui
 
 # Limit hierarchy depth
-node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --file PopupGroup.ui --depth 2
+node scripts/ui-structure.cjs --style 1 --file PopupGroup.ui --depth 2
 
 # Dump full JSON for an entity by exact name
-node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --entity BasicPopup
+node scripts/ui-structure.cjs --style 1 --entity BasicPopup
 
 # Search entity name across all files (substring match)
-node <SKILL_PATH>/scripts/ui-structure.cjs --style 1 --grep ExitButton
+node scripts/ui-structure.cjs --style 1 --grep ExitButton
 ```
 
 **`ruid-lookup.cjs`** — RUID lookup by style and role
 
 ```bash
 # List available styles
-node <SKILL_PATH>/scripts/ruid-lookup.cjs
+node scripts/ruid-lookup.cjs
 
 # Dump all RUIDs for a style
-node <SKILL_PATH>/scripts/ruid-lookup.cjs --style 1
+node scripts/ruid-lookup.cjs --style 1
 
 # Filter by role keyword (button, panel, slot, icon, gauge, etc.)
-node <SKILL_PATH>/scripts/ruid-lookup.cjs --style 1 --role button
+node scripts/ruid-lookup.cjs --style 1 --role button
 ```
 
 ### ripgrep patterns

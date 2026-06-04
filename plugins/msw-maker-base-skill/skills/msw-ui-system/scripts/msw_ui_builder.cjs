@@ -57,6 +57,19 @@ const ANCHOR_PRESETS = {
   stretch: { min: [0.0, 0.0], max: [1.0, 1.0], alignment: 15 },
 };
 
+function hasExplicitTransformOptions(options = {}) {
+  return options.anchor != null || options.pos != null || options.rect_size != null || options.pivot != null;
+}
+
+function assertNoParentOption(methodName, name, options = {}) {
+  if (options && Object.prototype.hasOwnProperty.call(options, "parent")) {
+    throw new Error(
+      `UIBuilder.${methodName}() does not accept options.parent. ` +
+        `Use path notation in the entity name instead, such as "Parent/Child".`
+    );
+  }
+}
+
 const KNOWN_COMPONENTS = new Set([
   "MOD.Core.UITransformComponent",
   "MOD.Core.SpriteGUIRendererComponent",
@@ -431,6 +444,53 @@ class UIBuilder {
       Scale: { x: 1.0, y: 1.0, z: 1.0 },
       Enable: true,
     };
+  }
+
+  _anchorNameFromTransform(transform) {
+    for (const [presetName, preset] of Object.entries(ANCHOR_PRESETS)) {
+      const amin = transform.AnchorsMin || {};
+      const amax = transform.AnchorsMax || {};
+      if (Number(amin.x) === preset.min[0] && Number(amin.y) === preset.min[1] && Number(amax.x) === preset.max[0] && Number(amax.y) === preset.max[1]) {
+        return presetName;
+      }
+    }
+    return "middle-center";
+  }
+
+  _mergeUiTransform(existingTransform, options = {}) {
+    const curPos = existingTransform.anchoredPosition || {};
+    const curSize = existingTransform.RectSize || {};
+    const curPivot = existingTransform.Pivot || {};
+    const curOffMin = existingTransform.OffsetMin || {};
+    const curOffMax = existingTransform.OffsetMax || {};
+    const nextPos = options.pos != null ? tuple(options.pos, [0, 0]) : [Number(curPos.x ?? 0.0), Number(curPos.y ?? 0.0)];
+    const nextSize = options.rect_size != null ? tuple(options.rect_size, [100, 100]) : [Number(curSize.x ?? 100.0), Number(curSize.y ?? 100.0)];
+    let nextPivot = null;
+    if (options.pivot != null) nextPivot = tuple(options.pivot, [0.5, 0.5]);
+    else if (curPivot.x != null && curPivot.y != null) nextPivot = [Number(curPivot.x), Number(curPivot.y)];
+    const nextAnchor = options.anchor ?? this._anchorNameFromTransform(existingTransform);
+    const rebuilt = this._uiTransform(nextAnchor, nextPos, nextSize, nextPivot);
+    if (options.anchor == null) {
+      const preset = ANCHOR_PRESETS[nextAnchor] || ANCHOR_PRESETS["middle-center"];
+      const stretchX = preset.min[0] !== preset.max[0];
+      const stretchY = preset.min[1] !== preset.max[1];
+      if ((stretchX || stretchY) && curOffMin.x != null && curOffMin.y != null && curOffMax.x != null && curOffMax.y != null) {
+        if (stretchX) {
+          rebuilt.OffsetMin.x = Number(curOffMin.x);
+          rebuilt.OffsetMax.x = Number(curOffMax.x);
+          rebuilt.anchoredPosition.x = options.pos != null ? Number(nextPos[0]) : Number(curPos.x ?? 0.0);
+        }
+        if (stretchY) {
+          rebuilt.OffsetMin.y = Number(curOffMin.y);
+          rebuilt.OffsetMax.y = Number(curOffMax.y);
+          rebuilt.anchoredPosition.y = options.pos != null ? Number(nextPos[1]) : Number(curPos.y ?? 0.0);
+        }
+        if (options.rect_size == null && curSize.x != null && curSize.y != null) {
+          rebuilt.RectSize = { x: Number(curSize.x), y: Number(curSize.y) };
+        }
+      }
+    }
+    return rebuilt;
   }
 
   static _spriteRenderer(color = null, alpha = 1.0, raycast = false, fillMethod = 0, spriteType = 0, imageRuid = "", extra = {}) {
@@ -989,24 +1049,35 @@ class UIBuilder {
     return this;
   }
 
-  _add(name, compNames, entryId, modelId, components, enable = true) {
+  _add(name, compNames, entryId, modelId, components, enable = true, preserveExistingTransform = false, transformOptions = {}) {
     const [fullPath, parentPath, entityName] = this._resolve(name);
     const idx = this._findIndex(name);
     let eid;
     let displayOrder;
     let action;
     let existingJs = null;
+    let finalComponents = components;
     if (idx >= 0) {
       eid = this.entities[idx].id;
       existingJs = this.entities[idx].jsonString;
       displayOrder = existingJs.displayOrder;
       action = "Updated";
+      const existingTransform = (existingJs["@components"] || []).find(
+        (component) => component["@type"] === "MOD.Core.UITransformComponent",
+      );
+      if (existingTransform && (preserveExistingTransform || hasExplicitTransformOptions(transformOptions))) {
+        finalComponents = (components || []).map((component) =>
+          component["@type"] === "MOD.Core.UITransformComponent"
+            ? (preserveExistingTransform ? clone(existingTransform) : this._mergeUiTransform(existingTransform, transformOptions))
+            : component,
+        );
+      }
     } else {
       eid = crypto.randomUUID();
       displayOrder = this._nextDisplayOrder(parentPath);
       action = "Added";
     }
-    const derivedNames = (components || []).map((component) => component["@type"]).filter(Boolean).join(",") || compNames;
+    const derivedNames = (finalComponents || []).map((component) => component["@type"]).filter(Boolean).join(",") || compNames;
     const entity = {
       id: eid,
       path: fullPath,
@@ -1029,7 +1100,7 @@ class UIBuilder {
           replaced_model_id: null,
         },
         modelId,
-        "@components": components,
+        "@components": finalComponents,
         "@version": 1,
       },
     };
@@ -1046,29 +1117,10 @@ class UIBuilder {
     const entity = this.entities[idx];
     const js = this._entityJson(entity);
     const transform = this._findComponent(entity, "MOD.Core.UITransformComponent");
-    if (transform && (options.anchor != null || options.pos != null || options.rect_size != null || options.pivot != null)) {
-      const curPos = transform.anchoredPosition || {};
-      const curSize = transform.RectSize || {};
-      const curPivot = transform.Pivot || {};
-      const nextPos = options.pos != null ? options.pos : [curPos.x || 0.0, curPos.y || 0.0];
-      const nextSize = options.rect_size != null ? options.rect_size : [curSize.x || 100.0, curSize.y || 100.0];
-      let nextPivot = null;
-      if (options.pivot != null) nextPivot = options.pivot;
-      else if (curPivot.x != null && curPivot.y != null) nextPivot = [Number(curPivot.x), Number(curPivot.y)];
-      let nextAnchor = options.anchor;
-      if (nextAnchor == null) {
-        nextAnchor = "middle-center";
-        for (const [presetName, preset] of Object.entries(ANCHOR_PRESETS)) {
-          const amin = transform.AnchorsMin || {};
-          const amax = transform.AnchorsMax || {};
-          if (amin.x === preset.min[0] && amin.y === preset.min[1] && amax.x === preset.max[0] && amax.y === preset.max[1]) {
-            nextAnchor = presetName;
-            break;
-          }
-        }
-      }
+    if (transform && hasExplicitTransformOptions(options)) {
+      const rebuilt = this._mergeUiTransform(transform, options);
       Object.keys(transform).forEach((key) => delete transform[key]);
-      Object.assign(transform, this._uiTransform(nextAnchor, nextPos, nextSize, nextPivot));
+      Object.assign(transform, rebuilt);
     }
     if (options.enable != null) js.enable = Boolean(options.enable);
     if (options.visible != null) js.visible = Boolean(options.visible);
@@ -1174,12 +1226,14 @@ class UIBuilder {
   }
 
   panel(name, options = {}) {
+    assertNoParentOption("panel", name, options);
     return this._add(name, "MOD.Core.UITransformComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   text(name, text = "", options = {}) {
+    assertNoParentOption("text", name, options);
     const size = options.size ?? 24;
     let rectSize = options.rect_size;
     if (rectSize == null) rectSize = [Math.max(String(text).length * size, 400), size + 16];
@@ -1203,19 +1257,21 @@ class UIBuilder {
         constraint_y: options.constraint_y ?? 100.0,
         ...sort,
       }),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   sprite(name, options = {}) {
+    assertNoParentOption("sprite", name, options);
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent", "UISprite", "uisprite", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
       this._spriteRenderer(options.color ?? null, options.alpha ?? 1.0, options.raycast ?? false, options.fill_method ?? 0, options.sprite_type ?? 0, imageRuid, { preserve_aspect: options.preserve_aspect ?? false, material_id: options.material_id ?? "", ...sort }),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   button(name, text = "", options = {}) {
+    assertNoParentOption("button", name, options);
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.ButtonComponent,MOD.Core.TextComponent", "UIButton", "uibutton", [
@@ -1223,35 +1279,54 @@ class UIBuilder {
       this._spriteRenderer(null, 1.0, true, 0, 0, imageRuid, sort),
       this._buttonComponent(sort),
       this._textComponent(text, options.font_size ?? 24, options.color ?? "#000000", false, 4, sort),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   script(name, scriptName, options = {}) {
+    if (scriptName == null || typeof scriptName !== "string") {
+      throw new TypeError(
+        `UIBuilder.script(name, scriptName, options) requires a 3-arg form. ` +
+          `Use b.script("Controller", "script.MyController", { ...options }). ` +
+          `Do not pass { scripts: [...] } as the second argument.`
+      );
+    }
+    normalizeComponentName(scriptName);
+    if (options && Object.prototype.hasOwnProperty.call(options, "scripts")) {
+      throw new Error(
+        `UIBuilder.script() does not accept options.scripts. ` +
+          `Pass the script component type as the second argument: ` +
+          `b.script("Controller", "script.MyController", options).`
+      );
+    }
+    assertNoParentOption("script", name, options);
     return this._add(name, `MOD.Core.UITransformComponent,${scriptName}`, "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
       { "@type": scriptName, Enable: true },
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   slider(name, options = {}) {
+    assertNoParentOption("slider", name, options);
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.SliderComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 30]), options.pivot ?? null),
       this._spriteRenderer(null, 1.0, true, 0, 0, imageRuid, sort),
       this._sliderComponent(options.min_val ?? 0, options.max_val ?? 1, options.value ?? 0, options.direction ?? 0, options.use_handle ?? true, options.use_integer ?? false, { ...options, ...sort }),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   scrollLayout(name, options = {}) {
+    assertNoParentOption("scrollLayout", name, options);
     const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.ScrollLayoutGroupComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [400, 600]), options.pivot ?? null),
       this._scrollLayoutComponent(options.layout_type ?? 0, options.spacing ?? 0, tuple(options.cell_size, [100, 100]), options.use_scroll ?? true, tuple(options.padding, [0, 0, 0, 0]), { ...options, ...sort }),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   textInput(name, options = {}) {
+    assertNoParentOption("textInput", name, options);
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     const sort = _resolveSortOptions(options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.TextComponent,MOD.Core.TextInputComponent", "UIEmpty", "uiempty", [
@@ -1259,114 +1334,128 @@ class UIBuilder {
       this._spriteRenderer(null, 1.0, true, 0, 0, imageRuid, sort),
       this._textComponent(String(options.text ?? ""), options.font_size ?? 24, options.color ?? "#000000", false, 4, sort),
       this._textInputComponent(options.placeholder ?? "", options.char_limit ?? 0, options.content_type ?? 0, options.line_type ?? 0, { ...options, ...sort }),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   group(name, options = {}) {
+    assertNoParentOption("group", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UIGroupComponent,MOD.Core.CanvasGroupComponent", "UIGroup", "uigroup", [
       this._uiTransform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
       this._uiGroupComponent(options.default_show ?? true, options.group_order ?? 0, options.group_type ?? 1),
       this._canvasGroupComponent(options.blocks_raycasts ?? true, options.group_alpha ?? 1.0, options.interactable ?? true),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   mask(name, options = {}) {
+    assertNoParentOption("mask", name, options);
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.MaskComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
       this._spriteRenderer(options.color ?? null, options.alpha ?? 0.0, false, 0, 0, imageRuid),
       this._maskComponent(options.shape ?? 0, tuple(options.padding, [0, 0, 0, 0]), tuple(options.softness, [0, 0])),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   gridView(name, options = {}) {
+    assertNoParentOption("gridView", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.GridViewComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [400, 600]), options.pivot ?? null),
       this._gridViewComponent(options.total_count ?? 0, tuple(options.cell_size, [100, 100]), options.fixed_count ?? 1, options.fixed_type ?? 0, tuple(options.spacing, [0, 0]), tuple(options.padding, [0, 0, 0, 0]), options.use_scroll ?? true, options.scroll_bar_visible ?? 1, options.scroll_bar_thickness ?? 10.0),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   avatar(name, options = {}) {
+    assertNoParentOption("avatar", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.AvatarGUIRendererComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 300]), options.pivot ?? null),
       this._avatarRendererComponent(options.color ?? null, options.flip_x ?? false, options.flip_y ?? false, options.play_rate ?? 1.0, options.preserve_avatar ?? 0, options.raycast ?? true, options.material_id ?? ""),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   touchReceive(name, options = {}) {
+    assertNoParentOption("touchReceive", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UITouchReceiveComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "stretch", tuple(options.pos, [0, 0]), tuple(options.rect_size, [1920, 1080]), options.pivot ?? null),
       this._touchReceiveComponent(),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   skeleton(name, options = {}) {
+    assertNoParentOption("skeleton", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SkeletonGUIRendererComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
       this._skeletonRendererComponent(options.skeleton_ruid ?? "", options.animations ?? null, options.skins ?? null, options.color ?? null, options.flip_x ?? false, options.flip_y ?? false, options.loop ?? true, options.play_rate ?? 1.0, options.preserve_mode ?? 0, options.raycast ?? true),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   areaParticle(name, options = {}) {
+    assertNoParentOption("areaParticle", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UIAreaParticleComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
       this._areaParticleComponent(options.particle_type ?? 0, tuple(options.area_size, [100, 100]), tuple(options.area_offset, [0, 0]), options.color ?? null, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   basicParticle(name, options = {}) {
+    assertNoParentOption("basicParticle", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UIBasicParticleComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
       this._basicParticleComponent(options.particle_type ?? 0, options.color ?? null, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   spriteParticle(name, options = {}) {
+    assertNoParentOption("spriteParticle", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.UISpriteParticleComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
       this._spriteParticleComponent(options.particle_type ?? 0, options.sprite_ruid ?? "", options.apply_sprite_color ?? false, tuple(options.local_scale, [1, 1]), options.loop ?? true, options.play_on_enable ?? true, options.prewarm ?? false, options.auto_random_seed ?? true, options.random_seed ?? 0, options.play_speed ?? 1.0, options.particle_size ?? 1.0, options.particle_speed ?? 1.0, options.particle_count ?? 1.0, options.particle_lifetime ?? 1.0, options.color ?? null),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   joystick(name, options = {}) {
+    assertNoParentOption("joystick", name, options);
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.JoystickComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "bottom-left", tuple(options.pos, [200, 200]), tuple(options.rect_size, [300, 300]), options.pivot ?? null),
       this._spriteRenderer(options.color ?? null, options.alpha ?? 1.0, false, 0, 0, imageRuid),
       this._joystickComponent(options.dynamic_stick ?? true, options.axis ?? 1, options.up_arrow ?? 273, options.down_arrow ?? 274, options.left_arrow ?? 276, options.right_arrow ?? 275),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   softMask(name, options = {}) {
+    assertNoParentOption("softMask", name, options);
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.SoftMaskComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [200, 200]), options.pivot ?? null),
       this._spriteRenderer(options.color ?? null, options.alpha ?? 0.0, false, 0, 0, imageRuid),
       this._softMaskComponent(options.invert_mask ?? false, options.invert_outsides ?? false),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   chat(name, options = {}) {
+    assertNoParentOption("chat", name, options);
     const imageRuid = options.image_ruid != null ? options.image_ruid : this.default_ruid;
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.ChatComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "bottom-left", tuple(options.pos, [200, 200]), tuple(options.rect_size, [400, 300]), options.pivot ?? null),
       this._spriteRenderer(options.color ?? null, options.alpha ?? 0.0, true, 0, 0, imageRuid),
       this._chatComponent(options.use_chat_balloon ?? false, options.expand ?? true, options.use_chat_emotion ?? true, options.chat_emotion_duration ?? 5.0, options.enable_voice_chat ?? true, options.hide_world_chat_button ?? false, options.message_align_bottom ?? false),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   line(name, options = {}) {
+    assertNoParentOption("line", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.LineGUIRendererComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
       this._lineGuiRendererComponent(options.points ?? null, options.is_flexible ?? true, options.flexibility ?? 3.0, options.is_smooth ?? false, options.loop ?? false, options.material_id ?? ""),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   polygon(name, options = {}) {
+    assertNoParentOption("polygon", name, options);
     return this._add(name, "MOD.Core.UITransformComponent,MOD.Core.PolygonGUIRendererComponent", "UIEmpty", "uiempty", [
       this._uiTransform(options.anchor || "middle-center", tuple(options.pos, [0, 0]), tuple(options.rect_size, [100, 100]), options.pivot ?? null),
       this._polygonGuiRendererComponent(options.points ?? null, options.color ?? null, options.use_custom_uvs ?? false, options.uvs ?? null, options.material_id ?? ""),
-    ], options.enable ?? true);
+    ], options.enable ?? true, !hasExplicitTransformOptions(options), options);
   }
 
   listEntities() {

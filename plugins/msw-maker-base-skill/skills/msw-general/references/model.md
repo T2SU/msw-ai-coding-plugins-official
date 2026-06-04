@@ -7,7 +7,7 @@ A `.model` is an entity template. This document carries the **domain rules** of 
 ## 0. Non-Negotiable Rule (summary)
 
 - Do not inspect or edit `.model` JSON directly. No `Read` / `cat` / `Get-Content` / `grep` / manual JSON patches.
-- All read / create / update / write goes through `<SKILL_PATH>/scripts/model/msw_model_builder.cjs` (`ModelBuilder`).
+- All read / create / update / write goes through `scripts/model/msw_model_builder.cjs` (`ModelBuilder`).
 - The builder **fully owns** `EntryKey`, `ContentProto.Json.Id/Name`, value type descriptors, inspector-property links, child model shape, and event-link preservation.
 - Concrete call patterns / API tables / chaining-safe vs non-builder returns / `typeKey` values / helper functions → [builder-protocol.md §2](builder-protocol.md).
 

@@ -389,6 +389,14 @@ class ModelBuilder {
     const parentId = this._childParentId(options.parent ?? options.parentId);
     const existing = this._findChild(name, options.parent ?? options.parentId);
     if (existing) {
+      if (options.model != null) {
+        throw new Error(
+          `child("${name}"): cannot swap the Model template of an existing child via options.model — ` +
+          `applyChildOptions does not consume options.model, so a passing call would silently keep the prior template. ` +
+          `To replace the template, call removeChild("${name}") first, then childFromTemplate/childFromModel. ` +
+          `To update name/components/enable/visible on the existing child, omit options.model.`,
+        );
+      }
       ensureChildModelShape(existing, name, parentId);
       applyChildOptions(existing, options, name, parentId);
       return this;

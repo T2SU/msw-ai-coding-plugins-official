@@ -10,14 +10,14 @@
 
 ### File → Builder routing
 
-| Target file | Builder class | Module path (relative to script CWD) |
+| Target file | Builder class | Script path (when invoked from skill root) |
 |---|---|---|
-| `./map/*.map` | `MapBuilder` | `<SKILL_PATH>/scripts/map/msw_map_builder.cjs` |
-| `./RootDesk/MyDesk/Models/**/*.model` | `ModelBuilder` | `<SKILL_PATH>/scripts/model/msw_model_builder.cjs` |
+| `./map/*.map` | `MapBuilder` | `scripts/map/msw_map_builder.cjs` |
+| `./RootDesk/MyDesk/Models/**/*.model` | `ModelBuilder` | `scripts/model/msw_model_builder.cjs` |
 | `./Global/*.model` (engine defaults — read-only) | `ModelBuilder.read` / `snapshot` only | (same module as above) |
-| `./ui/*.ui` | `UIBuilder` | `<SKILL_ROOT>/msw-ui-system/scripts/msw_ui_builder.cjs` |
+| `./ui/*.ui` | `UIBuilder` | `../msw-ui-system/scripts/msw_ui_builder.cjs` |
 
-`require()` paths use `<SKILL_PATH>` (the current skill's root) and `<SKILL_ROOT>` (the parent skills directory) placeholders that the runtime resolves to absolute paths. Use `<SKILL_PATH>/scripts/map/msw_map_builder.cjs` from inside msw-general, and `<SKILL_ROOT>/msw-general/scripts/map/msw_map_builder.cjs` from other skills.
+Use `node scripts/...` after changing CWD to the relevant skill root. In JavaScript `require(...)`, use an explicit relative specifier such as `require("./scripts/map/msw_map_builder.cjs")`; Node treats `require("scripts/...")` as a package name, not a filesystem path. To reach a script in a different skill, resolve the sibling skill directory explicitly (for example `../msw-ui-system/scripts/...` from `msw-general`), because `<SKILL_ROOT>` is only documentation shorthand and is not automatically substituted at runtime.
 
 ### Decision matrix — which builder for which task?
 
@@ -61,6 +61,9 @@ On any mid-workflow failure (RuntimeError / validate failure / lint error), **st
 ### Cross-builder chaining contract
 
 All three builders (`MapBuilder` / `ModelBuilder` / `UIBuilder`) share one contract: **every mutator — creators, updaters, removers, and `write()` — returns the builder itself, and a missing target throws `Error` (never returns `false` / `null`).** Inspection helpers (`find` / `getId` / `get*` / `has*` / `list*` / `snapshot` / `validate` / `build`) return data and must be called on their own line; pre-check with `has*()` / `find()` when conditional behavior is needed. `MapBuilder` and `UIBuilder` additionally expose `b.lastId()` — the id of the entity targeted by the most recent creator call (`entity` / `empty` / `sprite` / `placeModel`, or any of the 22 UI creators). For a brand-new path a fresh UUID is assigned; for a path that already exists the creator upserts in place and `lastId()` returns the existing UUID, so the caller always gets the id usable to address that entity. Update/remove mutators (`patch` / `patchComponent` / `rename` / `upsertComponent` / `setComponentEnabled` / `remove` / `removeComponent`) do **not** touch `lastId()`. For `MapBuilder.placeModel`, `lastId()` returns the **root** id of the placed model, not the last placed child. `ModelBuilder` operates on a single model file and has no `lastId()`.
+
+> [!IMPORTANT]
+> **`placeModel` has destructive descendant sync semantics.** The root path is updated in place, but when `placeModel` is called on a path that already exists, it removes every existing descendant before re-creating the model tree from the template. Any `patchComponent` overrides on the existing tree are lost. See the `placeModel` section in §4 for the full warning and workarounds.
 
 ```javascript
 // MapBuilder — chain + lastId() for the newly created entity
@@ -127,7 +130,7 @@ slime.value("MovementComponent", "InputSpeed", 2.5, "float").write("RootDesk/MyD
 ### §1.1 Load / Inspect
 
 ```javascript
-const { MapBuilder } = require("<SKILL_PATH>/scripts/map/msw_map_builder.cjs");
+const { MapBuilder } = require("./scripts/map/msw_map_builder.cjs");
 
 const map = MapBuilder.read("map/map01.map");
 MapBuilder.snapshot("map/map01.map");      // summary only, no instantiation
@@ -166,7 +169,7 @@ map.component("Monster01", "MOD.Core.TransformComponent");
 | `placeModel(name, modelPath, opts)` | `MapBuilder` | Place a `.model` instance (`pos`, `componentOverrides`, ...). Root id via `lastId()` |
 | `sprite(name, opts)` | `MapBuilder` | Inline sprite entity (`ruid`, `pos`, `order`). Id via `lastId()` |
 | `empty(name, opts)` | `MapBuilder` | Empty / script-only entity (`pos`, `scripts`). Id via `lastId()` |
-| `entity(name, components, opts)` | `MapBuilder` | Low-level entity placement. Id via `lastId()`. Upsert: existing-path root metadata (`name`/`nameEditable`/`enable`/`visible`/`localize`/`modelId`/`origin`/`displayOrder`) is preserved unless overridden in `opts`; `@components` is always replaced |
+| `entity(name, components, opts)` | `MapBuilder` | Low-level entity placement. Id via `lastId()`. Upsert: existing-path root metadata (`name`/`nameEditable`/`enable`/`visible`/`localize`/`modelId`/`origin`/`displayOrder`) is preserved unless overridden in `opts`. `@components` is rebuilt from the caller's array (caller's components are authoritative when calling `entity()` directly). `sprite()` / `empty()` / `placeModel()` route through `entity()` with an internal preserve flag: when the caller does NOT pass `pos` on re-call, the existing `MOD.Core.TransformComponent` is reused so the entity stays in place; passing `pos` triggers full transform replacement. To move an existing entity, pass `pos` explicitly to the same creator or call `patch({ pos })` / `patchComponent("MOD.Core.TransformComponent", { Position })` |
 | `patch(name, updates)` | `MapBuilder` | Position / enable / rename in one call. Throws if `name` missing |
 | `patchComponent(name, compType, fields)` | `MapBuilder` | Field-level component update. Throws if entity or component missing |
 | `upsertComponent(name, compType, body)` | `MapBuilder` | Add or replace a component. Throws if entity missing |
@@ -196,6 +199,13 @@ MapBuilder.read("map/map01.map")
 Prefer `.model` + `modelId` placement for repeated or runtime-spawned content. `pos` accepts `[x, y, z]` (preferred), `{ x, y, z }`, or the exported `vector3(x, y, z)` helper; all normalize to the same component value.
 
 > ⚠️ Unknown option keys are silently ignored — only `pos` and `componentOverrides` are read. Keys like `position`, `transform`, `location` are dropped without warning, so the entity spawns at `(0,0,0)` with no error.
+
+> ⚠️ **Asymmetric re-call behavior.** `sprite()` / `empty()` / `placeModel()` on an existing path are NOT a full replace:
+>
+> - **`MOD.Core.TransformComponent`** — preserved when the call does NOT pass `pos`. Re-calling `mb.sprite("Tree", { ruid: "newRUID" })` (no `pos`) keeps the existing Position. Passing `pos` explicitly (`mb.sprite("Tree", { pos: [5, 5, 0], ruid: "newRUID" })`) triggers full replacement and moves the entity.
+> - **Non-Transform components** (`SpriteRendererComponent` fields, scripts list, anything in the model template for `placeModel`) — **always rebuilt** from the call's arguments. Re-calling `mb.sprite("Tree", { ruid: "newRUID" })` after an earlier `mb.sprite("Tree", { color: "red" })` resets `Color` to the default because the new call did not pass `color`. For incremental updates to non-Transform components, use `patchComponent` / `upsertComponent`.
+> - **`entity()` called directly** — caller's components array is authoritative; no preserve flag. The internal preservation only applies to the higher-level `sprite()` / `empty()` / `placeModel()` paths.
+> - **`placeModel()` descendants** — wiped entirely on re-call regardless of `pos`. See §4 placeModel warning.
 
 ```javascript
 map.placeModel("Monster01", "RootDesk/MyDesk/Models/Monsters/Slime.model", {
@@ -311,7 +321,7 @@ Adding a new map to the world may require appending `map://{mapId}` to `entries`
 A `.model` is an entity template. AI agents **do not** inspect or edit its JSON directly. All read / create / update / write operations go through the skill-local CJS builder:
 
 ```javascript
-const { ModelBuilder, vector3 } = require("<SKILL_PATH>/scripts/model/msw_model_builder.cjs");
+const { ModelBuilder, vector3 } = require("./scripts/model/msw_model_builder.cjs");
 ```
 
 ### §2.0 Non-Negotiable Rule
@@ -435,7 +445,7 @@ Read [`monster.md`](monster.md) before authoring a monster.
 
 ```javascript
 const path = require("path");
-const { ModelBuilder, vector3 } = require("<SKILL_PATH>/scripts/model/msw_model_builder.cjs");
+const { ModelBuilder, vector3 } = require("./scripts/model/msw_model_builder.cjs");
 
 const b = ModelBuilder.fromTemplate(
   path.join(__dirname, "..", "models", "TransformOnly.model"),
@@ -717,7 +727,7 @@ If this order is inconvenient, keep the `.model` native-only and attach the scri
 
 ### §3.3 `write()` Auto-Lint (Default ON)
 
-`write(filepath)` automatically runs `<SKILL_ROOT>/msw-ui-system/scripts/ui_lint.cjs` immediately after saving. Default behavior:
+`write(filepath)` automatically runs the sibling `msw-ui-system/scripts/ui_lint.cjs` immediately after saving. Default behavior:
 
 - One or more errors → **build failure** via `RuntimeError` (the file remains on disk; the caller must observe the failure).
 - Warnings only → one-line summary, details hidden.
@@ -739,7 +749,7 @@ b.write("ui/PopupGroup.ui", { lint_verbose: true });            // verbose warni
 b.write("ui/_scratch.ui", { lint: false });                     // skip lint
 ```
 
-Applied rule IDs (`L001`–`L017`, `L023`–`L024`) are implemented as `ruleLNNN` functions in `<SKILL_ROOT>/msw-ui-system/scripts/ui_lint.cjs`.
+Applied rule IDs (`L001`–`L017`, `L023`–`L024`) are implemented as `ruleLNNN` functions in `msw-ui-system/scripts/ui_lint.cjs`.
 
 ### §3.4 pos / anchor Rules — Builder Auto-Pivot
 
@@ -792,7 +802,9 @@ b.sprite("Window/Bg", { anchor: "stretch" });                 // child of Window
 b.button("Window/Card_SA", "A", { rect_size: [96, 132] });     // child of Window
 ```
 
-All missing intermediate parents must be created explicitly before adding children. Use a flat structure only when it simplifies runtime lookup; nested structures are supported through slash-separated paths.
+Names without `/` are root-level children of the UI group. Passing `{ parent: "Window" }` or `{ parent: "/" }` to `panel()` / `text()` / `sprite()` / `button()` / other creator methods now throws. Use `"Window/Child"` path notation for nested children, or `"Child"` for root-level children. All missing intermediate parents must be created explicitly before adding children. Use a flat structure only when it simplifies runtime lookup; nested structures are supported through slash-separated paths.
+
+Binding injection follows the same path notation. When a property points at `"Window/TitleText"`, pass that full path to `injectBindings`; a short leaf name such as `"TitleText"` is ambiguous and fails lookup.
 
 #### Create / Load
 
@@ -838,7 +850,7 @@ if (btn?.Enable) { /* use */ }
 
 #### Entity Creation (upsert — components replaced, existing root metadata preserved)
 
-> When the same path already exists, the creator preserves the existing root metadata (`name`, `nameEditable`, `visible`, `localize`, `revision`, `origin`) and re-applies only what the caller passed. `@components` is always replaced with the new value (that is the point of re-creating). To change `name` / `enable` / `visible` on an existing entity, call `patch()` rather than re-invoking the creator, or pass the field explicitly in the creator options.
+> When the same path already exists, the creator preserves the existing root metadata (`name`, `nameEditable`, `visible`, `localize`, `revision`, `origin`) and re-applies only what the caller passed. `@components` is replaced with the new value. For `UITransformComponent`, a re-call with no transform option (`anchor`, `pos`, `rect_size`, `pivot`) preserves the existing transform, and a re-call with partial transform options merges omitted transform fields from the existing transform. Example: `sprite("Bg", { rect_size: [1200, 900] })` keeps the existing anchor / position / pivot and changes only the size. For stretch anchors, omitted stretch-axis offsets are preserved instead of being collapsed to the new `pos`. To change `name` / `enable` / `visible`, call `patch()` rather than re-invoking the creator, or pass the field explicitly in the creator options.
 
 
 Tuple-shaped options (`pos`, `rect_size`, `cell_size`, `padding`, `spacing`, `softness`, ...) accept `[a, b]` / `[a, b, c, d]` (preferred) or `{ x, y, z, w }`. Both normalize to the same value.
@@ -932,11 +944,11 @@ b.sprite("HPBar/Fill", { color: "2ecc71", sprite_type: 3, fill_method: 0 });   /
 b.sprite("HPBar/Fill", { image_type: "Filled", fill_method: "Horizontal" });   // ❌ throws "FillMethod must be int32. Got 'Horizontal'"
 ```
 
-**`script(name, scriptName, options)` is 3-arg.** Same shape as `text(name, text, opts)` / `button(name, text, opts)` — the second positional argument is the **content string** (the script type name, e.g. `"WoWPlayerHUDController"`), not the options object. Packing the script name into options (`b.script(name, { script_name: "X" })`) leaves `scriptName` undefined; the resulting component's `@type` becomes `"MOD.Core.UITransformComponent,undefined"`, the build still succeeds, `ui_lint` flags `L010` (componentNames out of sync), and the controller silently never runs. Options-only patterns are reserved for content-free entities (`panel` / `sprite` / `mask` / etc.).
+**`script(name, scriptName, options)` is 3-arg and `scriptName` must be fully qualified.** Same shape as `text(name, text, opts)` / `button(name, text, opts)` — the second positional argument is the **content string** (the script component type, e.g. `"script.WoWPlayerHUDController"`), not the options object. Packing the script name into options (`b.script(name, { scripts: ["script.X"] })`) now throws at the builder call site. Options-only patterns are reserved for content-free entities (`panel` / `sprite` / `mask` / etc.).
 
 ```javascript
-b.script("Controller", "WoWPlayerHUDController", { anchor: "stretch", pos: [0, 0], rect_size: [1920, 1080] });  // ✅
-b.script("Controller", { script_name: "WoWPlayerHUDController" });                                              // ❌ silent — L010 only
+b.script("Controller", "script.WoWPlayerHUDController", { anchor: "stretch", pos: [0, 0], rect_size: [1920, 1080] });  // ✅
+b.script("Controller", { scripts: ["script.WoWPlayerHUDController"] });                                                // ❌ throws — use 3-arg form
 ```
 
 #### Enum catalog
@@ -1169,8 +1181,8 @@ The most common cross-flow: **author model → place in map → bind ui → refr
 
 ```javascript
 const path = require("path");
-const { ModelBuilder, vector3 } = require("<SKILL_PATH>/scripts/model/msw_model_builder.cjs");
-const { MapBuilder } = require("<SKILL_PATH>/scripts/map/msw_map_builder.cjs");
+const { ModelBuilder, vector3 } = require("./scripts/model/msw_model_builder.cjs");
+const { MapBuilder } = require("./scripts/map/msw_map_builder.cjs");
 
 const skillRoot = path.join(process.cwd(), "skills", "msw-general");
 
@@ -1199,16 +1211,32 @@ MapBuilder.read("map/map01.map")
 
 - Reads the `.model`, derives `modelId` from `ContentProto.Json.Id` or `EntryKey`, mirrors its component list into the placed map entity, and applies model `Values` to matching component fields.
 - Returns the builder for chaining. The root entity id of the placed instance is exposed via `b.lastId()`.
-- Replaces an existing entity with the same map path and removes its existing descendants before placing the new model instance.
 - Places model children recursively, preserving parent-child paths and `origin` metadata.
 - Accepts `options.pos` as `[x, y, z]` / `{ x, y, z }` / `vector3(...)`; arrays preferred.
 - Accepts `options.componentOverrides` as a map keyed by component type. The target component must exist in the model or the builder throws.
 - Accepts `options.modelId` only for an intentional override. Usually omit it and let the builder use the model's own id.
 
+> [!WARNING]
+> **`placeModel` is destructive on re-call.** When the target path already exists, `placeModel` wipes the existing root **and every descendant** before re-creating the tree from the template. Any in-place edits made between the original call and the re-call are lost:
+>
+> - `patchComponent("Monster01/Head", ...)` overrides on root or descendant entities.
+> - Customizations applied in the Maker editor (color, position, custom child entities added by the level designer).
+> - Child entities added by other builder calls (e.g. an `empty("Monster01/HPBar", ...)` placed after `placeModel`).
+>
+> **Re-running the same authoring script is a re-call.** If the script's flow is `placeModel(...) -> patchComponent(...) -> write(...)`, re-running it is safe — the override is reapplied each run. The footgun is mixing builder placement with out-of-band edits (Maker UI tweaks, second builder scripts that customize the instance) and then re-running the placement script later. The wipe happens with no warning.
+>
+> **Workarounds, in order of preference:**
+>
+> 1. **Don't re-call `placeModel` for in-place updates.** Make the placement call idempotent in your script — guard with `if (!map.find("Monster01")) map.placeModel(...)` if you want create-once semantics — and use `patchComponent` / `patch` / `upsertComponent` for everything else.
+> 2. **Co-locate customization with placement.** Put the `patchComponent` calls in the same script as `placeModel` so the customization survives any re-run.
+> 3. **Snapshot overrides before re-placing.** If you must re-run `placeModel` (e.g. swapping templates), `snapshot()` the entity tree first, re-place, then reapply the overrides from the snapshot.
+>
+> A `refreshModel`-style additive sync method is not provided — the cost / benefit didn't justify a built-in API. If you keep hitting this, raise it and we'll revisit.
+
 **`.ui` ↔ `.mlua` integration** (§3.6):
 
 ```javascript
-const { UIBuilder } = require("<SKILL_ROOT>/msw-ui-system/scripts/msw_ui_builder.cjs");
+const { UIBuilder } = require("../msw-ui-system/scripts/msw_ui_builder.cjs");
 
 const ui = UIBuilder.load("ui/PopupGroup.ui");
 // ... mutate ...

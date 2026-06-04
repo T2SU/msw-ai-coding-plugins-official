@@ -29,7 +29,7 @@ DefaultPlayer is made up of **two .model files**:
 > **Important**: both files are located in `./Global/`. Custom script files are created under `./RootDesk/MyDesk/`.
 
 ### DefaultPlayer is patched through ModelBuilder
-DefaultPlayer is managed through `<SKILL_ROOT>/msw-general/scripts/model/msw_model_builder.cjs`, not raw JSON edits.
+DefaultPlayer is managed through the sibling `msw-general/scripts/model/msw_model_builder.cjs`, not raw JSON edits.
 - Change a property value: `ModelBuilder.read("./Global/DefaultPlayer.model").value(...)`
 - Add/remove a component: `component()` / `removeComponent()`
 - Check the base component list: `ModelBuilder.snapshot("./Global/Player.model")`
@@ -284,7 +284,7 @@ Load `./Global/DefaultPlayer.model` with `ModelBuilder.read()`, then update valu
 **Example: set movement speed to 2.0**
 
 ```javascript
-const { ModelBuilder } = require("<SKILL_ROOT>/msw-general/scripts/model/msw_model_builder.cjs");
+const { ModelBuilder } = require("../msw-general/scripts/model/msw_model_builder.cjs");
 
 const b = ModelBuilder.read("./Global/DefaultPlayer.model");
 
@@ -409,7 +409,7 @@ DefaultPlayer's components are inherited from the base model, so they **cannot b
 Set the component values through `ModelBuilder.value()`. For components that don't yet have an Enable entry, the builder adds one.
 
 ```javascript
-const { ModelBuilder } = require("<SKILL_ROOT>/msw-general/scripts/model/msw_model_builder.cjs");
+const { ModelBuilder } = require("../msw-general/scripts/model/msw_model_builder.cjs");
 
 const b = ModelBuilder.read("./Global/DefaultPlayer.model");
 

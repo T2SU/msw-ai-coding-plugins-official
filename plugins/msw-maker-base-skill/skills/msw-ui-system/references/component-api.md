@@ -4,7 +4,7 @@ Full list of properties, methods, and events per UI component. Use as a lookup w
 
 Before reading or writing a UI component field in `.mlua`, verify the exact field name here. Do not infer field names from Unity, UGUI, HTML, or other UI frameworks.
 
-> **Authoring `.ui` files**: this reference describes **what fields exist**. To **set** them, call the builder (`<SKILL_PATH>/scripts/msw_ui_builder.cjs`; protocol in [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3 — unified call entry point). Do not hand-edit `.ui` JSON.
+> **Authoring `.ui` files**: this reference describes **what fields exist**. To **set** them, call the builder (`scripts/msw_ui_builder.cjs`; protocol in [`../../msw-general/references/builder-protocol.md`](../../msw-general/references/builder-protocol.md) §3 — unified call entry point). Do not hand-edit `.ui` JSON.
 
 ---
 

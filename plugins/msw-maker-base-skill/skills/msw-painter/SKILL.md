@@ -32,7 +32,7 @@ The painter supports two pixel art **styles**: **chunky pixel** (retro, icon/til
 4. **Write the code** — Follow the rules for the chosen style:
    - `chunky` → [references/style-chunky-pixel.md](references/style-chunky-pixel.md)
    - `maple` → [references/style-maple-cartoon.md](references/style-maple-cartoon.md)
-5. **Render to PNG** — Run `<SKILL_PATH>/scripts/render.cjs`.
+5. **Render to PNG** — Run `scripts/render.cjs`.
 6. **Upload the resource** — `mcp__msw-mcp__asset_create_resource_storage_item` two-step pattern.
 7. **Report the result** — RUID + a 1–2 sentence description (include which style was used). Entity placement / script application is outside the painter's scope.
 
@@ -141,13 +141,13 @@ If you are in a constrained environment where Chromium cannot start its sandbox 
 ### Invocation
 
 ```bash
-node <SKILL_PATH>/scripts/render.cjs --type <svg|canvas|html> --in <code-file> --out <out.png> --width <W> --height <H>
+node scripts/render.cjs --type <svg|canvas|html> --in <code-file> --out <out.png> --width <W> --height <H>
 ```
 
 Or pass the code via stdin:
 
 ```bash
-echo "<svg ...>" | node <SKILL_PATH>/scripts/render.cjs --type svg --out out.png --width 128 --height 128
+echo "<svg ...>" | node scripts/render.cjs --type svg --out out.png --width 128 --height 128
 ```
 
 Options:

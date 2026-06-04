@@ -3,7 +3,7 @@
 Fetch details for a single or multiple resources, and inspect AI-generated multilingual tags.
 
 > **All examples in this file go through the Node.js wrapper
-> `<SKILL_PATH>/msw_resource_api.cjs`.** Use it either as a CLI from a
+> `scripts/msw_resource_api.cjs`.** Use it either as a CLI from a
 > shell or via `require(...)` inside Node.js — never assemble curl commands
 > by hand.
 
@@ -15,13 +15,13 @@ Fetch detail for a single resource.
 
 ```bash
 # CLI
-node <SKILL_PATH>/msw_resource_api.cjs \
+node scripts/msw_resource_api.cjs \
     get 0017da7385e04bc4b2ddbe5949b4b462
 ```
 
 ```js
 // Node.js
-const { getResource } = require('<SKILL_PATH>/msw_resource_api.cjs');
+const { getResource } = require('./scripts/msw_resource_api.cjs');
 
 const detail = await getResource("0017da7385e04bc4b2ddbe5949b4b462");
 ```
@@ -85,13 +85,13 @@ Fetch multiple RUIDs in a single request.
 
 ```bash
 # CLI — pass RUIDs as space-separated positional arguments
-node <SKILL_PATH>/msw_resource_api.cjs \
+node scripts/msw_resource_api.cjs \
     batch 0017da7385e04bc4b2ddbe5949b4b462 abc123def456789012345678abcdef01
 ```
 
 ```js
 // Node.js
-const { getResourcesBatch } = require('<SKILL_PATH>/msw_resource_api.cjs');
+const { getResourcesBatch } = require('./scripts/msw_resource_api.cjs');
 
 const resources = await getResourcesBatch([
   "0017da7385e04bc4b2ddbe5949b4b462",
@@ -117,13 +117,13 @@ Fetch AI-generated multilingual tags for a resource — including description, k
 
 ```bash
 # CLI
-node <SKILL_PATH>/msw_resource_api.cjs \
+node scripts/msw_resource_api.cjs \
     tags 0017da7385e04bc4b2ddbe5949b4b462
 ```
 
 ```js
 // Node.js
-const { getResourceTags } = require('<SKILL_PATH>/msw_resource_api.cjs');
+const { getResourceTags } = require('./scripts/msw_resource_api.cjs');
 
 const tags = await getResourceTags("0017da7385e04bc4b2ddbe5949b4b462");
 ```

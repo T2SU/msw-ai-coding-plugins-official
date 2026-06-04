@@ -191,7 +191,7 @@ Never guess or fabricate a RUID — **always obtain one through this API**.
 All resource-API calls in this skill are made through the Node.js wrapper
 
 ```
-<SKILL_PATH>/msw_resource_api.cjs
+scripts/msw_resource_api.cjs
 ```
 
 **Do not assemble curl commands by hand.** The wrapper:
@@ -205,11 +205,11 @@ Two ways to use it:
 
 ```bash
 # 1) CLI — fire one call from a shell. Output is pretty-printed JSON.
-node <SKILL_PATH>/msw_resource_api.cjs \
+node scripts/msw_resource_api.cjs \
     search "orange mushroom" --resource-type resource_pack --category npc --topK 3
 
 # Discover available subcommands:
-node <SKILL_PATH>/msw_resource_api.cjs --help
+node scripts/msw_resource_api.cjs --help
 ```
 
 ```js
@@ -219,7 +219,7 @@ const {
   getResource, getResourcesBatch, getResourceTags,
   listResources, randomResources, findPacksContaining,
   listAvatars, getAvatarDefaults,
-} = require('<SKILL_PATH>/msw_resource_api.cjs');
+} = require('./scripts/msw_resource_api.cjs');
 
 const result = await searchResources("orange mushroom", {
   resourceTypeFilter: ["resource_pack"],

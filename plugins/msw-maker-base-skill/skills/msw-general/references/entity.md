@@ -4,7 +4,7 @@
 
 > **The actual call protocol for `.map` mutation (MapBuilder API, snapshot workflow, coverage gaps, `.map` / `.model` cross-flow) lives in [builder-protocol.md §1](builder-protocol.md). Re-read builder-protocol.md every turn that touches `.map`; this document supplies the domain context (why the calls look that way) and is read alongside it.**
 
-The legacy Maker RPC (curl) API has been removed. `.map` inspection and mutation go through `<SKILL_PATH>/scripts/map/msw_map_builder.cjs` (= `MapBuilder`), followed by **msw-maker-mcp** verification tools.
+The legacy Maker RPC (curl) API has been removed. `.map` inspection and mutation go through `scripts/map/msw_map_builder.cjs` (= `MapBuilder`), followed by **msw-maker-mcp** verification tools.
 
 ---
 

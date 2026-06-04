@@ -10,6 +10,10 @@ function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
 
+function hasExplicitPos(options = {}) {
+  return options != null && options.pos != null;
+}
+
 function readJsonFile(filepath, label) {
   try {
     return JSON.parse(fs.readFileSync(filepath, "utf8"));
@@ -323,7 +327,7 @@ class MapBuilder {
     }).sort((a, b) => String(a.path).localeCompare(String(b.path)));
   }
 
-  entity(identifier, components, options = {}) {
+  entity(identifier, components, options = {}, preserveExistingTransform = false) {
     const path = this._normalizePath(identifier);
     const existingIndex = this._findIndex(path);
     const existing = existingIndex >= 0 ? this.entities[existingIndex] : null;
@@ -336,6 +340,17 @@ class MapBuilder {
     else if (modelId != null) origin = { type: "Model", entry_id: modelId, sub_entity_id: null, root_entity_id: id, replaced_model_id: null };
     else origin = undefined;
     if (origin && origin.root_entity_id == null) origin.root_entity_id = id;
+    let finalComponents = clone(components);
+    if (preserveExistingTransform && existingJs) {
+      const existingTransform = (existingJs["@components"] || []).find(
+        (component) => component["@type"] === "MOD.Core.TransformComponent",
+      );
+      if (existingTransform) {
+        finalComponents = finalComponents.map((component) =>
+          component["@type"] === "MOD.Core.TransformComponent" ? clone(existingTransform) : component,
+        );
+      }
+    }
     const js = {
       name: options.name ?? (existingJs ? existingJs.name : this._entityName(path)),
       path,
@@ -347,7 +362,7 @@ class MapBuilder {
       pathConstraints: this._pathConstraints(path),
       revision: existingJs ? (existingJs.revision ?? 1) : (options.revision ?? 1),
       modelId,
-      "@components": clone(components),
+      "@components": finalComponents,
       "@version": 1,
     };
     if (origin !== undefined) js.origin = origin;
@@ -362,7 +377,7 @@ class MapBuilder {
   empty(name, options = {}) {
     const components = [defaultComponent("MOD.Core.TransformComponent", options.pos || [0, 0, 0])];
     for (const script of options.scripts || []) components.push(defaultComponent(script));
-    return this.entity(name, components, { modelId: options.modelId ?? "mapempty", origin: options.origin, enable: options.enable });
+    return this.entity(name, components, { modelId: options.modelId ?? "mapempty", origin: options.origin, enable: options.enable }, !hasExplicitPos(options));
   }
 
   sprite(name, options = {}) {
@@ -374,7 +389,7 @@ class MapBuilder {
       modelId: options.modelId ?? "mapobject",
       origin: options.origin,
       enable: options.enable,
-    });
+    }, !hasExplicitPos(options));
   }
 
   placeModel(name, modelFilepathOrJson, options = {}) {
@@ -401,7 +416,7 @@ class MapBuilder {
       enable: options.enable,
       visible: options.visible,
       origin: { type: "Model", entry_id: modelId, sub_entity_id: null, root_entity_id: null, replaced_model_id: null },
-    });
+    }, !hasExplicitPos(options));
     const rootId = this._lastId;
     const model = modelContent(modelJson);
     this._placeModelChildren(path, rootId, modelId, model.Children || [], modelId);

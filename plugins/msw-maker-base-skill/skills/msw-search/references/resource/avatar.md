@@ -4,7 +4,7 @@ Search avatar costume items, browse the full avatar catalog, look up
 default parts, and inspect item details.
 
 > **All examples in this file go through the Node.js wrapper
-> `<SKILL_PATH>/msw_resource_api.cjs`.** Use it either as a CLI from a
+> `scripts/msw_resource_api.cjs`.** Use it either as a CLI from a
 > shell or via `require(...)` inside Node.js — never assemble curl commands
 > by hand.
 
@@ -20,13 +20,13 @@ optionally a slot category).
 
 ```bash
 # CLI — narrow to a specific slot with --category
-node <SKILL_PATH>/msw_resource_api.cjs \
+node scripts/msw_resource_api.cjs \
     search-avatar "early dismissal" --topK 3 --category shoes
 ```
 
 ```js
 // Node.js
-const { searchAvatarItems } = require('<SKILL_PATH>/msw_resource_api.cjs');
+const { searchAvatarItems } = require('./scripts/msw_resource_api.cjs');
 
 const result = await searchAvatarItems("early dismissal", {
   topK: 3,
@@ -54,15 +54,15 @@ a query; for keyword search use `searchAvatarItems`.
 
 ```bash
 # CLI — canonical-only (default; deduped by color/shape variant)
-node <SKILL_PATH>/msw_resource_api.cjs avatars
+node scripts/msw_resource_api.cjs avatars
 
 # Include all variants
-node <SKILL_PATH>/msw_resource_api.cjs avatars --no-canonical-only
+node scripts/msw_resource_api.cjs avatars --no-canonical-only
 ```
 
 ```js
 // Node.js
-const { listAvatars } = require('<SKILL_PATH>/msw_resource_api.cjs');
+const { listAvatars } = require('./scripts/msw_resource_api.cjs');
 
 const avatars = await listAvatars({ canonicalOnly: true });
 ```
@@ -103,13 +103,13 @@ Fetch the default avatar body / head RUIDs.
 
 ```bash
 # CLI
-node <SKILL_PATH>/msw_resource_api.cjs \
+node scripts/msw_resource_api.cjs \
     avatar-defaults
 ```
 
 ```js
 // Node.js
-const { getAvatarDefaults } = require('<SKILL_PATH>/msw_resource_api.cjs');
+const { getAvatarDefaults } = require('./scripts/msw_resource_api.cjs');
 
 const defaults = await getAvatarDefaults();
 ```
@@ -137,13 +137,13 @@ const defaults = await getAvatarDefaults();
 
 ```bash
 # CLI
-node <SKILL_PATH>/msw_resource_api.cjs \
+node scripts/msw_resource_api.cjs \
     get ITEM_RUID
 ```
 
 ```js
 // Node.js
-const { getResource } = require('<SKILL_PATH>/msw_resource_api.cjs');
+const { getResource } = require('./scripts/msw_resource_api.cjs');
 
 const item = await getResource("ITEM_RUID");
 ```

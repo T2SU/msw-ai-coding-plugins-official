@@ -7,7 +7,7 @@ This reference is for building a working monster model on MapleTile side-view ma
 **Canonical working sample (Pattern A):** a Soldier monster setup — `Soldier/SoldierAI.mlua`, `Soldier/SoldierAttack.mlua`, `Soldier/SoldierSpawner.mlua`, `Monster.mlua`, and `Models/Monsters/Soldier.model`. Full source for all four scripts is inlined in §7 below; refer back to those sections any time the skill output drifts from what visibly works.
 
 ```javascript
-const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("<SKILL_PATH>/scripts/model/msw_model_builder.cjs");
+const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("./scripts/model/msw_model_builder.cjs");
 ```
 
 ## 1. Silent Failures to Avoid
@@ -292,7 +292,7 @@ Rules for Sub-option B:
 Faithful to the proven working sample. Use this when behavior needs anything beyond AIChase's nearest-player chase.
 
 ```javascript
-const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("<SKILL_PATH>/scripts/model/msw_model_builder.cjs");
+const { ModelBuilder, vector2, collisionGroup, actionSheet } = require("./scripts/model/msw_model_builder.cjs");
 
 // No template — assemble from scratch with the 11-component Soldier layout.
 const b = new ModelBuilder("Slime");
