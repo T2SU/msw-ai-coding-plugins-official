@@ -8,11 +8,6 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/mlua-lsp/mlua-session-start.cjs\"",
             "timeout": 120
-          },
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/inject-agent-md/inject-agents-md.cjs\"",
-            "timeout": 5
           }
         ]
       }
@@ -24,11 +19,6 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/core-version-check/core-version-check.cjs\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/skill-router-reminder/skill-router-reminder.cjs\"",
             "timeout": 5
           }
         ]
